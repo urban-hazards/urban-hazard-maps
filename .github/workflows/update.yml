@@ -20,8 +20,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build-and-deploy:
@@ -54,9 +52,10 @@ jobs:
           echo "✅ docs/index.html exists ($(wc -c < docs/index.html) bytes)"
           ls -la docs/
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          commit_message: "Update needle hotspot data — $(date +'%Y-%m-%d')"
+      - name: Commit and push updated map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --staged --quiet || git commit -m "Update needle hotspot data — $(date +'%Y-%m-%d')"
+          git push
