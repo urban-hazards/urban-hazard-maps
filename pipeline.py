@@ -186,6 +186,7 @@ def clean(row: dict) -> dict | None:
         "dow": dt.strftime("%A"),
         "hood": hood,
         "street": street,
+        "zipcode": (row.get("location_zipcode") or row.get("LOCATION_ZIPCODE") or "").strip()[:5],
         "resp_hrs": (
             round((closed - dt).total_seconds() / 3600, 1) if closed else None
         ),
@@ -197,9 +198,10 @@ def clean(row: dict) -> dict | None:
 def compute_stats(records: list[dict]) -> dict:
     """Compute all the stats the HTML template needs."""
 
-    # Monthly trend
-    monthly = Counter(f"{r['year']}-{r['month']:02d}" for r in records)
-    monthly_sorted = sorted(monthly.items())
+    years = sorted(set(r["year"] for r in records))
+
+    # Compact point array for client-side filtering: [lat, lng, year, month]
+    points = [[r["lat"], r["lng"], r["year"], r["month"]] for r in records]
 
     # Neighborhood breakdown
     by_hood = defaultdict(list)
@@ -222,51 +224,42 @@ def compute_stats(records: list[dict]) -> dict:
     hourly = Counter(r["hour"] for r in records)
     hourly_data = [hourly.get(h, 0) for h in range(24)]
 
-    # Day of week
-    dow = Counter(r["dow"] for r in records)
-
-    def bin_records(recs):
-        """Cluster lat/lng points into ~90m grid cells for heatmap."""
-        grid = defaultdict(int)
-        bin_size = 0.0008
-        for r in recs:
-            key = (round(r["lat"] / bin_size) * bin_size,
-                   round(r["lng"] / bin_size) * bin_size)
-            grid[key] += 1
-        return [[lat, lng, count] for (lat, lng), count in grid.items()]
-
-    heat_points = bin_records(records)
-
-    # Per-year heat data for the year filter
-    years = sorted(set(r["year"] for r in records))
-    heat_by_year = {
-        str(y): bin_records([r for r in records if r["year"] == y])
+    # Monthly counts by year for Chart.js trend line
+    year_monthly = {
+        str(y): [sum(1 for r in records if r["year"] == y and r["month"] == m)
+                 for m in range(1, 13)]
         for y in years
     }
 
-    # Individual points for the marker layer (cap at 3000 most recent)
+    # Top zip codes
+    zip_counts = Counter(r["zipcode"] for r in records if r["zipcode"])
+    zip_stats = [{"zip": z, "count": c} for z, c in zip_counts.most_common(10)]
+
+    # Individual markers for zoom-in layer (cap at 3000 most recent)
     recent = sorted(records, key=lambda r: r["dt"], reverse=True)[:3000]
     markers = [
         {"lat": r["lat"], "lng": r["lng"], "dt": r["dt"][:10],
-         "hood": r["hood"], "street": r["street"]}
+         "hood": r["hood"], "street": r["street"], "zip": r["zipcode"]}
         for r in recent
     ]
+
+    dow = Counter(r["dow"] for r in records)
 
     return {
         "total": len(records),
         "years": years,
-        "monthly": monthly_sorted,
+        "points": points,
         "hoods": hood_stats[:15],
         "hourly": hourly_data,
-        "dow": dict(dow.most_common()),
-        "heat_points": heat_points,
-        "heat_by_year": heat_by_year,
+        "year_monthly": year_monthly,
+        "zip_stats": zip_stats,
         "markers": markers,
         "generated": datetime.now().strftime("%B %d, %Y at %I:%M %p"),
         "peak_hood": hood_stats[0]["name"] if hood_stats else "—",
         "peak_hour": max(range(24), key=lambda h: hourly.get(h, 0)),
         "peak_dow": dow.most_common(1)[0][0] if dow else "—",
-        "avg_monthly": round(len(records) / max(len(monthly), 1), 1),
+        "avg_monthly": round(len(records) / max(len(set(
+            f"{r['year']}-{r['month']}" for r in records)), 1), 1),
     }
 
 
@@ -277,304 +270,394 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Boston 311 — Needle Hotspot Map</title>
+<title>Boston 311 Needle Requests</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #06060f; --bg2: #0c0c1a; --bg3: #121220;
-    --border: #1a1a30; --border2: #242440;
-    --t1: #f0f0f8; --t2: #9090b8; --t3: #505070;
-    --red: #ef4444; --orange: #f97316; --amber: #f59e0b;
-    --green: #22c55e; --sidebar: 270px;
-  }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { height:100%; overflow:hidden; }
-  body { background:var(--bg); color:var(--t1);
-    font-family:'DM Sans',system-ui,sans-serif; display:flex; }
+  body { background:#f0f0f0; color:#1a1a1a;
+    font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+    display:flex; flex-direction:column; }
 
-  /* ── Sidebar ── */
-  #sidebar {
-    width:var(--sidebar); flex-shrink:0;
-    background:rgba(6,6,15,0.96);
-    border-right:1px solid var(--border);
-    display:flex; flex-direction:column;
-    overflow-y:auto; z-index:500;
-    backdrop-filter:blur(4px);
+  /* ── Header ── */
+  .hdr {
+    background:#fff; border-bottom:1px solid #d0d0d0;
+    padding:10px 16px; display:flex; align-items:center;
+    justify-content:space-between; flex-shrink:0; gap:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);
   }
-  .sb-title {
-    padding:18px 16px 12px;
-    border-bottom:1px solid var(--border);
-  }
-  .sb-title-top { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-  .dot { width:8px;height:8px;border-radius:50%;background:var(--red);
-    box-shadow:0 0 8px 3px rgba(239,68,68,.5); animation:pulse 2s infinite; flex-shrink:0; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .sb-h1 { font-family:'DM Mono',monospace; font-size:13px; font-weight:500;
-    letter-spacing:.06em; text-transform:uppercase;
-    background:linear-gradient(90deg,var(--orange),var(--amber));
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-  .sb-sub { font-family:'DM Mono',monospace; font-size:9px; color:var(--t3);
-    letter-spacing:.03em; line-height:1.5; }
+  .hdr-left { display:flex; align-items:baseline; gap:10px; }
+  .hdr-title { font-size:18px; font-weight:700; color:#1a1a1a; }
+  .hdr-sub { font-size:12px; color:#666; }
+  .hdr-right { font-size:11px; color:#888; }
 
-  /* KPIs */
-  .kpis { display:grid; grid-template-columns:1fr 1fr; gap:1px;
-    background:var(--border); border-bottom:1px solid var(--border); }
-  .kpi { padding:10px 12px; background:var(--bg2); }
-  .kpi-label { font-family:'DM Mono',monospace; font-size:8px; color:var(--t3);
-    letter-spacing:.1em; text-transform:uppercase; margin-bottom:3px; }
-  .kpi-val { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; }
-  .kpi-val.red{color:var(--red);} .kpi-val.orange{color:var(--orange);}
-  .kpi-val.amber{color:var(--amber);} .kpi-val.green{color:var(--green);}
+  /* ── Main layout ── */
+  .main { flex:1; display:flex; overflow:hidden; }
 
-  /* Section headers */
-  .sb-section { padding:10px 16px 6px;
-    font-family:'DM Mono',monospace; font-size:9px; color:var(--t3);
-    letter-spacing:.1em; text-transform:uppercase;
-    border-bottom:1px solid var(--border); }
-
-  /* Year filter */
-  .year-btns { display:flex; flex-wrap:wrap; gap:4px; padding:10px 12px;
-    border-bottom:1px solid var(--border); }
-  .yr-btn { font-family:'DM Mono',monospace; font-size:11px;
-    padding:5px 10px; border-radius:4px; cursor:pointer;
-    border:1px solid var(--border2); background:transparent;
-    color:var(--t3); transition:all .15s; }
-  .yr-btn:hover { border-color:var(--orange); color:var(--t2); }
-  .yr-btn.active { background:rgba(249,115,22,.15);
-    border-color:var(--orange); color:var(--orange); }
-
-  /* Neighborhood list */
-  .hood-list { flex:1; overflow-y:auto; }
-  .hood-row { display:flex; align-items:center; gap:8px;
-    padding:7px 12px; border-bottom:1px solid var(--bg3);
-    cursor:pointer; transition:background .1s; }
-  .hood-row:hover { background:rgba(249,115,22,.04); }
-  .hood-name { flex:1; font-size:12px; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis; }
-  .hood-count { font-family:'DM Mono',monospace; font-size:11px;
-    color:var(--orange); flex-shrink:0; }
-  .hood-bar-wrap { width:50px; flex-shrink:0; }
-  .hood-bar { height:4px; border-radius:2px; background:var(--orange); }
-
-  /* Legend */
-  .legend { padding:12px; border-top:1px solid var(--border); flex-shrink:0; }
-  .legend-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--t3);
-    letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px; }
-  .legend-gradient {
-    height:10px; border-radius:5px; margin-bottom:5px;
-    background:linear-gradient(90deg,
-      rgba(255,255,178,0.6) 0%,
-      #fecc5c 30%, #fd8d3c 55%, #f03b20 78%, #bd0026 100%);
-  }
-  .legend-labels { display:flex; justify-content:space-between;
-    font-family:'DM Mono',monospace; font-size:9px; color:var(--t3); }
-
-  /* Attribution */
-  .sb-footer { padding:8px 12px; font-family:'DM Mono',monospace;
-    font-size:8px; color:var(--t3); border-top:1px solid var(--border);
-    line-height:1.6; flex-shrink:0; }
-  .sb-footer a { color:var(--t3); text-decoration:underline; }
-
-  /* ── Map ── */
+  /* ── Map area ── */
   #map-wrap { flex:1; position:relative; }
   #map { position:absolute; inset:0; }
 
-  /* Leaflet overrides */
-  .leaflet-container { background:var(--bg) !important; }
-  .leaflet-control-attribution {
-    background:rgba(6,6,15,0.75) !important;
-    color:var(--t3) !important; font-size:9px !important;
+  /* Filter overlay — floats over the map, top-right */
+  #filter-box {
+    position:absolute; top:10px; right:10px; z-index:500;
+    background:rgba(255,255,255,0.96); border:1px solid #ccc;
+    border-radius:6px; padding:12px 14px; min-width:160px;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+    font-size:13px; line-height:1.4;
   }
-  .leaflet-control-attribution a { color:var(--t3) !important; }
-  .info-popup { font-family:'DM Mono',monospace; font-size:11px;
-    line-height:1.6; color:#e0e0f0; }
-  .info-popup b { color:var(--orange); display:block; margin-bottom:2px; }
-  .leaflet-popup-content-wrapper {
-    background:rgba(12,12,26,0.95) !important;
-    border:1px solid var(--border2) !important;
-    border-radius:6px !important; box-shadow:0 4px 20px rgba(0,0,0,.5) !important;
-  }
-  .leaflet-popup-tip { background:rgba(12,12,26,0.95) !important; }
+  .filter-section { margin-bottom:10px; }
+  .filter-section:last-child { margin-bottom:0; }
+  .filter-label { font-weight:700; font-size:11px; color:#444;
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+  .radio-row { display:flex; align-items:center; gap:5px;
+    padding:1px 0; cursor:pointer; color:#333; }
+  .radio-row input { cursor:pointer; accent-color:#e85a1b; }
+  .radio-row:hover { color:#e85a1b; }
 
-  /* Mobile */
+  /* Showing count box */
+  #count-box {
+    position:absolute; bottom:28px; left:10px; z-index:500;
+    background:rgba(255,255,255,0.93); border:1px solid #ccc;
+    border-radius:4px; padding:6px 10px; font-size:12px; color:#333;
+    box-shadow:0 1px 5px rgba(0,0,0,.12);
+  }
+
+  /* ── Right charts panel ── */
+  #charts-panel {
+    width:300px; flex-shrink:0; background:#fff;
+    border-left:1px solid #d0d0d0; overflow-y:auto;
+    display:flex; flex-direction:column;
+  }
+  .chart-section { padding:14px 14px 10px; border-bottom:1px solid #e8e8e8; }
+  .chart-title { font-size:13px; font-weight:700; color:#222;
+    margin-bottom:10px; }
+  .chart-sub { font-size:11px; color:#888; margin-top:4px; }
+
+  /* Legend strip */
+  .legend-strip { display:flex; align-items:center; gap:6px;
+    font-size:11px; color:#666; margin-top:6px; }
+  .legend-grad { height:8px; flex:1; border-radius:4px;
+    background:linear-gradient(90deg,
+      transparent 0%, #00aa44 20%, #ffff00 50%, #ff8800 75%, #cc0000 100%); }
+
+  /* Neighborhood table */
+  .hood-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .hood-table td { padding:4px 2px; }
+  .hood-table .hname { color:#222; width:45%; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+  .hood-table .hbar-cell { width:40%; }
+  .hbar { height:6px; border-radius:3px; background:#4e79a7; }
+  .hood-table .hcount { color:#e85a1b; font-weight:600;
+    text-align:right; width:15%; }
+
+  /* Zip table */
+  .zip-row { display:flex; align-items:center; gap:6px;
+    font-size:12px; padding:3px 0; }
+  .zip-label { width:55px; color:#555; font-weight:600; }
+  .zip-bar-wrap { flex:1; }
+  .zip-bar { height:6px; border-radius:3px; background:#76b7b2; }
+  .zip-count { width:45px; text-align:right; color:#333; }
+
+  /* Leaflet popup */
+  .info-popup { font-size:12px; line-height:1.6; color:#222; }
+  .info-popup b { font-size:13px; color:#e85a1b; display:block; }
+
+  @media(max-width:900px) {
+    #charts-panel { display:none; }
+  }
   @media(max-width:640px) {
-    body { flex-direction:column; overflow:auto; }
-    #sidebar { width:100%; height:auto; overflow:visible; border-right:none;
-      border-bottom:1px solid var(--border); }
-    #map-wrap { flex:none; height:65vh; }
+    .main { flex-direction:column; }
+    #map-wrap { flex:none; height:55vh; }
     #map { position:relative; height:100%; }
-    .hood-list { max-height:200px; }
+    #filter-box { font-size:11px; padding:8px 10px; }
   }
 </style>
 </head>
 <body>
 
-<!-- ── Sidebar ── -->
-<div id="sidebar">
-  <div class="sb-title">
-    <div class="sb-title-top">
-      <div class="dot"></div>
-      <div class="sb-h1">Boston 311 · Needles</div>
-    </div>
-    <div class="sb-sub">
-      Needle Pickup &amp; Clean-up requests<br>
-      Source: <a href="https://data.boston.gov/dataset/311-service-requests"
-        target="_blank" style="color:var(--t3);text-decoration:underline">data.boston.gov</a>
-      &nbsp;·&nbsp; Updated: $GENERATED
-    </div>
+<!-- ── Header ── -->
+<div class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-title">Boston 311 Needle Requests</span>
+    <span class="hdr-sub">Needle Pickup &amp; Needle Clean-up · $YEARS</span>
   </div>
-
-  <div class="kpis">
-    <div class="kpi">
-      <div class="kpi-label">Total</div>
-      <div class="kpi-val red">$TOTAL</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Top area</div>
-      <div class="kpi-val orange" style="font-size:13px;line-height:1.3">$PEAK_HOOD</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Peak hour</div>
-      <div class="kpi-val amber">${PEAK_HOUR}:00</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Avg/month</div>
-      <div class="kpi-val green">$AVG_MONTHLY</div>
-    </div>
-  </div>
-
-  <div class="sb-section">Year</div>
-  <div class="year-btns" id="year-btns">
-    <button class="yr-btn active" data-year="all" onclick="setYear(this,'all')">All</button>
-    <!-- year buttons injected by JS -->
-  </div>
-
-  <div class="sb-section">Neighborhoods</div>
-  <div class="hood-list" id="hood-list"></div>
-
-  <div class="legend">
-    <div class="legend-title">Request density</div>
-    <div class="legend-gradient"></div>
-    <div class="legend-labels"><span>Low</span><span>High</span></div>
-  </div>
-
-  <div class="sb-footer">
-    Zoom in past level&nbsp;15 for individual report markers.
-    Auto-updates monthly via GitHub&nbsp;Actions.
-    Years: $YEARS &nbsp;·&nbsp;
-    <a href="https://github.com/coffeethencode/boston-needle-map" target="_blank">Source</a>
+  <div class="hdr-right">
+    Data: <a href="https://data.boston.gov/dataset/311-service-requests"
+      target="_blank" style="color:#4e79a7">data.boston.gov</a>
+    &nbsp;·&nbsp; Updated $GENERATED
+    &nbsp;·&nbsp; <a href="https://github.com/coffeethencode/boston-needle-map"
+      target="_blank" style="color:#4e79a7">Source</a>
   </div>
 </div>
 
-<!-- ── Map ── -->
-<div id="map-wrap">
-  <div id="map"></div>
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Map -->
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <!-- Filter overlay -->
+    <div id="filter-box">
+      <div class="filter-section">
+        <div class="filter-label">Year</div>
+        <label class="radio-row">
+          <input type="radio" name="yr" value="all" checked> All Years
+        </label>
+        <!-- year radios injected by JS -->
+      </div>
+      <div class="filter-section">
+        <div class="filter-label">Month</div>
+        <label class="radio-row">
+          <input type="radio" name="mo" value="0" checked> All Months
+        </label>
+        <label class="radio-row"><input type="radio" name="mo" value="1"> January</label>
+        <label class="radio-row"><input type="radio" name="mo" value="2"> February</label>
+        <label class="radio-row"><input type="radio" name="mo" value="3"> March</label>
+        <label class="radio-row"><input type="radio" name="mo" value="4"> April</label>
+        <label class="radio-row"><input type="radio" name="mo" value="5"> May</label>
+        <label class="radio-row"><input type="radio" name="mo" value="6"> June</label>
+        <label class="radio-row"><input type="radio" name="mo" value="7"> July</label>
+        <label class="radio-row"><input type="radio" name="mo" value="8"> August</label>
+        <label class="radio-row"><input type="radio" name="mo" value="9"> September</label>
+        <label class="radio-row"><input type="radio" name="mo" value="10"> October</label>
+        <label class="radio-row"><input type="radio" name="mo" value="11"> November</label>
+        <label class="radio-row"><input type="radio" name="mo" value="12"> December</label>
+      </div>
+    </div>
+
+    <!-- Count readout -->
+    <div id="count-box">Showing <strong id="count-val">$TOTAL</strong> requests</div>
+  </div>
+
+  <!-- Charts panel -->
+  <div id="charts-panel">
+
+    <div class="chart-section">
+      <div class="chart-title">Requests by Year</div>
+      <canvas id="trend-chart" height="160"></canvas>
+      <div class="legend-strip">
+        <span>Low</span>
+        <div class="legend-grad"></div>
+        <span>High</span>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Top Neighborhoods</div>
+      <table class="hood-table" id="hood-table"></table>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Requests by Hour</div>
+      <canvas id="hour-chart" height="100"></canvas>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Top Zip Codes</div>
+      <div id="zip-list"></div>
+    </div>
+
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
-// ── Embedded data ─────────────────────────────────────────────────────
-const HEAT_ALL   = $HEAT_JSON;
-const HEAT_YEARS = $HEAT_BY_YEAR_JSON;
-const MARKERS    = $MARKERS_JSON;
-const MONTHLY    = $MONTHLY_JSON;
-const HOODS      = $HOODS_JSON;
-const HOURLY     = $HOURLY_JSON;
+// ── Data ──────────────────────────────────────────────────────────────
+// POINTS: [lat, lng, year, month] — compact, filtered client-side
+const POINTS      = $POINTS_JSON;
+const MARKERS     = $MARKERS_JSON;
+const HOODS       = $HOODS_JSON;
+const HOURLY      = $HOURLY_JSON;
+const YEAR_MONTHLY= $YEAR_MONTHLY_JSON;
+const ZIP_STATS   = $ZIP_STATS_JSON;
+const ALL_YEARS   = $YEARS_JSON;
 
-// ── Map ───────────────────────────────────────────────────────────────
-const map = L.map('map', {
-  center: [42.332, -71.078],
-  zoom: 13,
-  zoomControl: true,
-  attributionControl: true,
-});
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-  subdomains: 'abcd',
-  maxZoom: 19,
-}).addTo(map);
-
-// Heat gradient — YlOrRd (matches Tableau sequential heat palette)
+// ── Heat gradient: green → yellow → orange → red (matches Tableau) ───
 const GRADIENT = {
   0.00: 'rgba(0,0,0,0)',
-  0.15: 'rgba(255,255,178,0.55)',
-  0.35: '#fecc5c',
-  0.55: '#fd8d3c',
-  0.75: '#f03b20',
-  1.00: '#bd0026',
+  0.12: 'rgba(0,170,68,0.5)',
+  0.30: 'rgba(0,204,0,0.75)',
+  0.50: 'rgba(255,255,0,0.88)',
+  0.70: 'rgba(255,136,0,0.94)',
+  0.88: 'rgba(220,30,0,0.97)',
+  1.00: 'rgba(150,0,0,1)',
 };
 
-function makeHeat(pts) {
-  const counts = pts.map(p => p[2]);
-  // Use 95th-percentile as max so one outlier doesn't wash out the palette
-  const sorted = [...counts].sort((a,b) => a-b);
+// ── State ──────────────────────────────────────────────────────────────
+let selYear = 'all', selMonth = 0;
+
+// ── Map ────────────────────────────────────────────────────────────────
+const map = L.map('map', { center:[42.332,-71.078], zoom:13 });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  subdomains: 'abcd', maxZoom: 19,
+}).addTo(map);
+
+// ── Heatmap ────────────────────────────────────────────────────────────
+const BIN = 0.0008;
+
+function buildHeat(yr, mo) {
+  const grid = new Map();
+  let n = 0;
+  for (const [lat, lng, y, m] of POINTS) {
+    if (yr !== 'all' && y !== yr) continue;
+    if (mo !== 0 && m !== mo) continue;
+    const key = `${Math.round(lat/BIN)*BIN},${Math.round(lng/BIN)*BIN}`;
+    grid.set(key, (grid.get(key) || 0) + 1);
+    n++;
+  }
+  document.getElementById('count-val').textContent = n.toLocaleString();
+  const pts = [];
+  grid.forEach((count, key) => {
+    const [la, lo] = key.split(',').map(Number);
+    pts.push([la, lo, count]);
+  });
+  const sorted = pts.map(p => p[2]).sort((a,b)=>a-b);
   const p95 = sorted[Math.floor(sorted.length * 0.95)] || 1;
   return L.heatLayer(pts, {
-    radius: 30,
-    blur: 22,
-    maxZoom: 15,
-    max: p95,
-    minOpacity: 0.35,
-    gradient: GRADIENT,
+    radius: 38, blur: 28, maxZoom: 16,
+    max: p95, minOpacity: 0.4, gradient: GRADIENT,
   });
 }
 
-let heatLayer = makeHeat(HEAT_ALL);
+let heatLayer = buildHeat('all', 0);
 heatLayer.addTo(map);
 
-// ── Year filter ───────────────────────────────────────────────────────
-const yearBtns = document.getElementById('year-btns');
-Object.keys(HEAT_YEARS).sort().forEach(yr => {
-  const btn = document.createElement('button');
-  btn.className = 'yr-btn';
-  btn.dataset.year = yr;
-  btn.textContent = yr;
-  btn.onclick = () => setYear(btn, yr);
-  yearBtns.appendChild(btn);
-});
-
-function setYear(btn, yr) {
-  document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function updateHeat() {
   map.removeLayer(heatLayer);
-  const pts = yr === 'all' ? HEAT_ALL : (HEAT_YEARS[yr] || []);
-  heatLayer = makeHeat(pts);
+  heatLayer = buildHeat(selYear, selMonth);
   heatLayer.addTo(map);
 }
 
-// ── Marker layer (zoom 15+) ───────────────────────────────────────────
+// ── Filters ────────────────────────────────────────────────────────────
+// Year radios
+const yrSection = document.querySelector('[name=yr]').closest('.filter-section');
+ALL_YEARS.forEach(yr => {
+  const lbl = document.createElement('label');
+  lbl.className = 'radio-row';
+  lbl.innerHTML = `<input type="radio" name="yr" value="${yr}"> ${yr}`;
+  yrSection.appendChild(lbl);
+});
+
+document.querySelectorAll('[name=yr]').forEach(r => {
+  r.addEventListener('change', () => { selYear = r.value === 'all' ? 'all' : +r.value; updateHeat(); updateTrendChart(); });
+});
+document.querySelectorAll('[name=mo]').forEach(r => {
+  r.addEventListener('change', () => { selMonth = +r.value; updateHeat(); });
+});
+
+// ── Marker layer (zoom 15+) ────────────────────────────────────────────
 const markerGroup = L.layerGroup();
 MARKERS.forEach(m => {
   L.circleMarker([m.lat, m.lng], {
-    radius: 5, fillColor: '#f97316', fillOpacity: 0.8,
-    color: '#fff', weight: 0.5, opacity: 0.5,
+    radius:5, fillColor:'#e85a1b', fillOpacity:0.85,
+    color:'#fff', weight:1, opacity:0.6,
   }).bindPopup(
-    `<div class="info-popup"><b>${m.hood || 'Unknown area'}</b>${m.street ? m.street + '<br>' : ''}${m.dt}</div>`
+    `<div class="info-popup"><b>${m.hood||'Unknown'}</b>${m.street||''}<br>${m.dt}${m.zip?' &middot; '+m.zip:''}</div>`
   ).addTo(markerGroup);
 });
-
 map.on('zoomend', () => {
   if (map.getZoom() >= 15) map.addLayer(markerGroup);
   else map.removeLayer(markerGroup);
 });
 
-// ── Neighborhood list ─────────────────────────────────────────────────
+// ── Trend chart (Chart.js) ─────────────────────────────────────────────
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const YEAR_COLORS  = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f'];
+
+function buildTrendDatasets(filterYear) {
+  return Object.entries(YEAR_MONTHLY)
+    .filter(([yr]) => filterYear === 'all' || +yr === filterYear)
+    .map(([yr, vals], i) => ({
+      label: yr,
+      data: vals,
+      borderColor: YEAR_COLORS[i % YEAR_COLORS.length],
+      backgroundColor: YEAR_COLORS[i % YEAR_COLORS.length] + '22',
+      borderWidth: 2,
+      pointRadius: 3,
+      tension: 0.3,
+      fill: false,
+    }));
+}
+
+const trendCtx = document.getElementById('trend-chart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+  type: 'line',
+  data: { labels: MONTHS_SHORT, datasets: buildTrendDatasets('all') },
+  options: {
+    responsive: true,
+    plugins: { legend:{ labels:{ font:{size:10}, boxWidth:12 } } },
+    scales: {
+      x: { ticks:{ font:{size:10} }, grid:{ color:'#eee' } },
+      y: { ticks:{ font:{size:10} }, grid:{ color:'#eee' },
+           title:{ display:true, text:'Cases', font:{size:10} } },
+    },
+    animation: { duration: 400 },
+  },
+});
+
+function updateTrendChart() {
+  trendChart.data.datasets = buildTrendDatasets(selYear);
+  trendChart.update();
+}
+
+// ── Neighborhood table ──────────────────────────────────────────────────
 (function() {
-  const el = document.getElementById('hood-list');
-  const maxCount = HOODS.length ? HOODS[0].count : 1;
+  const el = document.getElementById('hood-table');
+  const max = HOODS[0] ? HOODS[0].count : 1;
   HOODS.forEach(h => {
-    const w = Math.max(3, Math.round((h.count / maxCount) * 50));
+    const w = Math.max(2, Math.round((h.count / max) * 100));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="hname" title="${h.name}">${h.name}</td>
+      <td class="hbar-cell"><div class="hbar" style="width:${w}%"></div></td>
+      <td class="hcount">${h.count.toLocaleString()}</td>`;
+    el.appendChild(tr);
+  });
+})();
+
+// ── Hour chart ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('hour-chart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: Array.from({length:24}, (_,i) => i===0?'12a':i<12?i+'a':i===12?'12p':(i-12)+'p'),
+    datasets: [{
+      data: HOURLY,
+      backgroundColor: HOURLY.map(v => {
+        const t = v / Math.max(...HOURLY);
+        return t > 0.7 ? '#cc0000' : t > 0.4 ? '#ff8800' : '#4e79a7';
+      }),
+      borderWidth: 0,
+    }],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend:{ display:false } },
+    scales: {
+      x: { ticks:{ font:{size:8}, maxRotation:0 }, grid:{ display:false } },
+      y: { ticks:{ font:{size:9} }, grid:{ color:'#eee' } },
+    },
+  },
+});
+
+// ── Zip code list ───────────────────────────────────────────────────────
+(function() {
+  const el = document.getElementById('zip-list');
+  const max = ZIP_STATS[0] ? ZIP_STATS[0].count : 1;
+  ZIP_STATS.forEach(z => {
+    const w = Math.max(2, Math.round((z.count / max) * 100));
     const div = document.createElement('div');
-    div.className = 'hood-row';
-    div.title = `${h.top_street} · avg response ${h.avg_resp}h`;
+    div.className = 'zip-row';
     div.innerHTML = `
-      <div class="hood-name">${h.name}</div>
-      <div class="hood-bar-wrap"><div class="hood-bar" style="width:${w}px"></div></div>
-      <div class="hood-count">${h.count.toLocaleString()}</div>
-    `;
+      <span class="zip-label">${z.zip}</span>
+      <div class="zip-bar-wrap"><div class="zip-bar" style="width:${w}%"></div></div>
+      <span class="zip-count">${z.count.toLocaleString()}</span>`;
     el.appendChild(div);
   });
 })();
@@ -593,12 +676,13 @@ def generate_html(stats: dict) -> str:
     html = html.replace("$PEAK_DOW", stats["peak_dow"])
     html = html.replace("$AVG_MONTHLY", str(stats["avg_monthly"]))
     html = html.replace("$YEARS", ", ".join(str(y) for y in stats["years"]))
-    html = html.replace("$HEAT_JSON", json.dumps(stats["heat_points"]))
-    html = html.replace("$HEAT_BY_YEAR_JSON", json.dumps(stats["heat_by_year"]))
+    html = html.replace("$POINTS_JSON", json.dumps(stats["points"]))
+    html = html.replace("$YEARS_JSON", json.dumps(stats["years"]))
     html = html.replace("$MARKERS_JSON", json.dumps(stats["markers"]))
-    html = html.replace("$MONTHLY_JSON", json.dumps(stats["monthly"]))
     html = html.replace("$HOODS_JSON", json.dumps(stats["hoods"]))
     html = html.replace("$HOURLY_JSON", json.dumps(stats["hourly"]))
+    html = html.replace("$YEAR_MONTHLY_JSON", json.dumps(stats["year_monthly"]))
+    html = html.replace("$ZIP_STATS_JSON", json.dumps(stats["zip_stats"]))
     return html
 
 
