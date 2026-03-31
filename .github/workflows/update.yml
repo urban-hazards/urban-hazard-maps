@@ -1,0 +1,62 @@
+name: Update Needle Hotspot Map
+
+on:
+  # Run at 2 AM EST on the 1st of every month
+  schedule:
+    - cron: '0 7 1 * *'
+
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years to fetch (space-separated, e.g. "2023 2024 2025 2026")'
+        required: false
+        default: ''
+
+  # Also run on pushes to main (for initial setup)
+  push:
+    branches: [main]
+    paths: [pipeline.py]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run pipeline
+        run: |
+          if [ -n "${{ github.event.inputs.years }}" ]; then
+            python pipeline.py ${{ github.event.inputs.years }}
+          else
+            python pipeline.py
+          fi
+
+      - name: Verify output
+        run: |
+          if [ ! -f docs/index.html ]; then
+            echo "❌ Pipeline did not produce docs/index.html"
+            exit 1
+          fi
+          echo "✅ docs/index.html exists ($(wc -c < docs/index.html) bytes)"
+          ls -la docs/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          commit_message: "Update needle hotspot data — $(date +'%Y-%m-%d')"
