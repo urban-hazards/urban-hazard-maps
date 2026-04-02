@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Boston 311 Needle Requests</title>
+<title>Boston 311 Sharps Collection Heatmap</title>
+<meta name="description" content="Interactive heatmap of sharps collection requests reported through Boston's 311 system. Explore trends by neighborhood, time of day, and season using open municipal data.">
+<meta name="keywords" content="Boston, 311, sharps collection, public health, heatmap, open data, harm reduction">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://urban-hazards.github.io/boston-needle-map/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Boston 311 Sharps Collection Heatmap">
+<meta property="og:description" content="Interactive heatmap of sharps collection requests from Boston's 311 open data portal. Explore patterns by neighborhood, time, and season.">
+<meta property="og:url" content="https://urban-hazards.github.io/boston-needle-map/">
+<meta property="og:site_name" content="Urban Hazards">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Boston 311 Sharps Collection Heatmap">
+<meta name="twitter:description" content="Interactive heatmap of sharps collection requests from Boston's 311 open data portal.">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -114,8 +130,8 @@
 <!-- -- Header -- -->
 <div class="hdr">
   <div class="hdr-left">
-    <span class="hdr-title">Boston 311 Needle Requests</span>
-    <span class="hdr-sub">Needle Pickup &amp; Needle Clean-up &middot; 2024, 2025, 2026</span>
+    <span class="hdr-title">Boston 311 Sharps Collection Requests</span>
+    <span class="hdr-sub">Reported pickups &amp; cleanups &middot; 2024, 2025, 2026</span>
   </div>
   <div class="hdr-right">
     Data: <a href="https://data.boston.gov/dataset/311-service-requests"

@@ -14,7 +14,7 @@ from boston_needle_map.config import RESOURCE_IDS
 from boston_needle_map.fetcher import fetch_year
 from boston_needle_map.models import CleanedRecord
 
-st.set_page_config(page_title="Boston 311 Needle Requests", layout="centered")
+st.set_page_config(page_title="Boston 311 Sharps Collection Requests", layout="centered")
 
 # Reduce top padding on mobile
 st.markdown(
@@ -29,7 +29,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Boston 311 Needle Requests")
+st.title("Boston 311 Sharps Collection Requests")
 
 
 @st.cache_data(ttl=3600, show_spinner="Fetching data...")

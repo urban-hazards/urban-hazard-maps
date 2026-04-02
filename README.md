@@ -1,6 +1,6 @@
-# Boston 311 Needle Hotspot Map
+# Boston 311 Sharps Collection Heatmap
 
-Automated pipeline that pulls needle cleanup requests from Boston's 311 open data portal and publishes an interactive heatmap. Includes a Streamlit dashboard for local data exploration and a static HTML dashboard for GitHub Pages.
+Automated pipeline that pulls sharps collection requests from Boston's 311 open data portal and publishes an interactive heatmap. Includes a Streamlit dashboard for local data exploration and a static HTML dashboard for GitHub Pages.
 
 **Live site:** https://urban-hazards.github.io/boston-needle-map/
 
@@ -167,4 +167,4 @@ To find a new year's resource ID:
 
 All data comes from the City of Boston's [Analyze Boston](https://data.boston.gov/) open data portal under the [Open Data Commons PDDL license](http://www.opendefinition.org/licenses/odc-pddl).
 
-The 311 dataset contains all service requests. This pipeline filters for needle-related request types, which represent reports to the city's Mobile Sharps Collection Team for picking up discarded needles found in public spaces.
+The 311 dataset contains all service requests. This pipeline filters for sharps collection request types, which represent reports to the City of Boston's Mobile Sharps Collection Team for safe retrieval and disposal of discarded sharps found in public spaces.
