@@ -12,12 +12,12 @@ interface HeatMapProps {
 
 const GRADIENT: Record<number, string> = {
 	0.0: "rgba(0,0,0,0)",
-	0.12: "rgba(0,170,68,0.5)",
-	0.3: "rgba(0,204,0,0.75)",
-	0.5: "rgba(255,255,0,0.88)",
-	0.7: "rgba(255,136,0,0.94)",
-	0.88: "rgba(220,30,0,0.97)",
-	1.0: "rgba(150,0,0,1)",
+	0.12: "rgba(0,170,68,0.3)",
+	0.3: "rgba(0,204,0,0.4)",
+	0.5: "rgba(255,255,0,0.5)",
+	0.7: "rgba(255,136,0,0.55)",
+	0.88: "rgba(220,30,0,0.6)",
+	1.0: "rgba(150,0,0,0.65)",
 }
 
 const MONTHS = [
@@ -386,7 +386,7 @@ function createHeatLayer(pts: number[][]): L.Layer {
 		blur: 28,
 		maxZoom: 16,
 		max: p95,
-		minOpacity: 0.4,
+		minOpacity: 0.25,
 		gradient: GRADIENT,
 	})
 }
