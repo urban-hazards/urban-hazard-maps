@@ -1,8 +1,13 @@
 # Boston Urban Hazard Maps
 
-Interactive heatmaps of public health and quality-of-life data from Boston's 311 open data portal. Currently visualizes two independently reported datasets: **sharps (needle) collection requests** and **encampment reports**.
+Interactive heatmaps of publicly available data from Boston's [Analyze Boston](https://data.boston.gov/) open data portal (311 Service Requests).
 
-These datasets are presented together because they are both publicly available through the same Boston 311 API — not because of any implied correlation or causation between them.
+We map whatever geolocated 311 data is available and interesting. Right now that's two datasets:
+
+- **Sharps collection requests** — reports of discarded needles/syringes for safe pickup
+- **Encampment reports** — 311 requests filed under the "Quality of Life" category (available since 2025)
+
+**These are independent datasets.** They come from the same 311 system but are unrelated complaint types. We display them on the same map because it's useful to see where the city is responding to different kinds of issues — not because we're claiming any connection between them.
 
 ![Data](https://img.shields.io/badge/source-data.boston.gov-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -146,14 +151,16 @@ urban-hazard-maps/
 
 ## Data Sources
 
-All data comes from the City of Boston's [Analyze Boston](https://data.boston.gov/) open data portal.
+All data comes from the City of Boston's [Analyze Boston](https://data.boston.gov/) open data portal, published under the [Open Data Commons PDDL license](http://www.opendefinition.org/licenses/odc-pddl).
 
 | Dataset | 311 Type | Available | Description |
 |---|---|---|---|
 | Sharps | `Needle Pickup`, `Needle Clean-up` | 2015–present | Reports to the city's Mobile Sharps Collection Team for safe retrieval of discarded sharps in public spaces |
 | Encampments | `Encampments` | 2025–present | 311 reports filed under the "Quality of Life" category |
 
-These are separate, independent datasets from the same 311 system. This project presents them on a shared map for geographic context — it does not assert or imply any relationship between them.
+These are separate complaint types within the same 311 system. People call 311 for all kinds of reasons — potholes, noise, graffiti, needles, encampments, etc. We picked these two because they have good geolocation data and are relevant to public health. Showing them on the same map is a convenience, not a claim that they're related.
+
+As more useful 311 categories become available, we may add them.
 
 ---
 
