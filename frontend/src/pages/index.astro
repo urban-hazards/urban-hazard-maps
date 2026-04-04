@@ -1,0 +1,143 @@
+---
+import Footer from "../components/Footer.astro"
+import Header from "../components/Header.astro"
+import HeatMap from "../components/HeatMap"
+import HourlyChart from "../components/HourlyChart"
+import MonthlyTrend from "../components/MonthlyTrend"
+import NeighborhoodTable from "../components/NeighborhoodTable.astro"
+import StatsOverview from "../components/StatsOverview.astro"
+import ZipCodeList from "../components/ZipCodeList.astro"
+import BaseLayout from "../layouts/BaseLayout.astro"
+import { fetchStats } from "../lib/api"
+import { formatHour, formatNumber } from "../lib/seo"
+import "../styles/global.css"
+
+const stats = await fetchStats()
+
+const neighborhoods = stats.hoods.map((h) => ({
+	...h,
+	slug: h.name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-|-$/g, ""),
+}))
+
+const title = `Boston 311 Sharps Collection Heatmap — ${formatNumber(stats.total)} Requests Analyzed`
+const description = `Interactive heatmap and analysis of ${formatNumber(stats.total)} sharps collection requests reported through Boston's 311 system across ${stats.hoods.length} neighborhoods. ${stats.peak_hood} leads with the highest volume. Data from ${stats.years[0]}–${stats.years[stats.years.length - 1]}.`
+---
+
+<BaseLayout title={title} description={description}>
+	<Header generated={stats.generated} />
+
+	<main class="container" style="padding-top: 24px; padding-bottom: 24px;">
+		<h1 class="page-title">
+			Boston 311 Sharps Collection Request Analysis
+		</h1>
+		<p class="page-subtitle">
+			Comprehensive analysis of {formatNumber(stats.total)} sharps (needle) collection
+			requests submitted to Boston's 311 system from {stats.years[0]} to {stats.years[stats.years.length - 1]}.
+			This data is sourced from the <a href="https://data.boston.gov/dataset/311-service-requests" target="_blank" rel="noopener">City of Boston's open data portal</a> and
+			is updated regularly for public health research and community awareness.
+		</p>
+
+		<StatsOverview
+			total={stats.total}
+			peakHood={stats.peak_hood}
+			peakHour={stats.peak_hour}
+			peakDow={stats.peak_dow}
+			avgMonthly={stats.avg_monthly}
+			neighborhoodCount={stats.hoods.length}
+			years={stats.years}
+		/>
+
+		<HeatMap
+			client:load
+			heatKeys={stats.heat_keys}
+			markers={stats.markers}
+			years={stats.years}
+			total={stats.total}
+		/>
+
+		<div class="charts-grid">
+			<MonthlyTrend client:visible yearMonthly={stats.year_monthly} />
+			<HourlyChart client:visible hourly={stats.hourly} />
+		</div>
+
+		<NeighborhoodTable neighborhoods={neighborhoods} />
+
+		<ZipCodeList zipStats={stats.zip_stats} />
+
+		<section class="section about-section" aria-label="About this data">
+			<h2 class="section-title">About This Data</h2>
+			<div class="card about-content">
+				<p>
+					This dashboard analyzes sharps collection requests from Boston's 311 system, the city's
+					non-emergency service request platform. When residents encounter discarded needles or
+					syringes in public spaces, they can report them through 311 for safe collection and
+					disposal by city crews.
+				</p>
+				<p>
+					The data covers <strong>{formatNumber(stats.total)}</strong> verified requests from
+					<strong>{stats.years[0]}</strong> to <strong>{stats.years[stats.years.length - 1]}</strong>.
+					Peak reporting times center around <strong>{formatHour(stats.peak_hour)}</strong>,
+					with <strong>{stats.peak_dow}</strong> being the most active day of the week.
+					The <strong>{stats.peak_hood}</strong> neighborhood consistently reports the
+					highest volume of requests.
+				</p>
+				<p>
+					All data is sourced from the <a href="https://data.boston.gov/dataset/311-service-requests" target="_blank" rel="noopener">City of Boston Open Data Portal</a>
+					via the CKAN API. This project is open source under the MIT license and intended for
+					public health research, harm reduction planning, and community awareness.
+				</p>
+			</div>
+		</section>
+	</main>
+
+	<Footer />
+</BaseLayout>
+
+<style>
+	.page-title {
+		font-size: 28px;
+		margin-bottom: 8px;
+	}
+
+	.page-subtitle {
+		font-size: 16px;
+		line-height: 1.7;
+		color: var(--color-text-muted);
+		margin-bottom: 32px;
+		max-width: 900px;
+	}
+
+	.charts-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-bottom: 32px;
+	}
+
+	.about-content {
+		line-height: 1.7;
+		font-size: 15px;
+		color: var(--color-text-muted);
+	}
+
+	.about-content p {
+		margin-bottom: 12px;
+	}
+
+	.about-content p:last-child {
+		margin-bottom: 0;
+	}
+
+	@media (max-width: 768px) {
+		.charts-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.page-title {
+			font-size: 22px;
+		}
+	}
+</style>

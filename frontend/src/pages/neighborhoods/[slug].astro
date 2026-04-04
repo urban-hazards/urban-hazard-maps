@@ -1,0 +1,200 @@
+---
+import Footer from "../../components/Footer.astro"
+import Header from "../../components/Header.astro"
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import { fetchStats } from "../../lib/api"
+import { formatNumber } from "../../lib/seo"
+import "../../styles/global.css"
+
+const { slug } = Astro.params
+
+const stats = await fetchStats()
+
+const neighborhood = stats.hoods.find((h) => {
+	const hSlug = h.name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-|-$/g, "")
+	return hSlug === slug
+})
+
+if (!neighborhood) {
+	return Astro.redirect("/")
+}
+
+const title = `${neighborhood.name} — Sharps Collection Requests | Boston 311`
+const description = `${neighborhood.name} has ${formatNumber(neighborhood.count)} sharps collection requests (${neighborhood.pct}% of citywide total). Top location: ${neighborhood.top_street}. Average response time: ${neighborhood.avg_resp} hours.`
+---
+
+<BaseLayout title={title} description={description}>
+	<Header generated={stats.generated} />
+
+	<main class="container" style="padding-top: 24px; padding-bottom: 24px;">
+		<nav class="breadcrumb" aria-label="Breadcrumb">
+			<a href="/">Home</a> &rsaquo;
+			<span>{neighborhood.name}</span>
+		</nav>
+
+		<h1 class="page-title">{neighborhood.name}</h1>
+		<p class="page-subtitle">
+			Sharps collection request data for the {neighborhood.name} neighborhood in Boston.
+			This area accounts for <strong>{neighborhood.pct}%</strong> of all citywide sharps
+			collection requests, with <strong>{formatNumber(neighborhood.count)}</strong> total
+			reports. The most frequently reported location is
+			<strong>{neighborhood.top_street}</strong>, and the average city response time for
+			this neighborhood is <strong>{neighborhood.avg_resp} hours</strong>.
+		</p>
+
+		<div class="stats-grid">
+			<div class="card stat-card">
+				<div class="stat-value">{formatNumber(neighborhood.count)}</div>
+				<div class="stat-label">Total Requests</div>
+			</div>
+			<div class="card stat-card">
+				<div class="stat-value">{neighborhood.pct}%</div>
+				<div class="stat-label">Share of Citywide Total</div>
+			</div>
+			<div class="card stat-card">
+				<div class="stat-value">{neighborhood.top_street}</div>
+				<div class="stat-label">Most Reported Street</div>
+			</div>
+			<div class="card stat-card">
+				<div class="stat-value">{neighborhood.avg_resp}h</div>
+				<div class="stat-label">Average Response Time</div>
+			</div>
+		</div>
+
+		<section class="section">
+			<h2 class="section-title">Context</h2>
+			<div class="card about-content">
+				<p>
+					{neighborhood.name} is one of {stats.hoods.length} Boston neighborhoods that report sharps
+					collection needs through the 311 system. With {formatNumber(neighborhood.count)} requests,
+					it ranks as a significant area for public health intervention.
+				</p>
+				<p>
+					The average response time of {neighborhood.avg_resp} hours reflects the city's
+					capacity to address sharps collection in this area. Response times can vary based on
+					request volume, crew availability, and seasonal patterns.
+				</p>
+			</div>
+		</section>
+
+		<nav class="section">
+			<h2 class="section-title">Other Neighborhoods</h2>
+			<div class="hood-links">
+				{stats.hoods
+					.filter((h) => h.name !== neighborhood.name)
+					.map((h) => {
+						const s = h.name
+							.toLowerCase()
+							.replace(/[^a-z0-9]+/g, "-")
+							.replace(/^-|-$/g, "")
+						return (
+							<a href={`/neighborhoods/${s}`} class="hood-link">
+								{h.name} <span class="hood-link-count">({formatNumber(h.count)})</span>
+							</a>
+						)
+					})}
+			</div>
+		</nav>
+	</main>
+
+	<Footer />
+
+	<script
+		is:inline
+		type="application/ld+json"
+		set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "Article",
+			headline: `${neighborhood.name} Sharps Collection Requests`,
+			description: description,
+			author: { "@type": "Organization", name: "Urban Hazards" },
+		})}
+	/>
+</BaseLayout>
+
+<style>
+	.breadcrumb {
+		font-size: 13px;
+		color: var(--color-text-muted);
+		margin-bottom: 12px;
+	}
+
+	.page-title {
+		font-size: 28px;
+		margin-bottom: 8px;
+	}
+
+	.page-subtitle {
+		font-size: 16px;
+		line-height: 1.7;
+		color: var(--color-text-muted);
+		margin-bottom: 24px;
+		max-width: 800px;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 16px;
+		margin-bottom: 32px;
+	}
+
+	.stat-card {
+		text-align: center;
+		padding: 16px;
+	}
+
+	.about-content {
+		line-height: 1.7;
+		font-size: 15px;
+		color: var(--color-text-muted);
+	}
+
+	.about-content p {
+		margin-bottom: 12px;
+	}
+
+	.about-content p:last-child {
+		margin-bottom: 0;
+	}
+
+	.hood-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.hood-link {
+		display: inline-block;
+		padding: 6px 12px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		font-size: 13px;
+		color: var(--color-text);
+		text-decoration: none;
+		transition: border-color 0.15s;
+	}
+
+	.hood-link:hover {
+		border-color: var(--color-accent);
+		text-decoration: none;
+	}
+
+	.hood-link-count {
+		color: var(--color-text-muted);
+	}
+
+	@media (max-width: 640px) {
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.page-title {
+			font-size: 22px;
+		}
+	}
+</style>

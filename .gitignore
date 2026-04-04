@@ -1,16 +1,21 @@
 .playwright-mcp/
 
-
+# Python
 __pycache__/
 *.pyc
 .venv/
 tmp/
 !tmp/.gitkeep
-dist/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# Astro / Frontend
+frontend/dist/
+frontend/node_modules/
+frontend/.astro/
+dist/
 
 
 
@@ -175,6 +180,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/

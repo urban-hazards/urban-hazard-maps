@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://boston-needle-map.up.railway.app/sitemap-index.xml

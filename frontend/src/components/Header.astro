@@ -1,0 +1,92 @@
+---
+interface Props {
+	generated: string
+}
+
+const { generated } = Astro.props
+---
+
+<header class="header">
+	<div class="container header-inner">
+		<div class="header-left">
+			<a href="/" class="header-title">Boston 311 Sharps Collection</a>
+			<span class="header-sub">Reported pickups &amp; cleanups</span>
+		</div>
+		<nav class="header-right">
+			<span class="header-meta">
+				Data: <a
+					href="https://data.boston.gov/dataset/311-service-requests"
+					target="_blank"
+					rel="noopener">data.boston.gov</a
+				>
+				&middot; Updated {generated}
+				&middot; <a
+					href="https://github.com/urban-hazards/boston-needle-map"
+					target="_blank"
+					rel="noopener">Source</a
+				>
+			</span>
+		</nav>
+	</div>
+</header>
+
+<style>
+	.header {
+		background: var(--color-surface);
+		border-bottom: 1px solid var(--color-border);
+		padding: 12px 0;
+		box-shadow: var(--shadow-sm);
+		position: sticky;
+		top: 0;
+		z-index: 100;
+	}
+
+	.header-inner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.header-left {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+	}
+
+	.header-title {
+		font-size: 18px;
+		font-weight: 700;
+		color: var(--color-text);
+		text-decoration: none;
+	}
+
+	.header-title:hover {
+		color: var(--color-accent);
+		text-decoration: none;
+	}
+
+	.header-sub {
+		font-size: 12px;
+		color: var(--color-text-muted);
+	}
+
+	.header-right {
+		font-size: 12px;
+	}
+
+	.header-meta {
+		color: var(--color-text-light);
+	}
+
+	@media (max-width: 640px) {
+		.header-sub {
+			display: none;
+		}
+
+		.header-right {
+			font-size: 11px;
+		}
+	}
+</style>

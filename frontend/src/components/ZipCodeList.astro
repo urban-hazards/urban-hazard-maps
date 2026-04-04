@@ -1,0 +1,70 @@
+---
+import { formatNumber } from "../lib/seo"
+import type { ZipStat } from "../lib/types"
+
+interface Props {
+	zipStats: ZipStat[]
+}
+
+const { zipStats } = Astro.props
+const maxCount = zipStats[0]?.count ?? 1
+---
+
+<section class="section" aria-label="Top zip codes">
+	<h2 class="section-title">Top Zip Codes</h2>
+	<div class="card">
+		<div class="zip-list">
+			{zipStats.map((z) => {
+				const barWidth = Math.max(2, Math.round((z.count / maxCount) * 100))
+				return (
+					<div class="zip-row">
+						<span class="zip-label">{z.zip}</span>
+						<div class="zip-bar-wrap">
+							<div class="zip-bar" style={`width: ${barWidth}%`} />
+						</div>
+						<span class="zip-count">{formatNumber(z.count)}</span>
+					</div>
+				)
+			})}
+		</div>
+	</div>
+</section>
+
+<style>
+	.zip-list {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.zip-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+	}
+
+	.zip-label {
+		width: 55px;
+		color: var(--color-text-muted);
+		font-weight: 600;
+		flex-shrink: 0;
+	}
+
+	.zip-bar-wrap {
+		flex: 1;
+	}
+
+	.zip-bar {
+		height: 8px;
+		border-radius: 4px;
+		background: var(--color-teal);
+	}
+
+	.zip-count {
+		width: 50px;
+		text-align: right;
+		color: var(--color-text);
+		font-weight: 600;
+	}
+</style>
