@@ -160,7 +160,7 @@ export default function HeatMap({ heatKeys, markers, years, total }: HeatMapProp
 	return (
 		<section className="map-section section" aria-label="Interactive heatmap">
 			<h2 className="section-title">Heatmap</h2>
-			<div style={{ position: "relative" }}>
+			<div style={{ position: "relative", zIndex: 0, isolation: "isolate" }}>
 				<div
 					ref={mapRef}
 					style={{
