@@ -26,7 +26,7 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString(
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:site_name" content="Boston Needle Map" />
+		<meta property="og:site_name" content="Boston Urban Hazard Maps" />
 
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
@@ -60,9 +60,9 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString(
 			set:html={JSON.stringify({
 				"@context": "https://schema.org",
 				"@type": "Dataset",
-				name: "Boston 311 Sharps Collection Requests",
+				name: "Boston Urban Hazard Maps",
 				description:
-					"Interactive analysis of sharps collection requests reported through Boston's 311 system. Derived from open municipal data.",
+					"Interactive analysis of sharps collection and encampment requests reported through Boston's 311 system. Derived from open municipal data.",
 				url: siteUrl,
 				license: "https://opensource.org/licenses/MIT",
 				creator: {

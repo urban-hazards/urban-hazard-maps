@@ -1,14 +1,16 @@
-# Boston 311 Sharps Collection Heatmap
+# Boston Urban Hazard Maps
 
-Automated pipeline that pulls sharps collection requests from Boston's 311 open data portal and publishes an interactive heatmap. Includes a Streamlit dashboard for local data exploration and a static HTML dashboard for GitHub Pages.
+Interactive heatmaps of publicly available data from Boston's [Analyze Boston](https://data.boston.gov/) open data portal (311 Service Requests).
 
-**Live site:** https://urban-hazards.github.io/boston-needle-map/
+We map whatever geolocated 311 data is available and interesting. Right now that's two datasets:
 
-![Pipeline](https://img.shields.io/badge/schedule-monthly-orange)
+- **Sharps collection requests** — reports of discarded needles/syringes for safe pickup
+- **Encampment reports** — 311 requests filed under the "Quality of Life" category (available since 2025)
+
+**These are independent datasets.** They come from the same 311 system but are unrelated complaint types. We display them on the same map because it's useful to see where the city is responding to different kinds of issues — not because we're claiming any connection between them.
+
 ![Data](https://img.shields.io/badge/source-data.boston.gov-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-
-![Streamlit Dashboard](docs/images/streamlit-screenshot.png)
 
 ---
 
@@ -16,24 +18,19 @@ Automated pipeline that pulls sharps collection requests from Boston's 311 open 
 
 ```
 ┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  data.boston.gov     │────>│  boston-needle-map    │────>│  docs/index.html│
-│  CKAN Datastore API │     │  Python 3.12 + uv    │     │  Leaflet.js map │
-│  311 Service Reqs   │     │  Pydantic + Typer    │     │  GitHub Pages   │
+│  data.boston.gov     │────>│  FastAPI backend      │────>│  Astro frontend │
+│  CKAN Datastore API │     │  Python 3.12 + uv     │     │  React + Leaflet│
+│  311 Service Reqs   │     │  Pydantic + Typer     │     │  Railway deploy │
 └─────────────────────┘     └──────────────────────┘     └─────────────────┘
-                                     │
-                            ┌────────┴────────┐
-                            │  Streamlit App  │
-                            │  Local explore  │
-                            └─────────────────┘
 ```
 
 **Key details:**
 - **Data source:** [Analyze Boston](https://data.boston.gov/dataset/311-service-requests) — 311 Service Requests dataset
-- **Filter:** `TYPE = "Needle Pickup"` or `"Needle Clean-up"`
-- **API:** Uses CKAN Datastore SQL API (fetches only needle rows, not the full 200MB+ CSV)
-- **Output:** Self-contained HTML with embedded data, Leaflet.js heatmap, and CARTO tiles
-- **Schedule:** GitHub Actions cron runs at 2 AM EST on the 1st of each month
-- **Caching:** Fetched data is cached in `tmp/` to avoid re-fetching during development
+- **Sharps filter:** `TYPE` in `("Needle Pickup", "Needle Clean-up", "Needle Cleanup")` — available 2015–present
+- **Encampment filter:** `TYPE = "Encampments"` — available 2025–present
+- **API:** Uses CKAN Datastore SQL API (fetches only matching rows, not the full dataset)
+- **Caching:** Redis in production, filesystem locally. Avoids re-fetching during development.
+- **Deployment:** Railway (two services: backend + frontend)
 
 ---
 
@@ -42,19 +39,25 @@ Automated pipeline that pulls sharps collection requests from Boston's 311 open 
 ### Prerequisites
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [pnpm](https://pnpm.io/) (frontend package manager)
 - [lefthook](https://github.com/evilmartians/lefthook) (git hooks)
 
 ### Install
 
 ```bash
 # Clone the repo
-git clone https://github.com/<you>/boston-needle-map.git
-cd boston-needle-map
+git clone https://github.com/urban-hazards/urban-hazard-maps.git
+cd urban-hazard-maps
 
-# Install dependencies
+# Backend
+cd backend
 uv sync
 
-# Install git hooks
+# Frontend
+cd ../frontend
+pnpm install
+
+# Git hooks
 lefthook install
 ```
 
@@ -62,38 +65,32 @@ lefthook install
 
 ## Usage
 
-### Run the pipeline (generates static HTML for GitHub Pages)
+### Run locally
 
 ```bash
-# Fetch last 3 years + current, generate docs/index.html
+# Start the backend (port 8000)
+cd backend
+uv run boston-needle-map serve
+
+# In another terminal, start the frontend (port 4321)
+cd frontend
+pnpm dev
+```
+
+### Other backend commands
+
+```bash
+# Fetch data and print summary
 uv run boston-needle-map run
 
-# Specific years
-uv run boston-needle-map run 2022 2023 2024 2025
-
-# Skip cache (always fetch fresh data)
-uv run boston-needle-map run --no-cache
-```
-
-### Explore data with Streamlit
-
-```bash
-uv run boston-needle-map explore
-```
-
-This launches an interactive dashboard at `http://localhost:8501` with:
-- Folium heatmap with year/month filters
-- Plotly trend charts and hourly distribution
-- Neighborhood and zip code rankings
-
-### Other commands
-
-```bash
-# Preview the static HTML dashboard
-uv run boston-needle-map serve
+# Fetch specific years
+uv run boston-needle-map run 2024 2025 2026
 
 # Clear cached data
 uv run boston-needle-map cache-clear
+
+# Export data as JSON
+uv run boston-needle-map dump-json
 ```
 
 ---
@@ -102,69 +99,71 @@ uv run boston-needle-map cache-clear
 
 ### Linting & Type Checking
 
+**Backend** (from `backend/`):
 ```bash
-# Lint
 uv run ruff check src/ tests/
-
-# Auto-format
 uv run ruff format src/ tests/
-
-# Type check
 uv run mypy src/
-
-# Run tests
 uv run pytest
 ```
 
-Git hooks (via lefthook) run ruff and mypy automatically on commit.
+**Frontend** (from `frontend/`):
+```bash
+pnpm check    # astro check + biome check
+pnpm lint     # biome lint
+pnpm format   # biome format
+```
+
+Git hooks (via lefthook) run ruff, mypy, and biome automatically on commit. All changes go through PRs with CI checks required to pass before merge.
 
 ---
 
 ## Project Structure
 
 ```
-boston-needle-map/
-├── src/boston_needle_map/       # Main package
-│   ├── cli.py                  # Typer CLI (run, explore, serve, cache-clear)
-│   ├── config.py               # Constants (CKAN URLs, resource IDs)
-│   ├── models.py               # Pydantic models (CleanedRecord, DashboardStats)
-│   ├── fetcher.py              # CKAN API data fetching
-│   ├── cleaner.py              # Record normalization & validation
-│   ├── analytics.py            # Stats computation
-│   ├── renderer.py             # Static HTML generation
-│   ├── cache.py                # tmp/ caching layer
-│   └── app.py                  # Streamlit interactive dashboard
-├── templates/
-│   └── dashboard.html          # HTML template for static site
-├── tests/                      # Test suite
-├── docs/                       # Generated output (GitHub Pages)
-├── tmp/                        # Cached API data (gitignored)
-├── pyproject.toml              # Project config (deps, ruff, mypy)
-├── lefthook.yml                # Git hook config
-└── CLAUDE.md                   # AI assistant instructions
+urban-hazard-maps/
+├── backend/
+│   ├── src/boston_needle_map/       # Python package
+│   │   ├── api.py                  # FastAPI app (needle + encampment endpoints)
+│   │   ├── cli.py                  # Typer CLI
+│   │   ├── config.py               # Constants (CKAN URLs, resource IDs, type filters)
+│   │   ├── models.py               # Pydantic models
+│   │   ├── fetcher.py              # CKAN API data fetching
+│   │   ├── cleaner.py              # Record normalization & validation
+│   │   ├── analytics.py            # Stats computation
+│   │   └── cache.py                # Cache adapter (Redis / filesystem)
+│   ├── tests/
+│   ├── Dockerfile
+│   └── pyproject.toml
+├── frontend/
+│   ├── src/
+│   │   ├── pages/                  # Astro pages
+│   │   ├── components/             # Astro + React components
+│   │   ├── lib/                    # TypeScript types, API client
+│   │   └── styles/                 # Global CSS
+│   ├── Dockerfile
+│   └── package.json
+├── CLAUDE.md                       # Project guide
+└── lefthook.yml                    # Git hook config
 ```
 
 ---
 
-## Configuration
+## Data Sources
 
-Edit `src/boston_needle_map/config.py` to adjust:
+All data comes from the City of Boston's [Analyze Boston](https://data.boston.gov/) open data portal, published under the [Open Data Commons PDDL license](http://www.opendefinition.org/licenses/odc-pddl).
 
-| Variable | What it does |
-|---|---|
-| `RESOURCE_IDS` | Map of year to CKAN resource ID. Add new years as Boston publishes them. |
-| `NEEDLE_TYPES` | Set of TYPE values to filter on. |
-| `BOSTON_BBOX` | Bounding box for coordinate validation. |
+| Dataset | 311 Type | Available | Description |
+|---|---|---|---|
+| Sharps | `Needle Pickup`, `Needle Clean-up` | 2015–present | Reports to the city's Mobile Sharps Collection Team for safe retrieval of discarded sharps in public spaces |
+| Encampments | `Encampments` | 2025–present | 311 reports filed under the "Quality of Life" category |
 
-To find a new year's resource ID:
-1. Go to https://data.boston.gov/dataset/311-service-requests
-2. Click the year's CSV resource
-3. The resource ID is in the URL: `/resource/<THIS-PART>/`
+These are separate complaint types within the same 311 system. People call 311 for all kinds of reasons — potholes, noise, graffiti, needles, encampments, etc. We picked these two because they have good geolocation data and are relevant to public health. Showing them on the same map is a convenience, not a claim that they're related.
+
+As more useful 311 categories become available, we may add them.
 
 ---
 
-## Data source
+## License
 
-All data comes from the City of Boston's [Analyze Boston](https://data.boston.gov/) open data portal under the [Open Data Commons PDDL license](http://www.opendefinition.org/licenses/odc-pddl).
-
-The 311 dataset contains all service requests. This pipeline filters for sharps collection request types, which represent reports to the City of Boston's Mobile Sharps Collection Team for safe retrieval and disposal of discarded sharps found in public spaces.
+MIT

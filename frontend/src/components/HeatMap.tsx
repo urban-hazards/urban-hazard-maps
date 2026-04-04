@@ -5,12 +5,15 @@ declare const L: typeof import("leaflet")
 
 interface HeatMapProps {
 	initialHeat: number[][]
+	initialEncampmentHeat: number[][]
 	years: number[]
+	encampmentYears: number[]
 	total: number
+	encampmentTotal: number
 	apiBase: string
 }
 
-const GRADIENT: Record<number, string> = {
+const NEEDLE_GRADIENT: Record<number, string> = {
 	0.0: "rgba(0,0,0,0)",
 	0.12: "rgba(0,170,68,0.3)",
 	0.3: "rgba(0,204,0,0.4)",
@@ -19,6 +22,18 @@ const GRADIENT: Record<number, string> = {
 	0.88: "rgba(220,30,0,0.6)",
 	1.0: "rgba(150,0,0,0.65)",
 }
+
+const ENCAMPMENT_GRADIENT: Record<number, string> = {
+	0.0: "rgba(0,0,0,0)",
+	0.12: "rgba(60,60,180,0.25)",
+	0.3: "rgba(80,80,220,0.35)",
+	0.5: "rgba(120,60,220,0.45)",
+	0.7: "rgba(160,40,200,0.5)",
+	0.88: "rgba(180,20,160,0.55)",
+	1.0: "rgba(140,10,120,0.6)",
+}
+
+type DataLayer = "needles" | "encampments" | "both"
 
 const MONTHS = [
 	"January",
@@ -35,22 +50,40 @@ const MONTHS = [
 	"December",
 ]
 
-export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapProps) {
+export default function HeatMap({
+	initialHeat,
+	initialEncampmentHeat,
+	years,
+	encampmentYears,
+	total,
+	encampmentTotal,
+	apiBase,
+}: HeatMapProps) {
 	const mapRef = useRef<HTMLDivElement>(null)
 	const mapInstance = useRef<L.Map | null>(null)
 	const heatLayerRef = useRef<L.Layer | null>(null)
+	const encampmentHeatLayerRef = useRef<L.Layer | null>(null)
 	const markerGroupRef = useRef<L.LayerGroup | null>(null)
+	const encampmentMarkerGroupRef = useRef<L.LayerGroup | null>(null)
 	const markersLoaded = useRef(false)
+	const encampmentMarkersLoaded = useRef(false)
 
 	const [selYear, setSelYear] = useState("all")
 	const [selMonth, setSelMonth] = useState(0)
+	const [dataLayer, setDataLayer] = useState<DataLayer>("both")
 	const [count, setCount] = useState(total)
+	const [encampmentCount, setEncampmentCount] = useState(encampmentTotal)
 	const [ready, setReady] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [isMobile, setIsMobile] = useState(false)
 	const [filterOpen, setFilterOpen] = useState(false)
 
 	const heatCacheRef = useRef<Record<string, number[][]>>({ all: initialHeat })
+	const encampmentHeatCacheRef = useRef<Record<string, number[][]>>({
+		all: initialEncampmentHeat,
+	})
+
+	const activeYears = dataLayer === "encampments" ? encampmentYears : years
 
 	useEffect(() => {
 		const check = () => setIsMobile(window.innerWidth < 640)
@@ -92,44 +125,20 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 				maxZoom: 19,
 			}).addTo(map)
 
-			const layer = createHeatLayer(initialHeat)
-			layer.addTo(map)
-			heatLayerRef.current = layer
+			// Both heat layers on by default
+			const needleLayer = createHeatLayer(initialHeat, NEEDLE_GRADIENT)
+			needleLayer.addTo(map)
+			heatLayerRef.current = needleLayer
 
-			// Load markers lazily when user zooms in
-			const markerGroup = L.layerGroup()
-			markerGroupRef.current = markerGroup
+			const encampmentLayer = createHeatLayer(initialEncampmentHeat, ENCAMPMENT_GRADIENT)
+			encampmentLayer.addTo(map)
+			encampmentHeatLayerRef.current = encampmentLayer
 
-			map.on("zoomend", async () => {
-				if (map.getZoom() >= 15) {
-					if (!markersLoaded.current) {
-						markersLoaded.current = true
-						try {
-							const res = await fetch(`${apiBase}/api/markers?limit=3000`)
-							const markers: MarkerData[] = await res.json()
-							for (const m of markers) {
-								L.circleMarker([m.lat, m.lng], {
-									radius: 5,
-									fillColor: "#e85a1b",
-									fillOpacity: 0.85,
-									color: "#fff",
-									weight: 1,
-									opacity: 0.6,
-								})
-									.bindPopup(
-										`<div style="font-size:12px;line-height:1.6;color:#222"><b style="font-size:13px;color:#e85a1b;display:block">${m.hood || "Unknown"}</b>${m.street || ""}<br>${m.dt}${m.zip ? ` &middot; ${m.zip}` : ""}</div>`,
-									)
-									.addTo(markerGroup)
-							}
-						} catch {
-							markersLoaded.current = false
-						}
-					}
-					map.addLayer(markerGroup)
-				} else {
-					map.removeLayer(markerGroup)
-				}
-			})
+			// Marker groups
+			markerGroupRef.current = L.layerGroup()
+			encampmentMarkerGroupRef.current = L.layerGroup()
+
+			map.on("zoomend", () => handleZoom(map))
 
 			setReady(true)
 		}
@@ -143,6 +152,125 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 			}
 		}
 	}, [])
+
+	function handleZoom(map: L.Map) {
+		const zoom = map.getZoom()
+		if (zoom >= 15) {
+			loadMarkers(map)
+		} else {
+			if (markerGroupRef.current) map.removeLayer(markerGroupRef.current)
+			if (encampmentMarkerGroupRef.current) map.removeLayer(encampmentMarkerGroupRef.current)
+		}
+	}
+
+	async function loadMarkers(map: L.Map) {
+		const layer = dataLayer
+		if (
+			(layer === "needles" || layer === "both") &&
+			!markersLoaded.current &&
+			markerGroupRef.current
+		) {
+			markersLoaded.current = true
+			try {
+				const res = await fetch(`${apiBase}/api/markers?limit=3000`)
+				const markers: MarkerData[] = await res.json()
+				for (const m of markers) {
+					L.circleMarker([m.lat, m.lng], {
+						radius: 5,
+						fillColor: "#e85a1b",
+						fillOpacity: 0.85,
+						color: "#fff",
+						weight: 1,
+						opacity: 0.6,
+					})
+						.bindPopup(
+							`<div style="font-size:12px;line-height:1.6;color:#222"><b style="font-size:13px;color:#e85a1b;display:block">Sharps: ${m.hood || "Unknown"}</b>${m.street || ""}<br>${m.dt}${m.zip ? ` &middot; ${m.zip}` : ""}</div>`,
+						)
+						.addTo(markerGroupRef.current as L.LayerGroup)
+				}
+			} catch {
+				markersLoaded.current = false
+			}
+		}
+
+		if (
+			(layer === "encampments" || layer === "both") &&
+			!encampmentMarkersLoaded.current &&
+			encampmentMarkerGroupRef.current
+		) {
+			encampmentMarkersLoaded.current = true
+			try {
+				const res = await fetch(`${apiBase}/api/encampments/markers?limit=3000`)
+				const markers: MarkerData[] = await res.json()
+				for (const m of markers) {
+					L.circleMarker([m.lat, m.lng], {
+						radius: 5,
+						fillColor: "#7b2d8e",
+						fillOpacity: 0.85,
+						color: "#fff",
+						weight: 1,
+						opacity: 0.6,
+					})
+						.bindPopup(
+							`<div style="font-size:12px;line-height:1.6;color:#222"><b style="font-size:13px;color:#7b2d8e;display:block">Encampment: ${m.hood || "Unknown"}</b>${m.street || ""}<br>${m.dt}${m.zip ? ` &middot; ${m.zip}` : ""}</div>`,
+						)
+						.addTo(encampmentMarkerGroupRef.current as L.LayerGroup)
+				}
+			} catch {
+				encampmentMarkersLoaded.current = false
+			}
+		}
+
+		if ((layer === "needles" || layer === "both") && markerGroupRef.current) {
+			map.addLayer(markerGroupRef.current)
+		}
+		if ((layer === "encampments" || layer === "both") && encampmentMarkerGroupRef.current) {
+			map.addLayer(encampmentMarkerGroupRef.current)
+		}
+	}
+
+	// Update layers when dataLayer changes
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional dependency on dataLayer
+	useEffect(() => {
+		if (!ready || !mapInstance.current) return
+		const map = mapInstance.current
+
+		// Remove existing layers
+		if (heatLayerRef.current) map.removeLayer(heatLayerRef.current)
+		if (encampmentHeatLayerRef.current) map.removeLayer(encampmentHeatLayerRef.current)
+		heatLayerRef.current = null
+		encampmentHeatLayerRef.current = null
+
+		// Remove marker groups when switching layers
+		if (markerGroupRef.current) map.removeLayer(markerGroupRef.current)
+		if (encampmentMarkerGroupRef.current) map.removeLayer(encampmentMarkerGroupRef.current)
+
+		// Reset filter to "all" when switching layers
+		setSelYear("all")
+		setSelMonth(0)
+
+		// Add appropriate layers
+		if (dataLayer === "needles" || dataLayer === "both") {
+			const pts = heatCacheRef.current.all || initialHeat
+			const layer = createHeatLayer(pts, NEEDLE_GRADIENT)
+			layer.addTo(map)
+			heatLayerRef.current = layer
+			setCount(pts.reduce((s, p) => s + p[2], 0))
+		}
+
+		if (dataLayer === "encampments" || dataLayer === "both") {
+			const pts = encampmentHeatCacheRef.current.all || initialEncampmentHeat
+			const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT)
+			layer.addTo(map)
+			encampmentHeatLayerRef.current = layer
+			setEncampmentCount(pts.reduce((s, p) => s + p[2], 0))
+		}
+
+		// Re-show markers if zoomed in
+		if (map.getZoom() >= 15) {
+			loadMarkers(map)
+		}
+	}, [dataLayer, ready])
 
 	// Fetch heatmap data on demand when filter changes
 	// biome-ignore lint/correctness/useExhaustiveDependencies: apiBase is stable
@@ -158,32 +286,71 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 					: yr
 				: `${yr === "all" ? "all" : yr}-${String(mo).padStart(2, "0")}`
 
-		const cached = heatCacheRef.current[key]
-		if (cached) {
-			updateHeatLayer(cached)
-			return
+		const updateNeedles = dataLayer === "needles" || dataLayer === "both"
+		const updateEncampments = dataLayer === "encampments" || dataLayer === "both"
+
+		const promises: Promise<void>[] = []
+
+		if (updateNeedles) {
+			const cached = heatCacheRef.current[key]
+			if (cached) {
+				updateNeedleHeatLayer(cached)
+			} else {
+				promises.push(
+					fetch(`${apiBase}/api/heatmap?year=${yr}&month=${mo}`)
+						.then((res) => res.json())
+						.then((data: HeatmapResponse) => {
+							heatCacheRef.current[data.key] = data.points
+							updateNeedleHeatLayer(data.points)
+						}),
+				)
+			}
 		}
 
-		setLoading(true)
-		fetch(`${apiBase}/api/heatmap?year=${yr}&month=${mo}`)
-			.then((res) => res.json())
-			.then((data: HeatmapResponse) => {
-				heatCacheRef.current[data.key] = data.points
-				updateHeatLayer(data.points)
-			})
-			.catch(() => {})
-			.finally(() => setLoading(false))
-	}, [selYear, selMonth, ready])
+		if (updateEncampments) {
+			const cached = encampmentHeatCacheRef.current[key]
+			if (cached) {
+				updateEncampmentHeatLayer(cached)
+			} else {
+				promises.push(
+					fetch(`${apiBase}/api/encampments/heatmap?year=${yr}&month=${mo}`)
+						.then((res) => res.json())
+						.then((data: HeatmapResponse) => {
+							encampmentHeatCacheRef.current[data.key] = data.points
+							updateEncampmentHeatLayer(data.points)
+						}),
+				)
+			}
+		}
 
-	function updateHeatLayer(pts: number[][]) {
+		if (promises.length > 0) {
+			setLoading(true)
+			Promise.all(promises)
+				.catch(() => {})
+				.finally(() => setLoading(false))
+		}
+	}, [selYear, selMonth, ready, dataLayer])
+
+	function updateNeedleHeatLayer(pts: number[][]) {
 		if (!mapInstance.current) return
 		if (heatLayerRef.current) {
 			mapInstance.current.removeLayer(heatLayerRef.current)
 		}
-		const layer = createHeatLayer(pts)
+		const layer = createHeatLayer(pts, NEEDLE_GRADIENT)
 		layer.addTo(mapInstance.current)
 		heatLayerRef.current = layer
 		setCount(pts.reduce((s, p) => s + p[2], 0))
+	}
+
+	function updateEncampmentHeatLayer(pts: number[][]) {
+		if (!mapInstance.current) return
+		if (encampmentHeatLayerRef.current) {
+			mapInstance.current.removeLayer(encampmentHeatLayerRef.current)
+		}
+		const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT)
+		layer.addTo(mapInstance.current)
+		encampmentHeatLayerRef.current = layer
+		setEncampmentCount(pts.reduce((s, p) => s + p[2], 0))
 	}
 
 	const showFilterPanel = !isMobile || filterOpen
@@ -250,6 +417,32 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 								&times;
 							</button>
 						)}
+
+						<div style={{ marginBottom: 10 }}>
+							<div style={filterLabelStyle}>Data Layer</div>
+							<LayerRadio
+								value="needles"
+								label="Sharps"
+								color="#e85a1b"
+								checked={dataLayer === "needles"}
+								onChange={setDataLayer}
+							/>
+							<LayerRadio
+								value="encampments"
+								label="Encampments"
+								color="#7b2d8e"
+								checked={dataLayer === "encampments"}
+								onChange={setDataLayer}
+							/>
+							<LayerRadio
+								value="both"
+								label="Both"
+								color="#333"
+								checked={dataLayer === "both"}
+								onChange={setDataLayer}
+							/>
+						</div>
+
 						<div style={{ marginBottom: 10 }}>
 							<div style={filterLabelStyle}>Year</div>
 							<FilterRadio
@@ -259,7 +452,7 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 								checked={selYear === "all"}
 								onChange={setSelYear}
 							/>
-							{years.map((yr) => (
+							{activeYears.map((yr) => (
 								<FilterRadio
 									key={yr}
 									name="yr"
@@ -313,32 +506,65 @@ export default function HeatMap({ initialHeat, years, total, apiBase }: HeatMapP
 						"Loading..."
 					) : (
 						<>
-							Showing <strong>{count.toLocaleString()}</strong> requests
+							{(dataLayer === "needles" || dataLayer === "both") && (
+								<span style={{ color: "#e85a1b" }}>
+									<strong>{count.toLocaleString()}</strong> sharps
+								</span>
+							)}
+							{dataLayer === "both" && <span> + </span>}
+							{(dataLayer === "encampments" || dataLayer === "both") && (
+								<span style={{ color: "#7b2d8e" }}>
+									<strong>{encampmentCount.toLocaleString()}</strong> encampments
+								</span>
+							)}
 						</>
 					)}
 				</div>
 			</div>
+
+			{/* Legend */}
 			<div
 				style={{
 					display: "flex",
-					alignItems: "center",
-					gap: 6,
+					flexDirection: "column",
+					gap: 4,
 					fontSize: "11px",
 					color: "#666",
 					marginTop: 8,
 				}}
 			>
-				<span>Low</span>
-				<div
-					style={{
-						height: 8,
-						flex: 1,
-						borderRadius: 4,
-						background:
-							"linear-gradient(90deg, transparent 0%, #00aa44 20%, #ffff00 50%, #ff8800 75%, #cc0000 100%)",
-					}}
-				/>
-				<span>High</span>
+				{(dataLayer === "needles" || dataLayer === "both") && (
+					<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+						<span style={{ color: "#e85a1b", fontWeight: 600, minWidth: 90 }}>Sharps</span>
+						<span>Low</span>
+						<div
+							style={{
+								height: 8,
+								flex: 1,
+								borderRadius: 4,
+								background:
+									"linear-gradient(90deg, transparent 0%, #00aa44 20%, #ffff00 50%, #ff8800 75%, #cc0000 100%)",
+							}}
+						/>
+						<span>High</span>
+					</div>
+				)}
+				{(dataLayer === "encampments" || dataLayer === "both") && (
+					<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+						<span style={{ color: "#7b2d8e", fontWeight: 600, minWidth: 90 }}>Encampments</span>
+						<span>Low</span>
+						<div
+							style={{
+								height: 8,
+								flex: 1,
+								borderRadius: 4,
+								background:
+									"linear-gradient(90deg, transparent 0%, #3c3cb4 20%, #7840dc 50%, #a028c8 75%, #8c0a78 100%)",
+							}}
+						/>
+						<span>High</span>
+					</div>
+				)}
 			</div>
 		</section>
 	)
@@ -411,7 +637,46 @@ function FilterRadio({
 	)
 }
 
-function createHeatLayer(pts: number[][]): L.Layer {
+function LayerRadio({
+	value,
+	label,
+	color,
+	checked,
+	onChange,
+}: {
+	value: DataLayer
+	label: string
+	color: string
+	checked: boolean
+	onChange: (v: DataLayer) => void
+}) {
+	return (
+		<label
+			style={{
+				display: "flex",
+				alignItems: "center",
+				gap: 6,
+				padding: "2px 0",
+				cursor: "pointer",
+				color: checked ? color : "#333",
+				fontWeight: checked ? 600 : 400,
+				fontSize: "13px",
+			}}
+		>
+			<input
+				type="radio"
+				name="layer"
+				value={value}
+				checked={checked}
+				onChange={() => onChange(value)}
+				style={{ cursor: "pointer", accentColor: color }}
+			/>
+			{label}
+		</label>
+	)
+}
+
+function createHeatLayer(pts: number[][], gradient: Record<number, string>): L.Layer {
 	const counts = pts.map((p) => p[2]).sort((a, b) => a - b)
 	const p95 = counts[Math.floor(counts.length * 0.95)] || 1
 	return (
@@ -424,6 +689,6 @@ function createHeatLayer(pts: number[][]): L.Layer {
 		maxZoom: 16,
 		max: p95,
 		minOpacity: 0.25,
-		gradient: GRADIENT,
+		gradient,
 	})
 }

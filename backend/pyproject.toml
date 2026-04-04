@@ -1,8 +1,7 @@
 [project]
 name = "boston-needle-map-backend"
-version = "4.0.0"
-description = "FastAPI backend for Boston 311 needle cleanup request data"
-readme = "README.md"
+version = "5.0.0"
+description = "FastAPI backend for Boston Urban Hazard Maps — 311 sharps and encampment data"
 license = {text = "MIT"}
 requires-python = ">=3.12"
 dependencies = [
