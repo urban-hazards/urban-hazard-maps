@@ -56,6 +56,15 @@ export default function HeatMap({ heatKeys, markers, years, total }: HeatMapProp
 	const [selMonth, setSelMonth] = useState(0)
 	const [count, setCount] = useState(total)
 	const [ready, setReady] = useState(false)
+	const [isMobile, setIsMobile] = useState(false)
+	const [filterOpen, setFilterOpen] = useState(false)
+
+	useEffect(() => {
+		const check = () => setIsMobile(window.innerWidth < 640)
+		check()
+		window.addEventListener("resize", check)
+		return () => window.removeEventListener("resize", check)
+	}, [])
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: one-time map initialization
 	useEffect(() => {
@@ -146,6 +155,8 @@ export default function HeatMap({ heatKeys, markers, years, total }: HeatMapProp
 		setCount(getCount(heatKeys, selYear, selMonth))
 	}, [selYear, selMonth, ready])
 
+	const showFilterPanel = !isMobile || filterOpen
+
 	return (
 		<section className="map-section section" aria-label="Interactive heatmap">
 			<h2 className="section-title">Heatmap</h2>
@@ -154,83 +165,117 @@ export default function HeatMap({ heatKeys, markers, years, total }: HeatMapProp
 					ref={mapRef}
 					style={{
 						width: "100%",
-						height: "500px",
+						height: isMobile ? "380px" : "500px",
 						borderRadius: "8px",
 						border: "1px solid #e0e0e0",
 					}}
 				/>
-				<div
-					style={{
-						position: "absolute",
-						top: 10,
-						right: 10,
-						zIndex: 500,
-						background: "rgba(255,255,255,0.96)",
-						border: "1px solid #ccc",
-						borderRadius: "6px",
-						padding: "12px 14px",
-						minWidth: 160,
-						boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-						fontSize: "13px",
-						lineHeight: "1.4",
-						maxHeight: "460px",
-						overflowY: "auto",
-					}}
-				>
-					<div style={{ marginBottom: 10 }}>
-						<div style={filterLabelStyle}>Year</div>
-						<FilterRadio
-							name="yr"
-							value="all"
-							label="All Years"
-							checked={selYear === "all"}
-							onChange={setSelYear}
-						/>
-						{years.map((yr) => (
+
+				{isMobile && !filterOpen && (
+					<button
+						type="button"
+						onClick={() => setFilterOpen(true)}
+						style={{
+							position: "absolute",
+							top: 10,
+							right: 10,
+							zIndex: 500,
+							background: "rgba(255,255,255,0.96)",
+							backdropFilter: "blur(8px)",
+							border: "1px solid rgba(0,0,0,0.1)",
+							borderRadius: "20px",
+							padding: "6px 14px",
+							fontSize: "12px",
+							fontWeight: 600,
+							color: "#333",
+							cursor: "pointer",
+							boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+						}}
+					>
+						Filters
+					</button>
+				)}
+
+				{showFilterPanel && (
+					<div style={filterPanelStyle(isMobile)}>
+						{isMobile && (
+							<button
+								type="button"
+								onClick={() => setFilterOpen(false)}
+								style={{
+									position: "absolute",
+									top: 8,
+									right: 10,
+									background: "none",
+									border: "none",
+									fontSize: "18px",
+									cursor: "pointer",
+									color: "#666",
+									lineHeight: 1,
+									padding: "2px 4px",
+								}}
+								aria-label="Close filters"
+							>
+								&times;
+							</button>
+						)}
+						<div style={{ marginBottom: 10 }}>
+							<div style={filterLabelStyle}>Year</div>
 							<FilterRadio
-								key={yr}
 								name="yr"
-								value={String(yr)}
-								label={String(yr)}
-								checked={selYear === String(yr)}
+								value="all"
+								label="All Years"
+								checked={selYear === "all"}
 								onChange={setSelYear}
 							/>
-						))}
-					</div>
-					<div>
-						<div style={filterLabelStyle}>Month</div>
-						<FilterRadio
-							name="mo"
-							value="0"
-							label="All Months"
-							checked={selMonth === 0}
-							onChange={(v) => setSelMonth(Number(v))}
-						/>
-						{MONTHS.map((name, i) => (
+							{years.map((yr) => (
+								<FilterRadio
+									key={yr}
+									name="yr"
+									value={String(yr)}
+									label={String(yr)}
+									checked={selYear === String(yr)}
+									onChange={setSelYear}
+								/>
+							))}
+						</div>
+						<div>
+							<div style={filterLabelStyle}>Month</div>
 							<FilterRadio
-								key={name}
 								name="mo"
-								value={String(i + 1)}
-								label={name}
-								checked={selMonth === i + 1}
+								value="0"
+								label="All Months"
+								checked={selMonth === 0}
 								onChange={(v) => setSelMonth(Number(v))}
 							/>
-						))}
+							{MONTHS.map((name, i) => (
+								<FilterRadio
+									key={name}
+									name="mo"
+									value={String(i + 1)}
+									label={name}
+									checked={selMonth === i + 1}
+									onChange={(v) => setSelMonth(Number(v))}
+								/>
+							))}
+						</div>
 					</div>
-				</div>
+				)}
+
 				<div
 					style={{
 						position: "absolute",
 						bottom: 28,
 						left: 10,
 						zIndex: 500,
-						background: "rgba(255,255,255,0.93)",
-						border: "1px solid #ccc",
-						borderRadius: "4px",
-						padding: "6px 10px",
+						background: "rgba(255,255,255,0.95)",
+						backdropFilter: "blur(4px)",
+						border: "1px solid rgba(0,0,0,0.08)",
+						borderRadius: "6px",
+						padding: "6px 12px",
 						fontSize: "12px",
 						color: "#333",
-						boxShadow: "0 1px 5px rgba(0,0,0,0.12)",
+						boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
 					}}
 				>
 					Showing <strong>{count.toLocaleString()}</strong> requests
@@ -262,6 +307,26 @@ export default function HeatMap({ heatKeys, markers, years, total }: HeatMapProp
 	)
 }
 
+function filterPanelStyle(mobile: boolean): React.CSSProperties {
+	return {
+		position: "absolute",
+		top: 10,
+		right: 10,
+		zIndex: 500,
+		background: "rgba(255,255,255,0.98)",
+		backdropFilter: "blur(8px)",
+		border: "1px solid rgba(0,0,0,0.08)",
+		borderRadius: "8px",
+		padding: mobile ? "12px 14px 12px" : "12px 14px",
+		minWidth: mobile ? 180 : 160,
+		boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+		fontSize: "13px",
+		lineHeight: "1.4",
+		maxHeight: mobile ? "320px" : "460px",
+		overflowY: "auto" as const,
+	}
+}
+
 const filterLabelStyle: React.CSSProperties = {
 	fontWeight: 700,
 	fontSize: "11px",
@@ -289,10 +354,11 @@ function FilterRadio({
 			style={{
 				display: "flex",
 				alignItems: "center",
-				gap: 5,
-				padding: "1px 0",
+				gap: 6,
+				padding: "2px 0",
 				cursor: "pointer",
 				color: checked ? "#e85a1b" : "#333",
+				fontSize: "13px",
 			}}
 		>
 			<input

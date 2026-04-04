@@ -29,10 +29,10 @@ const description = `${neighborhood.name} has ${formatNumber(neighborhood.count)
 <BaseLayout title={title} description={description}>
 	<Header generated={stats.generated} />
 
-	<main class="container" style="padding-top: 24px; padding-bottom: 24px;">
+	<main class="container" style="padding-top: 32px; padding-bottom: 48px;">
 		<nav class="breadcrumb" aria-label="Breadcrumb">
-			<a href="/">Home</a> &rsaquo;
-			<span>{neighborhood.name}</span>
+			<a href="/">Home</a> <span class="breadcrumb-sep">&rsaquo;</span>
+			<span class="breadcrumb-current">{neighborhood.name}</span>
 		</nav>
 
 		<h1 class="page-title">{neighborhood.name}</h1>
@@ -46,7 +46,7 @@ const description = `${neighborhood.name} has ${formatNumber(neighborhood.count)
 		</p>
 
 		<div class="stats-grid">
-			<div class="card stat-card">
+			<div class="card stat-card primary">
 				<div class="stat-value">{formatNumber(neighborhood.count)}</div>
 				<div class="stat-label">Total Requests</div>
 			</div>
@@ -117,40 +117,74 @@ const description = `${neighborhood.name} has ${formatNumber(neighborhood.count)
 
 <style>
 	.breadcrumb {
-		font-size: 13px;
+		font-size: var(--fs-sm);
 		color: var(--color-text-muted);
-		margin-bottom: 12px;
+		margin-bottom: 16px;
+		padding: 8px 12px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border-light);
+		border-radius: var(--radius-sm);
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.breadcrumb-sep {
+		color: var(--color-text-light);
+	}
+
+	.breadcrumb-current {
+		font-weight: 600;
+		color: var(--color-text);
 	}
 
 	.page-title {
-		font-size: 28px;
+		font-size: var(--fs-2xl);
 		margin-bottom: 8px;
+		position: relative;
+		padding-bottom: 16px;
+	}
+
+	.page-title::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 60px;
+		height: 3px;
+		background: var(--color-accent);
+		border-radius: 2px;
 	}
 
 	.page-subtitle {
-		font-size: 16px;
+		font-size: var(--fs-md);
 		line-height: 1.7;
 		color: var(--color-text-muted);
-		margin-bottom: 24px;
+		margin-bottom: var(--sp-lg);
 		max-width: 800px;
 	}
 
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
-		margin-bottom: 32px;
+		margin-bottom: var(--sp-xl);
 	}
 
 	.stat-card {
 		text-align: center;
-		padding: 16px;
+		padding: 20px 16px;
+	}
+
+	.stat-card.primary {
+		border-top: 3px solid var(--color-accent);
 	}
 
 	.about-content {
 		line-height: 1.7;
-		font-size: 15px;
+		font-size: var(--fs-base);
 		color: var(--color-text-muted);
+		border-left: 3px solid var(--color-teal);
 	}
 
 	.about-content p {
@@ -169,18 +203,19 @@ const description = `${neighborhood.name} has ${formatNumber(neighborhood.count)
 
 	.hood-link {
 		display: inline-block;
-		padding: 6px 12px;
+		padding: 8px 14px;
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		font-size: 13px;
+		font-size: var(--fs-sm);
 		color: var(--color-text);
 		text-decoration: none;
-		transition: border-color 0.15s;
+		transition: border-color 0.15s, box-shadow 0.15s;
 	}
 
 	.hood-link:hover {
 		border-color: var(--color-accent);
+		box-shadow: var(--shadow-xs);
 		text-decoration: none;
 	}
 

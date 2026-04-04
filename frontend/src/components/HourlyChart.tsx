@@ -2,6 +2,7 @@ import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip }
 import { useEffect, useRef } from "react"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
+Chart.defaults.font.family = '"Source Sans 3", system-ui, sans-serif'
 
 interface HourlyChartProps {
 	hourly: number[]
@@ -38,6 +39,7 @@ export default function HourlyChart({ hourly }: HourlyChartProps) {
 						data: hourly,
 						backgroundColor: colors,
 						borderWidth: 0,
+						borderRadius: 2,
 					},
 				],
 			},
@@ -46,7 +48,7 @@ export default function HourlyChart({ hourly }: HourlyChartProps) {
 				plugins: { legend: { display: false } },
 				scales: {
 					x: { ticks: { font: { size: 9 }, maxRotation: 0 }, grid: { display: false } },
-					y: { ticks: { font: { size: 10 } }, grid: { color: "#eee" } },
+					y: { ticks: { font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)" } },
 				},
 			},
 		})
@@ -57,9 +59,11 @@ export default function HourlyChart({ hourly }: HourlyChartProps) {
 	}, [hourly])
 
 	return (
-		<div className="card">
+		<div className="card" style={{ padding: "20px 20px 16px" }}>
 			<div className="card-title">Requests by Hour of Day</div>
-			<canvas ref={canvasRef} height={120} />
+			<div style={{ padding: "4px 0" }}>
+				<canvas ref={canvasRef} height={120} />
+			</div>
 		</div>
 	)
 }

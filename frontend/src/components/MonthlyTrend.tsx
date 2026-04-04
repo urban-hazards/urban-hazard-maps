@@ -19,6 +19,7 @@ Chart.register(
 	Tooltip,
 	Legend,
 )
+Chart.defaults.font.family = '"Source Sans 3", system-ui, sans-serif'
 
 interface MonthlyTrendProps {
 	yearMonthly: Record<string, number[]>
@@ -76,10 +77,10 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 					legend: { labels: { font: { size: 11 }, boxWidth: 12 } },
 				},
 				scales: {
-					x: { ticks: { font: { size: 10 } }, grid: { color: "#eee" } },
+					x: { ticks: { font: { size: 10 } }, grid: { color: "rgba(0,0,0,0.05)" } },
 					y: {
 						ticks: { font: { size: 10 } },
-						grid: { color: "#eee" },
+						grid: { color: "rgba(0,0,0,0.05)" },
 						title: { display: true, text: "Cases", font: { size: 10 } },
 					},
 				},
@@ -92,9 +93,11 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 	}, [yearMonthly])
 
 	return (
-		<div className="card">
+		<div className="card" style={{ padding: "20px 20px 16px" }}>
 			<div className="card-title">Monthly Trend by Year</div>
-			<canvas ref={canvasRef} height={180} />
+			<div style={{ padding: "4px 0" }}>
+				<canvas ref={canvasRef} height={180} />
+			</div>
 		</div>
 	)
 }

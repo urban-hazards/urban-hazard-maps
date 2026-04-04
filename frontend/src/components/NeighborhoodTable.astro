@@ -25,11 +25,11 @@ const maxCount = neighborhoods[0]?.count ?? 1
 			<thead>
 				<tr>
 					<th scope="col">Neighborhood</th>
-					<th scope="col">Volume</th>
+					<th scope="col" class="bar-col">Volume</th>
 					<th scope="col" class="text-right">Requests</th>
 					<th scope="col" class="text-right">Share</th>
-					<th scope="col">Top Street</th>
-					<th scope="col" class="text-right">Avg Response (hrs)</th>
+					<th scope="col" class="detail-col">Top Street</th>
+					<th scope="col" class="text-right detail-col">Avg Response (hrs)</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -40,13 +40,15 @@ const maxCount = neighborhoods[0]?.count ?? 1
 							<td>
 								<a href={`/neighborhoods/${h.slug}`}>{h.name}</a>
 							</td>
-							<td class="bar-cell">
-								<div class="bar" style={`width: ${barWidth}%`} />
+							<td class="bar-cell bar-col">
+								<div class="bar-track">
+									<div class="bar" style={`width: ${barWidth}%`} />
+								</div>
 							</td>
 							<td class="text-right count">{formatNumber(h.count)}</td>
 							<td class="text-right">{h.pct}%</td>
-							<td class="street">{h.top_street}</td>
-							<td class="text-right">{h.avg_resp}</td>
+							<td class="street detail-col">{h.top_street}</td>
+							<td class="text-right detail-col">{h.avg_resp}</td>
 						</tr>
 					)
 				})}
@@ -57,7 +59,7 @@ const maxCount = neighborhoods[0]?.count ?? 1
 
 <style>
 	.section-desc {
-		font-size: 15px;
+		font-size: var(--fs-base);
 		color: var(--color-text-muted);
 		margin-bottom: 16px;
 		max-width: 800px;
@@ -71,32 +73,43 @@ const maxCount = neighborhoods[0]?.count ?? 1
 	.hood-table {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 13px;
+		font-size: var(--fs-sm);
 	}
 
 	.hood-table th {
 		text-align: left;
-		font-size: 11px;
+		font-size: var(--fs-xs);
 		font-weight: 700;
 		color: var(--color-text-muted);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		padding: 8px 6px;
+		padding: 10px 6px;
 		border-bottom: 2px solid var(--color-border);
+		background: var(--color-surface-alt);
 	}
 
 	.hood-table td {
-		padding: 6px;
+		padding: 8px 6px;
 		border-bottom: 1px solid var(--color-border-light);
 		vertical-align: middle;
 	}
 
-	.hood-table tr:hover {
-		background: #f9f9f9;
+	.hood-table tbody tr:nth-child(even) {
+		background: var(--color-surface-alt);
+	}
+
+	.hood-table tbody tr:hover {
+		background: var(--color-blue-light);
 	}
 
 	.bar-cell {
 		width: 30%;
+	}
+
+	.bar-track {
+		background: var(--color-border-light);
+		border-radius: 4px;
+		overflow: hidden;
 	}
 
 	.bar {
@@ -108,11 +121,12 @@ const maxCount = neighborhoods[0]?.count ?? 1
 	.count {
 		color: var(--color-accent);
 		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.street {
 		color: var(--color-text-muted);
-		max-width: 140px;
+		max-width: 160px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -135,12 +149,18 @@ const maxCount = neighborhoods[0]?.count ?? 1
 	}
 
 	@media (max-width: 768px) {
-		.street,
-		.hood-table th:nth-child(5),
-		.hood-table td:nth-child(5),
-		.hood-table th:nth-child(6),
-		.hood-table td:nth-child(6) {
+		.detail-col {
 			display: none;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.bar-col {
+			display: none;
+		}
+
+		.hood-table td {
+			padding: 10px 6px;
 		}
 	}
 </style>

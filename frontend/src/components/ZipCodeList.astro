@@ -12,6 +12,10 @@ const maxCount = zipStats[0]?.count ?? 1
 
 <section class="section" aria-label="Top zip codes">
 	<h2 class="section-title">Top Zip Codes</h2>
+	<p class="section-desc">
+		The most active zip codes for sharps collection requests, led by <strong>{zipStats[0]?.zip}</strong> with
+		<strong>{formatNumber(zipStats[0]?.count ?? 0)}</strong> reports.
+	</p>
 	<div class="card">
 		<div class="zip-list">
 			{zipStats.map((z) => {
@@ -31,17 +35,25 @@ const maxCount = zipStats[0]?.count ?? 1
 </section>
 
 <style>
+	.section-desc {
+		font-size: var(--fs-base);
+		color: var(--color-text-muted);
+		margin-bottom: 16px;
+		max-width: 800px;
+		line-height: 1.6;
+	}
+
 	.zip-list {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 8px;
 	}
 
 	.zip-row {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		font-size: 13px;
+		gap: 10px;
+		font-size: var(--fs-sm);
 	}
 
 	.zip-label {
@@ -49,22 +61,27 @@ const maxCount = zipStats[0]?.count ?? 1
 		color: var(--color-text-muted);
 		font-weight: 600;
 		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.zip-bar-wrap {
 		flex: 1;
+		background: var(--color-border-light);
+		border-radius: 5px;
+		overflow: hidden;
 	}
 
 	.zip-bar {
-		height: 8px;
-		border-radius: 4px;
+		height: 10px;
+		border-radius: 5px;
 		background: var(--color-teal);
 	}
 
 	.zip-count {
-		width: 50px;
+		width: 55px;
 		text-align: right;
 		color: var(--color-text);
 		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
 </style>

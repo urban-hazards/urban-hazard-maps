@@ -7,7 +7,7 @@ export default defineConfig({
   output: "server",
   adapter: node({ mode: "standalone" }),
   integrations: [react(), sitemap()],
-  site: "https://boston-needle-map.up.railway.app",
+  site: "https://www.urbanhazardmaps.com",
   server: {
     host: "0.0.0.0",
     port: 4321,

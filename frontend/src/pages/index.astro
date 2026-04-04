@@ -29,7 +29,7 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 <BaseLayout title={title} description={description}>
 	<Header generated={stats.generated} />
 
-	<main class="container" style="padding-top: 24px; padding-bottom: 24px;">
+	<main class="container" style="padding-top: 32px; padding-bottom: 48px;">
 		<h1 class="page-title">
 			Boston 311 Sharps Collection Request Analysis
 		</h1>
@@ -58,10 +58,13 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			total={stats.total}
 		/>
 
-		<div class="charts-grid">
-			<MonthlyTrend client:visible yearMonthly={stats.year_monthly} />
-			<HourlyChart client:visible hourly={stats.hourly} />
-		</div>
+		<section class="section" aria-label="Trend charts">
+			<h2 class="section-title">Trends &amp; Patterns</h2>
+			<div class="charts-grid">
+				<MonthlyTrend client:visible yearMonthly={stats.year_monthly} />
+				<HourlyChart client:visible hourly={stats.hourly} />
+			</div>
+		</section>
 
 		<NeighborhoodTable neighborhoods={neighborhoods} />
 
@@ -98,29 +101,42 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 
 <style>
 	.page-title {
-		font-size: 28px;
+		font-size: var(--fs-2xl);
 		margin-bottom: 8px;
+		position: relative;
+		padding-bottom: 16px;
+	}
+
+	.page-title::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 60px;
+		height: 3px;
+		background: var(--color-accent);
+		border-radius: 2px;
 	}
 
 	.page-subtitle {
-		font-size: 16px;
+		font-size: var(--fs-md);
 		line-height: 1.7;
 		color: var(--color-text-muted);
-		margin-bottom: 32px;
+		margin-bottom: var(--sp-xl);
 		max-width: 900px;
 	}
 
 	.charts-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-		margin-bottom: 32px;
+		gap: 20px;
 	}
 
 	.about-content {
 		line-height: 1.7;
-		font-size: 15px;
+		font-size: var(--fs-base);
 		color: var(--color-text-muted);
+		border-left: 3px solid var(--color-teal);
 	}
 
 	.about-content p {

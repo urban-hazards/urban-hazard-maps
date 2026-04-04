@@ -6,7 +6,7 @@ interface Props {
 }
 
 const { title, description, canonical } = Astro.props
-const siteUrl = "https://boston-needle-map.up.railway.app"
+const siteUrl = "https://www.urbanhazardmaps.com"
 const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString()
 ---
 
@@ -18,6 +18,7 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString(
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<meta name="robots" content="index, follow" />
+		<meta name="theme-color" content="#e85a1b" />
 		<link rel="canonical" href={canonicalUrl} />
 
 		<meta property="og:type" content="website" />
