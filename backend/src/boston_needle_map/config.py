@@ -22,6 +22,11 @@ RESOURCE_IDS: dict[int, str] = {
 
 NEEDLE_TYPES: set[str] = {"Needle Pickup", "Needle Clean-up", "Needle Cleanup"}
 
+ENCAMPMENT_TYPES: set[str] = {"Encampments"}
+
+# Encampment data only exists from 2025 onwards
+ENCAMPMENT_START_YEAR = 2025
+
 BOSTON_BBOX = {
     "lat_min": 42.2279,
     "lat_max": 42.3969,

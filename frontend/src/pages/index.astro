@@ -8,11 +8,11 @@ import NeighborhoodTable from "../components/NeighborhoodTable.astro"
 import StatsOverview from "../components/StatsOverview.astro"
 import ZipCodeList from "../components/ZipCodeList.astro"
 import BaseLayout from "../layouts/BaseLayout.astro"
-import { fetchPageStats } from "../lib/api"
+import { fetchEncampmentStats, fetchPageStats } from "../lib/api"
 import { formatHour, formatNumber } from "../lib/seo"
 import "../styles/global.css"
 
-const stats = await fetchPageStats()
+const [stats, encampmentStats] = await Promise.all([fetchPageStats(), fetchEncampmentStats()])
 
 const neighborhoods = stats.hoods.map((h) => ({
 	...h,
@@ -22,8 +22,8 @@ const neighborhoods = stats.hoods.map((h) => ({
 		.replace(/^-|-$/g, ""),
 }))
 
-const title = `Boston 311 Sharps Collection Heatmap — ${formatNumber(stats.total)} Requests Analyzed`
-const description = `Interactive heatmap and analysis of ${formatNumber(stats.total)} sharps collection requests reported through Boston's 311 system across ${stats.hoods.length} neighborhoods. ${stats.peak_hood} leads with the highest volume. Data from ${stats.years[0]}–${stats.years[stats.years.length - 1]}.`
+const title = `Boston Urban Hazard Maps — ${formatNumber(stats.total + encampmentStats.total)} Reports Analyzed`
+const description = `Interactive heatmap and analysis of ${formatNumber(stats.total)} sharps and ${formatNumber(encampmentStats.total)} encampment reports from Boston's 311 system across ${stats.hoods.length} neighborhoods. Data from ${stats.years[0]}–${stats.years[stats.years.length - 1]}.`
 ---
 
 <BaseLayout title={title} description={description}>
@@ -31,13 +31,14 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 
 	<main class="container" style="padding-top: 32px; padding-bottom: 48px;">
 		<h1 class="page-title">
-			Boston 311 Sharps Collection Request Analysis
+			Boston Urban Hazard Maps
 		</h1>
 		<p class="page-subtitle">
-			Comprehensive analysis of {formatNumber(stats.total)} sharps (needle) collection
-			requests submitted to Boston's 311 system from {stats.years[0]} to {stats.years[stats.years.length - 1]}.
-			This data is sourced from the <a href="https://data.boston.gov/dataset/311-service-requests" target="_blank" rel="noopener">City of Boston's open data portal</a> and
-			is updated regularly for public health research and community awareness.
+			Interactive analysis of {formatNumber(stats.total)} sharps collection requests
+			and {formatNumber(encampmentStats.total)} encampment reports
+			submitted to Boston's 311 system from {stats.years[0]} to {stats.years[stats.years.length - 1]}.
+			Sourced from the <a href="https://data.boston.gov/dataset/311-service-requests" target="_blank" rel="noopener">City of Boston's open data portal</a>,
+			updated regularly for public health research and community awareness.
 		</p>
 
 		<StatsOverview
@@ -53,8 +54,11 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 		<HeatMap
 			client:load
 			initialHeat={stats.initial_heat}
+			initialEncampmentHeat={encampmentStats.initial_heat}
 			years={stats.years}
+			encampmentYears={encampmentStats.years}
 			total={stats.total}
+			encampmentTotal={encampmentStats.total}
 			apiBase={process.env.API_URL || "http://localhost:8000"}
 		/>
 

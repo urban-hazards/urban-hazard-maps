@@ -123,12 +123,12 @@ def _get_backend() -> CacheBackend:
 # --- Public API (same interface as before) ---
 
 
-def _cache_key(year: int) -> str:
-    return f"boston311:year:{year}"
+def _cache_key(year: int, dataset: str = "needles") -> str:
+    return f"boston311:{dataset}:{year}"
 
 
 def load_cached(year: int, max_age: int = DEFAULT_TTL_SECONDS) -> list[dict[str, Any]] | None:
-    """Load cached records for a year."""
+    """Load cached needle records for a year."""
     records = _get_backend().get(_cache_key(year))
     if records is not None:
         logger.info("  ✓ Cache hit for %d (%d records)", year, len(records))
@@ -138,11 +138,27 @@ def load_cached(year: int, max_age: int = DEFAULT_TTL_SECONDS) -> list[dict[str,
 
 
 def save_cache(year: int, records: list[dict[str, Any]], ttl: int = DEFAULT_TTL_SECONDS) -> None:
-    """Save raw API records to cache."""
+    """Save raw needle API records to cache."""
     _get_backend().set(_cache_key(year), records, ttl)
     logger.info("  💾 Cached %d records for %d (TTL: %dh)", len(records), year, ttl // 3600)
 
 
+def load_cached_encampments(year: int) -> list[dict[str, Any]] | None:
+    """Load cached encampment records for a year."""
+    records = _get_backend().get(_cache_key(year, "encampments"))
+    if records is not None:
+        logger.info("  ✓ Encampment cache hit for %d (%d records)", year, len(records))
+    else:
+        logger.info("  ○ Encampment cache miss for %d", year)
+    return records
+
+
+def save_encampment_cache(year: int, records: list[dict[str, Any]], ttl: int = DEFAULT_TTL_SECONDS) -> None:
+    """Save raw encampment API records to cache."""
+    _get_backend().set(_cache_key(year, "encampments"), records, ttl)
+    logger.info("  💾 Cached %d encampment records for %d (TTL: %dh)", len(records), year, ttl // 3600)
+
+
 def clear_cache() -> None:
     """Remove all cached data."""
-    _get_backend().clear("boston311:year:*")
+    _get_backend().clear("boston311:*")
