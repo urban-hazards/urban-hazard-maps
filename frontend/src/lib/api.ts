@@ -1,6 +1,6 @@
 import type { DashboardStats, NeighborhoodStat } from "./types"
 
-const API_BASE = import.meta.env.API_URL || "http://localhost:8000"
+const API_BASE = process.env.API_URL || "http://localhost:8000"
 
 async function apiFetch<T>(path: string): Promise<T> {
 	const res = await fetch(`${API_BASE}${path}`)
