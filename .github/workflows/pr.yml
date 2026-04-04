@@ -8,6 +8,9 @@ jobs:
   ruff-lint:
     name: Ruff Lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -20,6 +23,9 @@ jobs:
   ruff-format:
     name: Ruff Format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -32,6 +38,9 @@ jobs:
   mypy:
     name: Mypy
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -44,6 +53,9 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -52,6 +64,29 @@ jobs:
         run: uv sync --dev
       - name: Run tests
         run: uv run pytest
+
+  frontend-check:
+    name: Frontend Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check
+        run: pnpm check
 
   secret-scanning:
     name: Scan for secrets
@@ -79,7 +114,7 @@ jobs:
           username: ${{ secrets.NOTIFY_EMAIL }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           to: ${{ secrets.NOTIFY_EMAIL }}
-          from: Boston Needle Map <${{ secrets.NOTIFY_EMAIL }}>
+          from: Urban Hazard Maps <${{ secrets.NOTIFY_EMAIL }}>
           subject: "⚠️ Secret detected in PR #${{ github.event.pull_request.number }}"
           body: |
             TruffleHog found a potential secret in a pull request.
@@ -94,7 +129,7 @@ jobs:
     name: All Checks Pass
     runs-on: ubuntu-latest
     if: always()
-    needs: [ruff-lint, ruff-format, mypy, test, secret-scanning]
+    needs: [ruff-lint, ruff-format, mypy, test, frontend-check, secret-scanning]
     steps:
       - name: Verify all checks passed
         run: |
@@ -102,6 +137,7 @@ jobs:
                 "${{ needs.ruff-format.result }}" != "success" ||
                 "${{ needs.mypy.result }}" != "success" ||
                 "${{ needs.test.result }}" != "success" ||
+                "${{ needs.frontend-check.result }}" != "success" ||
                 "${{ needs.secret-scanning.result }}" != "success" ]]; then
             echo "One or more checks failed."
             exit 1
