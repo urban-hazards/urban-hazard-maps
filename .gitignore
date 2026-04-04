@@ -11,6 +11,10 @@ tmp/
 .ruff_cache/
 .pytest_cache/
 
+# Data experiments
+data-experiments/cache/
+data-experiments/output/
+
 # Astro / Frontend
 frontend/dist/
 frontend/node_modules/
