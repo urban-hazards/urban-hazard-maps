@@ -17,3 +17,15 @@ pre-commit:
       root: frontend/
       run: pnpm biome check src/
       glob: "frontend/src/**/*.{ts,tsx,astro}"
+    ruff-check-pipeline:
+      root: pipeline/
+      run: uv run ruff check src/ tests/
+      glob: "pipeline/**/*.py"
+    ruff-format-pipeline:
+      root: pipeline/
+      run: uv run ruff format --check src/ tests/
+      glob: "pipeline/**/*.py"
+    mypy-pipeline:
+      root: pipeline/
+      run: uv run mypy src/
+      glob: "pipeline/**/*.py"
