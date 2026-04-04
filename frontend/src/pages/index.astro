@@ -8,11 +8,31 @@ import NeighborhoodTable from "../components/NeighborhoodTable.astro"
 import StatsOverview from "../components/StatsOverview.astro"
 import ZipCodeList from "../components/ZipCodeList.astro"
 import BaseLayout from "../layouts/BaseLayout.astro"
-import { fetchEncampmentStats, fetchPageStats } from "../lib/api"
+import { fetchMarkers, fetchPageStats, fetchPoints } from "../lib/bucket"
 import { formatNumber } from "../lib/seo"
 import "../styles/global.css"
 
-const [stats, encampmentStats] = await Promise.all([fetchPageStats(), fetchEncampmentStats()])
+const [
+	stats,
+	encampmentStats,
+	wasteStats,
+	needlePoints,
+	encampmentPoints,
+	wastePoints,
+	needleMarkers,
+	encampmentMarkers,
+	wasteMarkers,
+] = await Promise.all([
+	fetchPageStats("needles"),
+	fetchPageStats("encampments"),
+	fetchPageStats("waste"),
+	fetchPoints("needles"),
+	fetchPoints("encampments"),
+	fetchPoints("waste"),
+	fetchMarkers("needles"),
+	fetchMarkers("encampments"),
+	fetchMarkers("waste"),
+])
 
 const neighborhoods = stats.hoods.map((h) => ({
 	...h,
@@ -53,13 +73,18 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 
 		<HeatMap
 			client:load
-			initialHeat={stats.initial_heat}
-			initialEncampmentHeat={encampmentStats.initial_heat}
+			needlePoints={needlePoints}
+			encampmentPoints={encampmentPoints}
+			wastePoints={wastePoints}
+			needleMarkers={needleMarkers}
+			encampmentMarkers={encampmentMarkers}
+			wasteMarkers={wasteMarkers}
 			years={stats.years}
 			encampmentYears={encampmentStats.years}
+			wasteYears={wasteStats.years}
 			total={stats.total}
 			encampmentTotal={encampmentStats.total}
-			apiBase={process.env.API_URL || "http://localhost:8000"}
+			wasteTotal={wasteStats.total}
 		/>
 
 		<section class="section" aria-label="Trend charts">

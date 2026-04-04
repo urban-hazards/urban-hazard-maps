@@ -11,6 +11,14 @@ tmp/
 .ruff_cache/
 .pytest_cache/
 
+# Data experiments
+data-experiments/cache/
+data-experiments/output/
+
+# Pipeline
+pipeline/.venv/
+pipeline/tmp/
+
 # Astro / Frontend
 frontend/dist/
 frontend/node_modules/
