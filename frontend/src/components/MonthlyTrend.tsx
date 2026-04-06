@@ -57,16 +57,29 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 	useEffect(() => {
 		if (!canvasRef.current) return
 
-		const datasets = Object.entries(yearMonthly).map(([yr, vals], i) => ({
-			label: yr,
-			data: vals,
-			borderColor: COLORS[i % COLORS.length],
-			backgroundColor: `${COLORS[i % COLORS.length]}22`,
-			borderWidth: 2,
-			pointRadius: 3,
-			tension: 0.3,
-			fill: false,
-		}))
+		const now = new Date()
+		const currentYear = now.getFullYear()
+		const currentMonth = now.getMonth() // 0-indexed
+
+		const datasets = Object.entries(yearMonthly).map(([yr, vals], i) => {
+			let data: (number | null)[] = vals
+			// For the current year, replace future months (no data yet) with null
+			// so Chart.js breaks the line instead of dropping to zero
+			if (Number(yr) === currentYear) {
+				data = vals.map((v, monthIdx) => (monthIdx > currentMonth ? null : v))
+			}
+			return {
+				label: yr,
+				data,
+				borderColor: COLORS[i % COLORS.length],
+				backgroundColor: `${COLORS[i % COLORS.length]}22`,
+				borderWidth: 2,
+				pointRadius: 3,
+				tension: 0.3,
+				fill: false,
+				spanGaps: false,
+			}
+		})
 
 		chartRef.current = new Chart(canvasRef.current, {
 			type: "line",
