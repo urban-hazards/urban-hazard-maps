@@ -38,8 +38,10 @@ const rs = (wasteStats as Record<string, any>)?.routing_stats as
 			<h2 class="section-title">1. Your Report Gets Closed — But Nothing Happens</h2>
 			<div class="card prose">
 				<p>
-					"Closed" in Boston's 311 system does not mean "resolved." It means a city
-					worker clicked a button. For human waste reports, the data tells a stark story:
+					"Closed" in Boston's 311 system does not mean "resolved." It means the
+					ticket was marked complete — even when the receiving department had no
+					way to act on it or send it to someone who could. For human waste reports,
+					the data tells a stark story:
 				</p>
 				{rs && (
 					<div class="stats-grid">
@@ -164,10 +166,11 @@ const rs = (wasteStats as Record<string, any>)?.routing_stats as
 					<li>No department is accountable. No SLA. No follow-up.</li>
 				</ol>
 				<p>
-					The problem isn't lazy workers — it's a system that routes biohazard
-					reports to the wrong team, then counts the rejection as a resolution.
-					There is no department in Boston's 311 system whose job it is to handle
-					human waste on public streets.
+					Workers who receive these tickets have no way to reroute them. The
+					system gives them one option: close it. The report goes to the wrong
+					team, and the rejection is counted as a resolution. There is no
+					department in Boston's 311 system whose job it is to handle human
+					waste on public streets.
 				</p>
 				<div class="fix-box">
 					<strong>What should change:</strong> Assign a response team for human waste.
