@@ -7,7 +7,9 @@ interface Props {
 
 const { title, description, canonical } = Astro.props
 const siteUrl = "https://www.urbanhazardmaps.com"
-const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString()
+// Normalize: strip trailing slash, always use www
+const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/"
+const canonicalUrl = canonical || new URL(pathname, siteUrl).toString()
 ---
 
 <!doctype html>
@@ -71,8 +73,8 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString(
 				},
 				distribution: {
 					"@type": "DataDownload",
-					encodingFormat: "application/json",
-					contentUrl: `${siteUrl}/api/stats`,
+					encodingFormat: "text/html",
+					contentUrl: siteUrl,
 				},
 			})}
 		/>
