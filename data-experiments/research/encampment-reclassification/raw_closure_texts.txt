@@ -1,0 +1,1361 @@
+=== TOTAL: 225 unique tickets (0 open, 225 closed) ===
+
+================================================================================
+CLOSED TICKETS (225) — what did the city actually do?
+================================================================================
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Closed date : Tue Jul 02 23:02:47 EDT 2024 Noted Homeless guy again on the bridge at mass ave and Boylston   was warned that he needed to clean up his mess or he was going to be cited a violation.
+  #101005542091  Opened: 2024-07-02  Closed: 2024-07-02
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Wed Jul 17 09:48:09 EDT 2024 Resolved Shopping cart belongs to homeless women shopping cart was removed by the individual
+  #101005572393  Opened: 2024-07-17  Closed: 2024-07-17
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: South End
+  Matched: belongings, homeless
+  CLOSURE: Closed date : Tue Apr 02 18:27:46 EDT 2024 Noted Homeless belongings
+  #101005385611  Opened: 2024-04-02  Closed: 2024-04-02
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 5  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Tue Feb 20 14:07:26 EST 2024 Resolved Completed all loose litter and homeless debris were removed from Park.
+  #101005301502  Opened: 2024-02-20  Closed: 2024-02-20
+
+  [2024] Equipment Repair
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Sun Jan 28 11:14:33 EST 2024 Resolved Homeless camp removed
+  #101005274677  Opened: 2024-01-27  Closed: 2024-01-28
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Sat Apr 20 12:31:54 EDT 2024 Noted Trash infront of property left by homeless  no evidence   leading to who placed it there and no citation was issued at this time and sent to dpw for re
+  #101005419029  Opened: 2024-04-20  Closed: 2024-04-20
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Sun Oct 20 14:30:57 EDT 2024 Resolved No syringes recovered just homeless people sitting around if u see any syringes again resubmit jg
+  #101005739288  Opened: 2024-10-20  Closed: 2024-10-20
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Mon Jul 29 06:39:54 EDT 2024 Resolved Homeless
+  #101005588141  Opened: 2024-07-28  Closed: 2024-07-29
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless, sleeping
+  CLOSURE: Closed date : Thu Aug 15 08:40:03 EDT 2024 Noted This actually a homeless person sleeping
+  #101005624695  Opened: 2024-08-15  Closed: 2024-08-15
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE: Closed date : Tue May 14 13:12:08 EDT 2024 Resolved 1 syringe recovered  homeless people and trash still there jg
+  #101005462718  Opened: 2024-05-14  Closed: 2024-05-14
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Thu Nov 07 09:24:20 EST 2024 Noted Homeless person sitting on the chair can't removed  it
+  #101005771522  Opened: 2024-11-07  Closed: 2024-11-07
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Sun Mar 03 10:18:05 EST 2024 Resolved No syringes recovered or seen at address given just homeless group keeping warm jg
+  #101005336223  Opened: 2024-03-03  Closed: 2024-03-03
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Homeless stuff has been placed in for collections.
+  #101005649066  Opened: 2024-08-30  Closed: 2024-08-31
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: Closed date : Fri Sep 27 06:58:51 EDT 2024 Noted Trash was sent for collection   bags were ripped open by homeless
+  #101005701020  Opened: 2024-09-27  Closed: 2024-09-27
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Animals appeared healthy they are provided food and water . Dog does bark a lot the woman stated . No intervention at this time . Informed both to reach out if animal control can be helpful. IM/103
+  #101005772742  Opened: 2024-11-07  Closed: 2024-11-08
+
+  [2024] Abandoned Building
+  Queue: ISD_Environmental Services (INTERNAL)  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Tue Apr 09 10:18:27 EDT 2024 Noted Building is secured no force entry homeless
+  #101005403541  Opened: 2024-04-09  Closed: 2024-04-09
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Sat Apr 20 12:34:44 EDT 2024 Noted Trash left by homeless   needs to be cleaned up.
+  #101005419034  Opened: 2024-04-20  Closed: 2024-04-20
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Mon Sep 09 18:53:27 EDT 2024 Resolved 4syringes found homeless people in park didn't see any besides 4 given to me jg
+  #101005676108  Opened: 2024-09-09  Closed: 2024-09-09
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 5  Neighborhood: Roxbury
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Tue Nov 05 08:38:32 EST 2024 Noted There is a homeless encampment under the deck with people living in there we will contact the proper authorities and once its resolved we will remove a
+  #101005753430  Opened: 2024-10-31  Closed: 2024-11-05
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Mission Hill
+  Matched: homeless
+  CLOSURE: Closed date : Mon Feb 05 07:23:58 EST 2024 Resolved 1 syringe recovered homeless people are on site
+  #101005284427  Opened: 2024-02-04  Closed: 2024-02-05
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Boston
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Sat Jun 22 13:55:55 EDT 2024 Noted Big black trash bags   alot of loose trash  and a homeless encampment that has been here for weeks that needs to be removed immediately   no citation i
+  #101005527851  Opened: 2024-06-22  Closed: 2024-06-22
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Thu Sep 19 08:42:42 EDT 2024 Noted Shopping cart belongs to homeless
+  #101005690471  Opened: 2024-09-19  Closed: 2024-09-19
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE: Closed date : Wed Jul 17 13:54:38 EDT 2024 Noted Homeless debris
+  #101005572634  Opened: 2024-07-17  Closed: 2024-07-17
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Tue Aug 06 16:52:54 EDT 2024 Resolved No syringes recovered homeless man ok took here all syringes jg
+  #101005611867  Opened: 2024-08-06  Closed: 2024-08-06
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Mon Sep 09 07:15:48 EDT 2024 Resolved Shopping cart belongs to homeless
+  #101005674501  Opened: 2024-09-09  Closed: 2024-09-09
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Thu Sep 26 14:15:37 EDT 2024 Resolved No syringes recovered homeless people in parking lot but no syringes found in area in photo
+  #101005700485  Opened: 2024-09-26  Closed: 2024-09-26
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Tue Jan 02 09:35:57 EST 2024 Resolved No syringes found homeless people presently here
+  #101005232332  Opened: 2024-01-02  Closed: 2024-01-02
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: South Boston / South Boston Waterfront
+  Matched: belongings, homeless
+  CLOSURE: Closed date : Mon Jul 08 21:11:01 EDT 2024 Noted Homeless belongings
+  #101005560293  Opened: 2024-07-08  Closed: 2024-07-08
+
+  [2024] Abandoned Building
+  Queue: ISD_Environmental Services (INTERNAL)  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Tue Apr 09 10:20:21 EDT 2024 Noted Inspection no force entry form homeless the  building is secured
+  #101005403514  Opened: 2024-04-09  Closed: 2024-04-09
+
+  [2024] Empty Litter Basket
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: on Wednesday 11/14/24.
+  #101005778272  Opened: 2024-11-13  Closed: 2024-11-13
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 5  Neighborhood: Roxbury
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Tue Nov 05 08:35:52 EST 2024 Noted There is a homeless encampment under the deck with people living there we will notify the proper authorities and when the situation is dealt with we wi
+  #101005755974  Opened: 2024-11-02  Closed: 2024-11-05
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Sent to dpw for removal.
+  #101005466046  Opened: 2024-05-16  Closed: 2024-05-16
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Tue Sep 17 15:15:38 EDT 2024 Noted Homeless people going through bags material was removed  thank you.
+  #101005686876  Opened: 2024-09-17  Closed: 2024-09-17
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood:  
+  Matched: homeless
+  CLOSURE: Closed date : Sat Aug 17 09:36:20 EDT 2024 Resolved Homeless debris was removed this morning
+  #101005626917  Opened: 2024-08-16  Closed: 2024-08-17
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: Boston
+  Matched: belongings, homeless
+  CLOSURE: Closed date : Thu Mar 21 14:14:16 EDT 2024 Noted Homeless belongings
+  #101005370446  Opened: 2024-03-21  Closed: 2024-03-21
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Closed date : Wed Apr 10 22:57:47 EDT 2024 Noted Unable to issue a citation do to trash coming from the homeless  sent in to dpw for removal.
+  #101005406613  Opened: 2024-04-10  Closed: 2024-04-10
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless, sleeping
+  CLOSURE: Closed date : Thu Mar 14 05:31:16 EDT 2024 Noted Upon arrival  homeless man sleeping right next to shopping cart can't removed
+  #101005350040  Opened: 2024-03-13  Closed: 2024-03-14
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Downtown / Financial District
+  Matched: homeless, outreach
+  CLOSURE: An outreach team will be notified about the homeless in the Rose garden
+  #101005567113  Opened: 2024-07-13  Closed: 2024-07-13
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Reallocation From Dept  Neighborhood: Downtown / Financial District
+  Matched: homeless, outreach, sleeping
+  CLOSURE: We do not remove homeless people from public property. If you are being harassed or if it is an issue of trespassing contact police. If you are concerned about someone sleeping outside we can have our
+  #101005651542  Opened: 2024-09-01  Closed: 2024-09-01
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Tue Dec 03 13:33:21 EST 2024 Resolved Homeless debris has been removed
+  #101005798366  Opened: 2024-12-03  Closed: 2024-12-03
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE: Closed date : Tue Oct 01 13:59:47 EDT 2024 Resolved 5 syringes recovered 3 homeless people some trash and human waste jg and dw
+  #101005706706  Opened: 2024-10-01  Closed: 2024-10-01
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: Closed date : Wed May 15 23:51:45 EDT 2024 Noted Alot of loose trash that looks like it came from the homeless  no citation was issued at the location and I sent it to dpw for removal.
+  #101005465068  Opened: 2024-05-15  Closed: 2024-05-15
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Charlestown
+  Matched: homeless
+  CLOSURE: Closed date : Thu Oct 17 17:24:23 EDT 2024 Resolved No syringes trash and homeless are noticed trash can safely be discarded
+  #101005736367  Opened: 2024-10-17  Closed: 2024-10-17
+
+  [2024] CE Collection
+  Queue: PWDx_District 10A: Roxbury  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: homeless
+  CLOSURE: The homeless person is on scene also.
+  #101005587832  Opened: 2024-07-28  Closed: 2024-07-28
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 5  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Wed Jul 24 11:17:23 EDT 2024 Resolved We are in the process of cutting Clifford park and there is a clean up crew every day  cleaning the park   unfortunately this park is a home for man
+  #101005581587  Opened: 2024-07-23  Closed: 2024-07-24
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE:  Before and after picture of cleanup
+  #101005611615  Opened: 2024-08-06  Closed: 2024-08-07
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE: Not homeless debris
+  #101005737061  Opened: 2024-10-18  Closed: 2024-10-18
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Tue Jun 18 00:08:33 EDT 2024 Noted Homeless person trash all over the sidewalk abandoned  this trash needs to be removed asap.
+  #101005520867  Opened: 2024-06-17  Closed: 2024-06-17
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Beacon Hill
+  Matched: homeless
+  CLOSURE: Closed date : Tue Sep 03 03:05:31 EDT 2024 Noted Items left behind from the homeless   no citation was issued at this time and sent to dpw for removal.
+  #101005653689  Opened: 2024-09-02  Closed: 2024-09-02
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Roxbury
+  Matched: encampment
+  CLOSURE: Closed date : Mon Dec 16 08:10:17 EST 2024 Resolved No encampment  1pic  df
+  #101005821688  Opened: 2024-12-16  Closed: 2024-12-16
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Beacon Hill
+  Matched: encampment
+  CLOSURE:  DCR Community Relations has sent this over to our staff to request cleanup or see if there is an encampment out under that pedestrian bridge that needs to be cleared or cleaned out.   Thank you for s
+  #101005345208  Opened: 2024-03-10  Closed: 2024-03-11
+
+  [2024] Ground Maintenance
+  Queue: INFO_Mass DCR  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: encampment
+  CLOSURE:  Former encampment site.   DCR Community Relations
+  #101005418962  Opened: 2024-04-20  Closed: 2024-05-01
+
+  [2024] Parks General Request
+  Queue: PARK_Maintenance_Region 5  Neighborhood: Roxbury
+  Matched: encampment
+  CLOSURE: Closed date : Tue Nov 05 07:43:41 EST 2024 Noted We appreciate the heads up  our maintenance crew will monitor the park for  encampment and debris thank you
+  #101005754922  Opened: 2024-11-01  Closed: 2024-11-05
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Reallocation From Dept  Neighborhood: Roxbury
+  Matched: encampment
+  CLOSURE: Closed date : 2024-09-07 16:35:17.547 Duplicate of Existing Case Case resubmitted as an encampment 101005672931
+  #101005672903  Opened: 2024-09-07  Closed: 2024-09-07
+
+  [2024] Ground Maintenance
+  Queue: INFO_Mass DCR  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: encampment
+  CLOSURE:  It looks to be leftover from a larger encampment under the Bowker.  DCR Operations will remove.   DCR Community Relations
+  #101005418961  Opened: 2024-04-20  Closed: 2024-05-01
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Back Bay
+  Matched: encampment
+  CLOSURE:  This is part of an encampment. DCR is coordinating with staff as well as local and state police and advocacy groups to schedule a break down of this larger encampment and clean it out.    DCR Communi
+  #101005464623  Opened: 2024-05-15  Closed: 2024-05-16
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Downtown / Financial District
+  Matched: encampment, unsheltered
+  CLOSURE: The beer garden is within the Boston Common  we engaged other unsheltered persons in the park  no encampments. BPD further assisted as the park is closed by midnight."
+  #101005634739  Opened: 2024-08-22  Closed: 2024-08-22
+
+  [2024] Pick up Dead Animal
+  Queue: INFO_Mass DCR  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: encampment
+  CLOSURE:  This can be closed. Staff removed the dead goose here and agency cleaned up/out encampment in area.  This has been an area that people have used repeatedly for encampments so please report in to DCR 
+  #101005478239  Opened: 2024-05-26  Closed: 2024-06-24
+
+  [2024] Ground Maintenance
+  Queue: INFO_Mass DCR  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: encampment
+  CLOSURE:  These items that were reported are part of a larger encampment of unhoused individuals.   DCR Operations staff is aware and will be working to remove these items and clean up the area.   Any addition
+  #101005380374  Opened: 2024-03-29  Closed: 2024-04-01
+
+  [2024] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South End
+  Matched: encampment
+  CLOSURE: Closed date : Sun Dec 15 07:28:47 EST 2024 Resolved No encampment  need more information on needles  1 pic df
+  #101005820998  Opened: 2024-12-14  Closed: 2024-12-15
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Beacon Hill
+  Matched: encampment
+  CLOSURE:  I have sent this to our Operations staff for the area so they can remove these items.  Community Relations has also asked operations staff if these items are part of a larger encampment under the foo
+  #101005330667  Opened: 2024-02-27  Closed: 2024-02-28
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Back Bay
+  Matched: encampment
+  CLOSURE:  This may be part of a larger encampment in the area.  This issue was referred to our staff that coordinates breakdowns of encampments as well as they are investigating whether there is encampment her
+  #101005652124  Opened: 2024-09-01  Closed: 2024-09-05
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Boston
+  Matched: encampment
+  CLOSURE:  While I do not think that this is an encampment  currently  the location has repeatedly had encampments and therefore I wanted to cast a wider net.  Any update or additional information I would be ha
+  #101005822848  Opened: 2024-12-17  Closed: 2024-12-17
+
+  [2024] Ground Maintenance
+  Queue: PARK_Urban_Wilds  Neighborhood: East Boston
+  Matched: tent
+  CLOSURE: Closed date : Fri Aug 09 12:40:44 EDT 2024 Resolved Tent remnants have been removed from the site.
+  #101005611475  Opened: 2024-08-06  Closed: 2024-08-09
+
+  [2024] Illegal Vending
+  Queue: PWDx_Code Enforcement  Neighborhood: Allston
+  Matched: tent
+  CLOSURE: Closed date : Fri Aug 30 13:58:56 EDT 2024 Noted No code enforcement violation found at this time tent was move from the sidewalk
+  #101005648115  Opened: 2024-08-30  Closed: 2024-08-30
+
+  [2024] Poor Conditions of Property
+  Queue: PARK_Maintenance_Region 3  Neighborhood: Greater Mattapan
+  Matched: tent
+  CLOSURE: Closed date : Fri Nov 08 10:21:30 EST 2024 Resolved The blue tent has been removed and trash pick up
+  #101005773020  Opened: 2024-11-08  Closed: 2024-11-08
+
+  [2024] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: West Roxbury
+  Matched: tent
+  CLOSURE: Closed date : Wed May 15 09:25:23 EDT 2024 Resolved Tent has been removed from sidewalk
+  #101005463390  Opened: 2024-05-14  Closed: 2024-05-15
+
+  [2024] Unsafe Dangerous Conditions
+  Queue: ISD_Building (INTERNAL)  Neighborhood: East Boston
+  Matched: tent
+  CLOSURE: Closed date : Thu Apr 04 15:22:56 EDT 2024 Noted On call building inspector responded  inspector contacted owner  142 princeton st  owner removed tent
+  #101005387750  Opened: 2024-04-04  Closed: 2024-04-04
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 2  Neighborhood: Dorchester
+  Matched: tent
+  CLOSURE: Closed date : Tue Jun 11 11:40:46 EDT 2024 Resolved Check the park didn't see any tent
+  #101005509150  Opened: 2024-06-09  Closed: 2024-06-11
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: South Boston / South Boston Waterfront
+  Matched: sleeping
+  CLOSURE:  I have sent it to our Operations staff for the area.  They will clean up the trash and debris  leftover from the people sleeping at/under this location.    DCR Community Relations
+  #101005618698  Opened: 2024-08-11  Closed: 2024-08-12
+
+  [2024] Pest Infestation - Residential
+  Queue: ISD_Environmental Services (INTERNAL)  Neighborhood: Allston / Brighton
+  Matched: sleeping
+  CLOSURE: Trash and debris on grounds and rat droppings observed also. An abatement will be served to the property owner to  correct all  violations.
+  #101005333720  Opened: 2024-02-29  Closed: 2024-03-25
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Greater Mattapan
+  Matched: sleeping
+  CLOSURE: Closed date : 2024-08-04 08:36:51.747 Case Resolved An officer went by and spoke to the dog owner regarding the complaint  the dog was on the porch sleeping and did not appear to be in distress.
+  #101005605808  Opened: 2024-08-01  Closed: 2024-08-04
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: sleeping
+  CLOSURE: Both looked for bat and were UTL it  hole in bedroom wall i. Space by ac unit in window.  unsure how it got in but was first seen in bedroom while sleeping. If bat not seen in next few hours  advised 
+  #101005618561  Opened: 2024-08-11  Closed: 2024-08-12
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: sleeping
+  CLOSURE: Both looked for bat and were UTL it  hole in bedroom wall i. Space by ac unit in window.  unsure how it got in but was first seen in bedroom while sleeping. If bat not seen in next few hours  advised 
+  #101005618531  Opened: 2024-08-11  Closed: 2024-08-12
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: sleeping
+  CLOSURE: Also stated to contact his landlord. (Jones) 7/21
+  #101005578202  Opened: 2024-07-21  Closed: 2024-07-23
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 10B: Roxbury  Neighborhood: Jamaica Plain
+  Matched: sleeping
+  CLOSURE: Closed date : Wed Aug 28 10:11:25 EDT 2024 Noted People sleeping  there
+  #101005643395  Opened: 2024-08-27  Closed: 2024-08-28
+
+  [2024] Pick up Dead Animal
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South Boston / South Boston Waterfront
+  Matched: sleeping
+  CLOSURE: MS 107.
+  #101005626812  Opened: 2024-08-16  Closed: 2024-08-17
+
+  [2024] Unsanitary Conditions - Establishment
+  Queue: ISD_Health (INTERNAL)  Neighborhood: Downtown / Financial District
+  Matched: belongings
+  CLOSURE: - I interviewed with manager J.J at this time - we went over all hygienic practices as well all cooking temperatures  proper sanitation and hand washing - employees have a designated staff area in the
+  #101005488361  Opened: 2024-06-02  Closed: 2024-06-04
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Back Bay
+  Matched: crt
+  CLOSURE:  We are diligently working with the City’s CRT and BPD to develop the best plan of action addressing the “encampments” on Boylston Street.  To ensure the unhoused peoples are offered any necessary ser
+  #101005488534  Opened: 2024-06-02  Closed: 2024-06-04
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Boston
+  Matched: crt
+  CLOSURE: We are working on ensuring that area is clean and safe in collaboration with the City’s CRT and BPD.  Boylston Street has been occupied by several unhoused individuals.  Our facilities team works dail
+  #101005489462  Opened: 2024-06-03  Closed: 2024-06-04
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: crt, outreach
+  CLOSURE:  CRT
+  #101005725383  Opened: 2024-10-08  Closed: 2024-10-09
+
+  [2024] Poor Conditions of Property
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Boston
+  Matched: crt
+  CLOSURE: Closed date : 2025-01-02 13:20:59.387 Case Resolved CRT handling
+  #101005836014  Opened: 2024-12-29  Closed: 2025-01-02
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: crt
+  CLOSURE: Closed date : 2024-10-28 15:26:54.757 Per CRT: Case can be closed.
+  #101005730924  Opened: 2024-10-12  Closed: 2024-10-28
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO_Mass DOT  Neighborhood: South Boston / South Boston Waterfront
+  Matched: crt
+  CLOSURE:  CRT
+  #101005478075  Opened: 2024-05-25  Closed: 2024-05-28
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: crt
+  CLOSURE: CRT
+  #101005755637  Opened: 2024-11-01  Closed: 2024-11-21
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South Boston / South Boston Waterfront
+  Matched: crt
+  CLOSURE: Will continue to monitor
+  #101005775858  Opened: 2024-11-11  Closed: 2024-11-12
+
+  [2024] General Comments For a Program or Policy
+  Queue: INFO_General Comments Complaints Compliments  Neighborhood: Jamaica Plain
+  Matched: crt
+  CLOSURE: Closed date : 2024-11-13 16:11:33.807 Case Resolved cRT handling
+  #101005752671  Opened: 2024-10-30  Closed: 2024-11-13
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: South End
+  Matched: blanket
+  CLOSURE: Closed date : Wed Jul 03 09:00:59 EDT 2024 Resolved Park was cleaned and blanket was removed.
+  #101005541431  Opened: 2024-07-01  Closed: 2024-07-03
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: blanket
+  CLOSURE: Closed date : Fri Mar 01 13:30:03 EST 2024 Noted No evidence was found from where blanket came from
+  #101005334169  Opened: 2024-03-01  Closed: 2024-03-01
+
+  [2024] Requests for Street Cleaning
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Back Bay
+  Matched: blanket
+  CLOSURE: Closed date : Thu Jul 18 14:38:00 EDT 2024 Resolved The blanket has been removed
+  #101005574358  Opened: 2024-07-18  Closed: 2024-07-18
+
+  [2024] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: blanket
+  CLOSURE: Closed date : Fri Sep 06 14:19:57 EDT 2024 Resolved Inspected area no blanket on bench
+  #101005671116  Opened: 2024-09-06  Closed: 2024-09-06
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: Downtown / Financial District
+  Matched: blanket
+  CLOSURE: Closed date : Sat Jan 27 18:19:04 EST 2024 Resolved Blanket and carboard box removed
+  #101005275103  Opened: 2024-01-27  Closed: 2024-01-27
+
+  [2024] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Beacon Hill
+  Matched: blanket
+  CLOSURE: Closed date : Mon May 06 22:52:58 EDT 2024 Noted 2 bags   1 full of trash and the other a blanket  no evidence found leading to who placed it there and no citation was issued and sent to dpw for remov
+  #101005452171  Opened: 2024-05-06  Closed: 2024-05-06
+
+  [2024] Request for Pothole Repair
+  Queue: ISD_Building (INTERNAL)  Neighborhood: South Boston / South Boston Waterfront
+  Matched: tarp
+  CLOSURE: Closed date : Mon Jul 22 14:41:20 EDT 2024 Resolved Tarp overlaying scaffold
+  #101005570781  Opened: 2024-07-16  Closed: 2024-07-22
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: Roslindale
+  Matched: tarp
+  CLOSURE:  Checked Friday 11/1/24 11:22 am
+  #101005753771  Opened: 2024-10-31  Closed: 2024-11-01
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Allston / Brighton
+  Matched: tarp
+  CLOSURE: Arrived at home explained we don’t go under front porches  moving the tarp it was a rat. Homeowner needs to resolve this(Jones)
+  #101005450359  Opened: 2024-05-05  Closed: 2024-05-06
+
+  [2024] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: tarp
+  CLOSURE: Closed date : Thu Apr 04 06:34:19 EDT 2024 Resolved Red tarp removed
+  #101005386947  Opened: 2024-04-03  Closed: 2024-04-04
+
+  [2024] Contractors Complaint
+  Queue: ISD_Building (INTERNAL)  Neighborhood: Dorchester
+  Matched: tarp
+  CLOSURE:  maybe next door at UMass campus
+  #101005778372  Opened: 2024-11-13  Closed: 2024-11-13
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Dorchester
+  Matched: tarp
+  CLOSURE: There was no snake
+  #101005538473  Opened: 2024-06-29  Closed: 2024-06-29
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Greater Mattapan
+  Matched: tarp
+  CLOSURE: No visible loose trash. No violations found at this time by Code Enforcement.
+  #101005727699  Opened: 2024-10-09  Closed: 2024-10-10
+
+  [2024] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South Boston / South Boston Waterfront
+  Matched: tarp
+  CLOSURE: We were unable to capture the heron. I gave advice on how to get the heron to fly under and out of the giant tarp.-Munroe
+  #101005528350  Opened: 2024-06-22  Closed: 2024-06-24
+
+  [2024] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Greater Mattapan
+  Matched: tarp
+  CLOSURE: Closed date : Wed Oct 09 10:02:25 EDT 2024 Noted No code enforcement violations found   can not see under tarp
+  #101005726751  Opened: 2024-10-09  Closed: 2024-10-09
+
+  [2024] Equipment Repair
+  Queue: PARK_Carpentry  Neighborhood: Charlestown
+  Matched: tarp
+  CLOSURE: Closed date : Fri Apr 19 10:35:01 EDT 2024 Resolved Removed broken  tarp
+  #101005416198  Opened: 2024-04-18  Closed: 2024-04-19
+
+  [2024] Ground Maintenance
+  Queue: PARK_Tree Emergencies  Neighborhood: Roxbury
+  Matched: tarp
+  CLOSURE: Closed date : Wed Dec 18 08:27:49 EST 2024 Resolved Tarp removed from tree by JB  IT
+  #101005823314  Opened: 2024-12-17  Closed: 2024-12-18
+
+  [2024] Trash on Vacant Lot
+  Queue: INFO_Mass DCR  Neighborhood: Dorchester
+  Matched: outreach
+  CLOSURE: Closed date : 2024-10-28 12:50:31.48 Case Resolved Area has been cleaned and outreach will continue to monitor this location daily.
+  #101005741891  Opened: 2024-10-22  Closed: 2024-10-28
+
+  [2024] Unsatisfactory Living Conditions
+  Queue: ISD_Housing (INTERNAL)  Neighborhood: Dorchester
+  Matched: outreach
+  CLOSURE: Closed date : Thu Jun 27 18:13:54 EDT 2024 Resolved The Constituent did not respond to our outreach.
+  #101005531391  Opened: 2024-06-25  Closed: 2024-06-27
+
+  [2024] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Back Bay
+  Matched: outreach
+  CLOSURE: Thank you.
+  #101005453692  Opened: 2024-05-07  Closed: 2024-05-15
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 3  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: homeless
+  CLOSURE: Closed date : Mon May 19 12:12:07 EDT 2025 Resolved Homeless camp cleaned up
+  #101006071911  Opened: 2025-05-18  Closed: 2025-05-19
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Mon Feb 10 13:05:42 EST 2025 Noted No code violations issue   trash was out for pickup   homeless rippbags open
+  #101005906514  Opened: 2025-02-10  Closed: 2025-02-10
+
+  [2025] Requests for Street Cleaning
+  Queue: ISD_Health (INTERNAL)  Neighborhood: Boston
+  Matched: homeless, outreach
+  CLOSURE: Closed date : Thu Jun 05 09:26:49 EDT 2025 Invalid This complaint was forwarded to the BPHC homeless outreach team.
+  #101006100413  Opened: 2025-06-02  Closed: 2025-06-05
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: East Boston
+  Matched: homeless
+  CLOSURE: Closed date : Wed Sep 03 07:52:03 EDT 2025 Resolved Homeless stuff picked up.
+  #101006270109  Opened: 2025-09-02  Closed: 2025-09-03
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: South Boston
+  Matched: homeless
+  CLOSURE: Closed date : Fri Jul 25 10:43:59 EDT 2025 Resolved Homeless clothes and trash.It was bagged up and removed.
+  #101006183604  Opened: 2025-07-23  Closed: 2025-07-25
+
+  [2025] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: No citation was issued at this time.
+  #101006237858  Opened: 2025-08-26  Closed: 2025-08-26
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: 0 recovered
+  #101006179893  Opened: 2025-07-21  Closed: 2025-07-21
+
+  [2025] CE Collection
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Fri Jun 13 07:46:06 EDT 2025 Resolved Homeless man belonging won't let me remove
+  #101006114619  Opened: 2025-06-12  Closed: 2025-06-13
+
+  [2025] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: The cat owner returned to the vehicle and I returned the cats to them. I educated the owner who is homeless and may need to surrender their cats. BSG111
+  #101006105274  Opened: 2025-06-05  Closed: 2025-06-09
+
+  [2025] Rodent Activity
+  Queue: ISD_Environmental Services (INTERNAL)  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Fri Mar 21 11:55:21 EDT 2025 Noted Inspection found rat burrow holes and exposed trash debris from homeless people living behind the property  I will contact the owner to cleanup and hir
+  #101005978787  Opened: 2025-03-21  Closed: 2025-03-21
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE:  Explained how he called 311 . Stating a homeless person came early in the morning ripping open bags with a knife. Said that public works would send a special truck to pick up trash
+  #101006095990  Opened: 2025-05-30  Closed: 2025-05-30
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 3  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: homeless
+  CLOSURE: Closed date : Mon May 19 11:00:47 EDT 2025 Resolved Homeless camp cleaned up
+  #101006072165  Opened: 2025-05-18  Closed: 2025-05-19
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 4  Neighborhood: Allston / Brighton
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Thu Jul 03 11:12:44 EDT 2025 Noted Thank you  for this 311  we are away of the Homeless encampment and we will be taking care of it within the next couple of days to remove the debris  t
+  #101006158424  Opened: 2025-07-02  Closed: 2025-07-03
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: South Boston / South Boston Waterfront
+  Matched: homeless
+  CLOSURE: Closed date : Fri Oct 17 01:45:01 EDT 2025 Noted Homeless people being confrontational was unable to remove debris
+  #101006326599  Opened: 2025-10-16  Closed: 2025-10-16
+
+  [2025] Ground Maintenance
+  Queue: INFO_Mass DCR  Neighborhood: Roslindale
+  Matched: homeless
+  CLOSURE:  I have sent this to both our Operations staff as well as the staff that oversees cleanup of homeless encampments. They are going to take a look to see whether this is something that was illegally dum
+  #101006082782  Opened: 2025-05-28  Closed: 2025-06-03
+
+  [2025] Short Term Rental
+  Queue: ISD_Housing_ShortTermRental  Neighborhood: West Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Mon Nov 03 09:15:44 EST 2025 Resolved Homeless shelters are not under the jurisdiction of Short Term Rental.
+  #101006331490  Opened: 2025-10-21  Closed: 2025-11-03
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Tue Aug 19 06:26:13 EDT 2025 Noted Trash from homeless encampment left behind  no citation was issued and was sent to dpw for removal.
+  #101006227967  Opened: 2025-08-18  Closed: 2025-08-19
+
+  [2025] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: Downtown / Financial District
+  Matched: homeless
+  CLOSURE: Closed date : Mon Dec 01 00:29:37 EST 2025 Noted Trash left by homeless at the location  no citation issued at this time and was sent to dpw for removal.
+  #101006379483  Opened: 2025-11-30  Closed: 2025-11-30
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: Closed date : Tue Aug 19 06:25:09 EDT 2025 Noted Boxes and loose trash from homeless   no evidence found and no citation was issued and sent to dpw for removal.
+  #101006228015  Opened: 2025-08-18  Closed: 2025-08-19
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 10B: Roxbury  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE:  Need the needle people to remove about 20 needles on the sidewalk.
+  #101005863114  Opened: 2025-01-16  Closed: 2025-01-16
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: Closed date : Sun Jun 29 15:09:38 EDT 2025 Resolved No syringes homeless people dont see syringes please resubmit jg
+  #101006153836  Opened: 2025-06-29  Closed: 2025-06-29
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Mon Dec 22 07:06:39 EST 2025 Resolved Trash and debris removed  and is schedule to get pick up at this location everyday due to the homeless activities that take place
+  #101006417773  Opened: 2025-12-22  Closed: 2025-12-22
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 4  Neighborhood: Allston / Brighton
+  Matched: encampment, homeless
+  CLOSURE: Thank you.
+  #101006159682  Opened: 2025-07-03  Closed: 2025-07-04
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: Back Bay
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Thu Mar 27 21:26:40 EDT 2025 Noted Homeless encampment
+  #101006005381  Opened: 2025-03-27  Closed: 2025-03-27
+
+  [2025] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Looks like homeless person rip through multiple bags. Unable to identify individual No citation issued. Trash out for regular scheduled collections Monday
+  #101006179578  Opened: 2025-07-20  Closed: 2025-07-20
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Closed date : Fri Jun 13 13:12:58 EDT 2025 Noted Trash was sent for collection due to homeless people
+  #101006115244  Opened: 2025-06-13  Closed: 2025-06-13
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Fri Aug 22 14:39:11 EDT 2025 Noted Shopping cart belongs to homeless homeless person next to shopping cart
+  #101006233392  Opened: 2025-08-22  Closed: 2025-08-22
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: belongings, homeless
+  CLOSURE: Closed date : Sun Aug 31 22:13:07 EDT 2025 Noted Homeless belongings
+  #101006266690  Opened: 2025-08-31  Closed: 2025-08-31
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 4  Neighborhood: Allston / Brighton
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Fri Jul 04 08:27:50 EDT 2025 Resolved Homeless encampment removed  thank you.
+  #101006159638  Opened: 2025-07-03  Closed: 2025-07-04
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Mon Apr 28 19:00:14 EDT 2025 Resolved No syringes founded homeless at address but didnt see syringes or drug usage
+  #101006049094  Opened: 2025-04-28  Closed: 2025-04-28
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Fri Aug 01 06:55:45 EDT 2025 Noted No violation issued trash bags were torn open by homeless trash collection is also today in the area and it will be removed
+  #101006204481  Opened: 2025-08-01  Closed: 2025-08-01
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 2  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Tue Aug 12 18:49:42 EDT 2025 Resolved Homeless man  that collects trash all set thank you
+  #101006219344  Opened: 2025-08-12  Closed: 2025-08-12
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Fri Nov 28 09:41:52 EST 2025 Noted Homeless person will removed item
+  #101006377968  Opened: 2025-11-28  Closed: 2025-11-28
+
+  [2025] Animal Generic Request
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Dog was friendly during my interaction. Will follow up . IM/103
+  #101006080471  Opened: 2025-05-26  Closed: 2025-05-26
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 09: East Boston  Neighborhood: East Boston
+  Matched: homeless
+  CLOSURE: Closed date : Wed Jul 02 12:36:50 EDT 2025 Noted Stuff belongs to homeless person we were told  if the people of the gumball factory condos are complaining they can have there janitor remove it.
+  #101006157435  Opened: 2025-07-02  Closed: 2025-07-02
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Thu Nov 13 09:41:56 EST 2025 Noted Trash left on the sidewalk left by homeless will be put in for collection
+  #101006363677  Opened: 2025-11-13  Closed: 2025-11-13
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: East Boston
+  Matched: homeless
+  CLOSURE: Closed date : Thu Oct 02 09:38:00 EDT 2025 Resolved Removed homeless  camp trash
+  #101006309249  Opened: 2025-10-01  Closed: 2025-10-02
+
+  [2025] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless, sleeping
+  CLOSURE: Closed date : Sat Apr 19 06:09:38 EDT 2025 Noted Homeless sleeping on cardboard
+  #101006028413  Opened: 2025-04-18  Closed: 2025-04-19
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Closed date : Fri Apr 11 07:50:48 EDT 2025 Noted Cardboard let from homeless was sent for collection
+  #101006019947  Opened: 2025-04-10  Closed: 2025-04-11
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: No Citation issued at this time.
+  #101006163095  Opened: 2025-07-07  Closed: 2025-07-07
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 4  Neighborhood: Allston / Brighton
+  Matched: encampment, homeless
+  CLOSURE: Closed date : Mon Jul 07 12:27:39 EDT 2025 Noted The barrel is empty   the stuff you see is from a homeless encampment  i spoke to the gentlemen about removing there stuff and disperse from the park o
+  #101006162181  Opened: 2025-07-07  Closed: 2025-07-07
+
+  [2025] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: homeless
+  CLOSURE: Closed date : Mon Jun 23 22:46:12 EDT 2025 Noted 1 small shopping cart illegally left by a homeless person ful of clothes  due to it being trash day do citation was issued at this time.
+  #101006127015  Opened: 2025-06-23  Closed: 2025-06-23
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Allston / Brighton
+  Matched: homeless
+  CLOSURE: Closed date : Sun May 04 15:46:19 EDT 2025 Resolved 3 syringes 9dt recovered some homeless but no drug use trash and other items can safely be disguarded
+  #101006055609  Opened: 2025-05-03  Closed: 2025-05-04
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Tue Jun 17 19:12:01 EDT 2025 Resolved No syringes recovered 1 homeless person with a bag and was asked to leave by jg
+  #101006119989  Opened: 2025-06-17  Closed: 2025-06-17
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Dorchester
+  Matched: encampment
+  CLOSURE: Closed date : Sun Dec 21 09:31:04 EST 2025 Resolved No needles recovered..no encampment df 1pic
+  #101006417330  Opened: 2025-12-21  Closed: 2025-12-21
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Downtown / Financial District
+  Matched: encampment
+  CLOSURE: Closed date : Sat Jun 21 18:07:39 EDT 2025 Resolved Searched area and no encampment located
+  #101006124749  Opened: 2025-06-21  Closed: 2025-06-21
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 3  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: encampment
+  CLOSURE:  Thank you
+  #101006316157  Opened: 2025-10-07  Closed: 2025-10-08
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: Mission Hill
+  Matched: encampment
+  CLOSURE: Closed date : Mon Sep 01 11:19:23 EDT 2025 Resolved Df recovered 9 and added a note for encampment cleaning
+  #101006267310  Opened: 2025-09-01  Closed: 2025-09-01
+
+  [2025] Poor Conditions of Property
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Downtown / Financial District
+  Matched: crt, encampment
+  CLOSURE: Closed date : 2025-08-28 15:17:05.9 Per CRT  State partners are aware of encampment and report they are cleaning the location.Outreach will  continue to offer support and services.
+  #101006224245  Opened: 2025-08-15  Closed: 2025-08-28
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Beacon Hill
+  Matched: encampment
+  CLOSURE: Closed date : 2025-09-25 13:26:52.153 Per Mass DCR on 7/31: This was sent to DCR's Operations staff for the area as well as DCR's Public Health Advisor to check to see if these are remnants of an enca
+  #101006202702  Opened: 2025-07-30  Closed: 2025-09-25
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Ground Maintenance  Neighborhood: Boston
+  Matched: encampment
+  CLOSURE: Closed date : Mon Oct 13 12:16:53 EDT 2025 Resolved Encampment was removed.
+  #101006322492  Opened: 2025-10-13  Closed: 2025-10-13
+
+  [2025] General Comments For a Program or Policy
+  Queue: BTDT_Parking Lot_Municipal Parking Lot Complaints  Neighborhood:  
+  Matched: encampment
+  CLOSURE: Closed date : Thu Sep 18 16:09:36 EDT 2025 Resolved Encampment removed
+  #101006269703  Opened: 2025-09-02  Closed: 2025-09-18
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South Boston / South Boston Waterfront
+  Matched: encampment
+  CLOSURE: Closed date : Sun Aug 24 08:33:40 EDT 2025 Resolved No encampment df  recovered 0
+  #101006235248  Opened: 2025-08-24  Closed: 2025-08-24
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South End
+  Matched: encampment
+  CLOSURE: Closed date : Sun Sep 07 13:10:49 EDT 2025 Resolved 2 syringes recovered 4dt but no encampment founded by jg
+  #101006277033  Opened: 2025-09-07  Closed: 2025-09-07
+
+  [2025] Work w/out Permit
+  Queue: ISD_Building (INTERNAL)  Neighborhood: Boston
+  Matched: tent
+  CLOSURE: Closed date : Sun Dec 21 16:35:42 EST 2025 Resolved Tent City management having flooring replaced in the unit
+  #101006417325  Opened: 2025-12-21  Closed: 2025-12-21
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: tent
+  CLOSURE: Closed date : Fri Jun 20 11:11:16 EDT 2025 Resolved Banner is off tent
+  #101006122126  Opened: 2025-06-19  Closed: 2025-06-20
+
+  [2025] Missed Trash/Recycling/Yard Waste/Bulk Item
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: Roxbury
+  Matched: tent
+  CLOSURE: on Wednesday 4/30/25. We will return on next scheduled trash day.
+  #101006051121  Opened: 2025-04-30  Closed: 2025-04-30
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 6  Neighborhood: Roxbury
+  Matched: sleeping
+  CLOSURE:  As for people sleeping in the tot lot contact BPD for further assistance.
+  #101006300055  Opened: 2025-09-24  Closed: 2025-09-24
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: belongings, unsheltered
+  CLOSURE: Closed date : Fri Jul 18 08:37:46 EDT 2025 Resolved The unsheltered person removed their belongings
+  #101006174090  Opened: 2025-07-16  Closed: 2025-07-18
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_Administration  Neighborhood: Boston
+  Matched: belongings, outreach
+  CLOSURE: Case Closed Case Noted  Outreach has made contact and the owner is removing the belongings
+  #101006171098  Opened: 2025-07-14  Closed: 2025-07-16
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 1C: Downtown  Neighborhood: Downtown / Financial District
+  Matched: belongings
+  CLOSURE: Closed date : Mon Sep 29 11:54:05 EDT 2025 Resolved Personal belongings
+  #101006305918  Opened: 2025-09-29  Closed: 2025-09-29
+
+  [2025] Requests for Street Cleaning
+  Queue: PARK_Maintenance_Region 6  Neighborhood: Roxbury
+  Matched: belongings
+  CLOSURE: Closed date : Wed Jul 09 13:59:47 EDT 2025 Noted People have taking the bikes and belongings away from the park for now.
+  #101006165443  Opened: 2025-07-09  Closed: 2025-07-09
+
+  [2025] Requests for Street Cleaning
+  Queue: PARK_Maintenance_Region 6  Neighborhood: Roxbury
+  Matched: belongings
+  CLOSURE: Closed date : Wed Jul 09 14:00:13 EDT 2025 Noted People have taking the bikes and belongings away from the park for now.
+  #101006165439  Opened: 2025-07-09  Closed: 2025-07-09
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: belongings
+  CLOSURE: Closed date : Wed May 21 08:00:32 EDT 2025 Noted Their his belongings if he leaves anything behind we will removed it
+  #101006075422  Opened: 2025-05-21  Closed: 2025-05-21
+
+  [2025] Equipment Repair
+  Queue: INFO_Mass DCR  Neighborhood: Dorchester
+  Matched: crt
+  CLOSURE: Closed date : 2025-08-28 09:18:54.557 Case Noted P-er crt  case can be closed.
+  #101006215702  Opened: 2025-08-09  Closed: 2025-08-28
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South End
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-25 10:03:17.34 Case Noted Per crt  case can be closed.
+  #101006263867  Opened: 2025-08-29  Closed: 2025-09-25
+
+  [2025] General Comments For a Program or Policy
+  Queue: INFO_General Comments Complaints Compliments  Neighborhood:  
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-10 15:19:20.233 Case Noted Per crt  case can be closed.
+  #101006273974  Opened: 2025-09-04  Closed: 2025-09-10
+
+  [2025] General Comments For a Program or Policy
+  Queue: INFO_General Comments Complaints Compliments  Neighborhood:  
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-11 10:54:30.74 Case Noted Per crt  case can be closed
+  #101006273392  Opened: 2025-09-04  Closed: 2025-09-11
+
+  [2025] Ground Maintenance
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: crt
+  CLOSURE: Closed date : 2025-08-28 09:58:49.887 Case Noted Per crt  case can be closed.
+  #101006239359  Opened: 2025-08-27  Closed: 2025-08-28
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Boston
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-23 09:20:17.657 Case Noted Per crt  case can be closed.
+  #101006262242  Opened: 2025-08-28  Closed: 2025-09-23
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South End
+  Matched: crt
+  CLOSURE: Closed date : 2025-03-31 16:40:32.247 Case Resolved crt handled
+  #101006007231  Opened: 2025-03-29  Closed: 2025-03-31
+
+  [2025] Request for Pothole Repair
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Jamaica Plain
+  Matched: crt
+  CLOSURE: Closed date : 2025-08-05 15:37:20.1 Case Noted Per crt  case can be closed.
+  #101006206688  Opened: 2025-08-02  Closed: 2025-08-05
+
+  [2025] Ground Maintenance
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Jamaica Plain
+  Matched: crt
+  CLOSURE: Closed date : 2025-11-06 09:32:00.123 Case Noted Per Crt  case can be closed.
+  #101006356984  Opened: 2025-11-05  Closed: 2025-11-06
+
+  [2025] Poor Conditions of Property
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-26 10:54:59.26 Case Noted Per crt  case can be closed.
+  #101006295325  Opened: 2025-09-20  Closed: 2025-09-26
+
+  [2025] Ground Maintenance
+  Queue: INFO_Mass DCR  Neighborhood: Boston
+  Matched: crt
+  CLOSURE: Closed date : 2025-08-27 14:08:01.1 Case Noted Per crt  case  can be closed.
+  #101006233488  Opened: 2025-08-22  Closed: 2025-08-27
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Boston
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-10 16:50:23.337 Case Resolved Per CRT: Case can be closed.
+  #101006262563  Opened: 2025-08-28  Closed: 2025-09-10
+
+  [2025] Ground Maintenance
+  Queue: PWDx_Administration  Neighborhood: South End
+  Matched: crt
+  CLOSURE: Closed date : 2025-07-16 11:35:45.827 Case Noted Per crt  case can be closed.
+  #101006174196  Opened: 2025-07-16  Closed: 2025-07-16
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: South End
+  Matched: crt
+  CLOSURE: Closed date : 2025-09-25 09:21:34.657 Case Noted Per crt  case can be closed.
+  #101006265127  Opened: 2025-08-30  Closed: 2025-09-25
+
+  [2025] Requests for Street Cleaning
+  Queue: PWDx_District 07: South Dorchester  Neighborhood: Dorchester
+  Matched: blanket
+  CLOSURE: Closed date : Tue Feb 04 20:43:23 EST 2025 Resolved Blanket removed from sidewalk
+  #101005901226  Opened: 2025-02-04  Closed: 2025-02-04
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Roxbury
+  Matched: blanket
+  CLOSURE: Closed date : Mon Sep 08 09:01:21 EDT 2025 Noted Mattress and blanket found dumped on sidewalk no evidence found unable to issue citation sent to dpw for removal
+  #101006277828  Opened: 2025-09-08  Closed: 2025-09-08
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: East Boston
+  Matched: blanket
+  CLOSURE: Closed date : Thu Jun 05 08:44:44 EDT 2025 Resolved Maintenance crew removed the blanket and cleaned the park  thank you.
+  #101006103475  Opened: 2025-06-04  Closed: 2025-06-05
+
+  [2025] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: South End
+  Matched: blanket
+  CLOSURE: Closed date : Mon Apr 14 00:13:02 EDT 2025 Noted 1 trash bag with a blanket in it  no evidence leading to who placed it there and no citation was issued at this time and was sent to dpw for removal.
+  #101006022323  Opened: 2025-04-13  Closed: 2025-04-13
+
+  [2025] Empty Litter Basket
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: blanket
+  CLOSURE: Closed date : Fri Oct 03 12:07:28 EDT 2025 Resolved Blanket removed
+  #101006311321  Opened: 2025-10-03  Closed: 2025-10-03
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: blanket
+  CLOSURE: Closed date : Tue Sep 02 11:20:19 EDT 2025 Resolved Blanket is gone
+  #101006268714  Opened: 2025-09-02  Closed: 2025-09-02
+
+  [2025] Missed Trash/Recycling/Yard Waste/Bulk Item
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: Roslindale
+  Matched: tarp
+  CLOSURE: Tagged plastic bags with yard waste. There is no yard waste service this week. Yard waste is not allowed in plastic bags. Thank you
+  #101006275230  Opened: 2025-09-05  Closed: 2025-09-06
+
+  [2025] Catchbasin
+  Queue: BWSC_All Cases  Neighborhood: Dorchester
+  Matched: tarp
+  CLOSURE: 2/13
+  #101005909669  Opened: 2025-02-13  Closed: 2025-02-21
+
+  [2025] Contractors Complaint
+  Queue: ISD_Building (INTERNAL)  Neighborhood: Roxbury
+  Matched: tarp
+  CLOSURE: Requested contract to tarp over dumpster. Full dumpster to be emptied today. Due to wind observed dust generated and understand complainant issue. Solution is TBD.
+  #101006368203  Opened: 2025-11-17  Closed: 2025-11-18
+
+  [2025] Missed Trash/Recycling/Yard Waste/Bulk Item
+  Queue: PWDx_Missed Trash\Recycling\Yard Waste\Bulk Item  Neighborhood: Hyde Park
+  Matched: tarp
+  CLOSURE: Closed date : Mon Sep 15 10:32:44 EDT 2025 Noted Recycling contaminated with tarp  plastic bags & trash.
+  #101006288152  Opened: 2025-09-15  Closed: 2025-09-15
+
+  [2025] General Comments For a Program or Policy
+  Queue: INFO_General Comments Complaints Compliments  Neighborhood:  
+  Matched: outreach
+  CLOSURE: Closed date : 2025-09-22 16:48:44.943 Case Resolved Outreach has been triaged.
+  #101006297618  Opened: 2025-09-22  Closed: 2025-09-22
+
+  [2025] Student Move-in Issues
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: outreach
+  CLOSURE: Closed date : 2025-08-26 12:28:59.05 Case Resolved Outreach has been triaged.
+  #101006238036  Opened: 2025-08-26  Closed: 2025-08-26
+
+  [2025] Transportation General Request
+  Queue: BTDT_Administration  Neighborhood: Greater Mattapan
+  Matched: outreach
+  CLOSURE: Our team will incorporate it and review it as they work to improve their outreach methods regarding this matter. The Boston Traffic Advisory  posted on the BTD webpage  gives weekly updates regarding 
+  #101006293191  Opened: 2025-09-18  Closed: 2025-09-19
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Downtown / Financial District
+  Matched: outreach
+  CLOSURE: Closed date : 2025-07-11 17:32:19.067 Case Resolved Outreach has been triaged
+  #101006168603  Opened: 2025-07-11  Closed: 2025-07-11
+
+  [2025] Roadway Repair
+  Queue: ISD_Building (INTERNAL)  Neighborhood: South End
+  Matched: outreach
+  CLOSURE: Closed date : 2025-05-09 12:06:14.09 Case Resolved Outreach has been triaged.
+  #101006058570  Opened: 2025-05-06  Closed: 2025-05-09
+
+  [2025] Overflowing or Un-kept Dumpster
+  Queue: ISD_Environmental Services (INTERNAL)  Neighborhood: Roslindale
+  Matched: outreach
+  CLOSURE: Closed date : 2025-10-03 09:57:03.123 Case Noted Outreach to landlord initiated.
+  #101006310395  Opened: 2025-10-02  Closed: 2025-10-03
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Roxbury
+  Matched: outreach
+  CLOSURE: Closed date : 2025-07-08 17:35:55.123 Case Resolved Outreach en route
+  #101006161704  Opened: 2025-07-06  Closed: 2025-07-08
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: outreach
+  CLOSURE: Closed date : Wed May 28 05:40:10 EDT 2025 Noted This was sent over so outreach can talk to the woman.
+  #101006081395  Opened: 2025-05-27  Closed: 2025-05-28
+
+  [2025] Requests for Street Cleaning
+  Queue: INFO_Mass DCR  Neighborhood: Allston / Brighton
+  Matched: outreach
+  CLOSURE: Closed date : 2025-08-04 12:58:46.433 Case Resolved Outreach has been triaged
+  #101006207394  Opened: 2025-08-03  Closed: 2025-08-04
+
+  [2025] Poor Conditions of Property
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: Allston / Brighton
+  Matched: outreach
+  CLOSURE: Closed date : 2025-08-05 15:08:03.897 Outreach has been triaged.
+  #101006197084  Opened: 2025-07-25  Closed: 2025-08-05
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 4  Neighborhood: Allston / Brighton
+  Matched: outreach
+  CLOSURE:  The case has been forwarded to the city's Coordinated Response Team for outreach.
+  #101006277452  Opened: 2025-09-07  Closed: 2025-09-10
+
+  [2025] Illegal Occupancy
+  Queue: ISD_Building (INTERNAL)  Neighborhood: Back Bay
+  Matched: outreach
+  CLOSURE: Closed date : 2026-01-07 08:51:51.773 Case Referred to External Agency Case closed and referred to the BPD Street Outreach team via phone.
+  #101006433146  Opened: 2025-12-30  Closed: 2026-01-07
+
+  [2025] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South End
+  Matched: outreach
+  CLOSURE: JT
+  #101006080540  Opened: 2025-05-26  Closed: 2025-05-26
+
+  [2025] Ground Maintenance
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Boston
+  Matched: outreach
+  CLOSURE: Closed date : Fri Jul 11 16:30:23 EDT 2025 Resolved Trash was picked up and the outreach team was notified  and they will speak to the people
+  #101006165616  Opened: 2025-07-09  Closed: 2025-07-11
+
+  [2025] Parks General Request
+  Queue: PARK_Maintenance_Region 1  Neighborhood: Beacon Hill
+  Matched: unsheltered
+  CLOSURE: Access over the fence is fairly easy.  Please call 311 report unsheltered people that at the park.  Thank you.
+  #101006029604  Opened: 2025-04-19  Closed: 2025-04-25
+
+  [2026] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless, sleeping
+  CLOSURE: Closed date : Wed Jan 07 10:40:14 EST 2026 Invalid Homeless debris homeless sleeping behind all there items they will move it once they get up
+  #101006439053  Opened: 2026-01-07  Closed: 2026-01-07
+
+  [2026] Poor Conditions of Property
+  Queue: PWDx_Code Enforcement  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Tue Mar 10 08:30:02 EDT 2026 Noted No code enforcement violation debris belongs to homeless person in the area
+  #101006563264  Opened: 2026-03-10  Closed: 2026-03-10
+
+  [2026] Unsanitary Conditions - Food
+  Queue: ISD_Health (INTERNAL)  Neighborhood: Downtown / Financial District
+  Matched: homeless
+  CLOSURE: As discussed with the manager to monitor the self serve area.
+  #101006488841  Opened: 2026-02-02  Closed: 2026-02-03
+
+  [2026] Requests for Street Cleaning
+  Queue: BTDT_Parking Lot_Municipal Parking Lot Complaints  Neighborhood: Roxbury
+  Matched: homeless
+  CLOSURE: Closed date : Fri Jan 09 05:41:39 EST 2026 Noted Working with BPD to have homeless removed and debris cleaned up.
+  #101006438388  Opened: 2026-01-06  Closed: 2026-01-09
+
+  [2026] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: Downtown / Financial District
+  Matched: homeless
+  CLOSURE: Closed date : Mon Mar 09 01:46:55 EDT 2026 Noted Trash illegally left behind by the homeless on private property   no citation was issued at this time and note that it's the properties responsibility 
+  #101006559386  Opened: 2026-03-07  Closed: 2026-03-09
+
+  [2026] Improper Storage of Trash (Barrels)
+  Queue: PWDx_Code Enforcement  Neighborhood: Back Bay
+  Matched: homeless
+  CLOSURE: Closed date : Sat Mar 21 09:14:27 EDT 2026 Noted Upon arrival time of complaint the sidewalk and area was clear of all trash and homeless bearish and no violations were found at this time.
+  #101006576471  Opened: 2026-03-20  Closed: 2026-03-21
+
+  [2026] Illegal Dumping
+  Queue: PWDx_Code Enforcement  Neighborhood: Boston
+  Matched: homeless
+  CLOSURE: Closed date : Tue Mar 31 03:37:23 EDT 2026 Noted 2 trash bags of homeless items blankets etc etc and a car battery illegally dumped in the parking lot on private property   no evidence found and no ci
+  #101006596828  Opened: 2026-03-30  Closed: 2026-03-31
+
+  [2026] Requests for Street Cleaning
+  Queue: PWDx_District 03: North Dorchester  Neighborhood: Dorchester
+  Matched: homeless
+  CLOSURE: Closed date : Fri Feb 20 05:29:17 EST 2026 Noted Matreses schedule for removal homeless debris on private property
+  #101006512648  Opened: 2026-02-19  Closed: 2026-02-20
+
+  [2026] Needle Pickup
+  Queue: GEN_Needle_Pickup  Neighborhood: South Boston / South Boston Waterfront
+  Matched: encampment
+  CLOSURE: Closed date : Tue Mar 31 10:36:31 EDT 2026 Resolved Encampment found df
+  #101006597490  Opened: 2026-03-31  Closed: 2026-03-31
+
+  [2026] Requests for Street Cleaning
+  Queue: PWDx_District 02: Jamaica Plain  Neighborhood: Jamaica Plain
+  Matched: sleeping
+  CLOSURE: Closed date : Thu Apr 02 09:39:12 EDT 2026 Resolved Man sleeping on the grass we did not see any trash
+  #101006599392  Opened: 2026-04-01  Closed: 2026-04-02
+
+  [2026] Requests for Street Cleaning
+  Queue: INFO_JC Decaux  Neighborhood: Fenway / Kenmore / Audubon Circle / Longwood
+  Matched: belongings
+  CLOSURE: We cannot remove personal belongings.   Thank you Bruno  Bruno Nappa JCDecaux  Regional Vice President   North-East Operations.
+  #101006437256  Opened: 2026-01-05  Closed: 2026-01-05
+
+  [2026] Request for Snow Plowing
+  Queue: INFO_Reallocation From Dept  Neighborhood: South End
+  Matched: belongings
+  CLOSURE: Closed date : 2026-02-20 15:51:13.647 Per Public Works: Personal belongings
+  #101006513298  Opened: 2026-02-20  Closed: 2026-02-20
+
+  [2026] Requests for Street Cleaning
+  Queue: PWDx_Request for Street Cleaning  Neighborhood: Roxbury
+  Matched: crt
+  CLOSURE: Closed date : 2026-03-10 16:50:08.83 Case Resolved crt handled
+  #101006560456  Opened: 2026-03-08  Closed: 2026-03-10
+
+  [2026] Requests for Street Cleaning
+  Queue: INFO01_GenericeFormforOtherServiceRequestTypes  Neighborhood: East Boston
+  Matched: blanket
+  CLOSURE: They have a blanket of snow covering the grass at the moment but she will make sure to keep an eye out and let their Building Manager know to keep an eye on it as well. Sand
+  #101006449328  Opened: 2026-01-17  Closed: 2026-03-19
+
+  [2026] Sidewalk Repair (Make Safe)
+  Queue: PWDx_Code Enforcement  Neighborhood: Allston
+  Matched: tarp
+  CLOSURE: Closed date : Thu Jan 15 08:10:29 EST 2026 Resolved Tarp has been removed from location
+  #101006445242  Opened: 2026-01-13  Closed: 2026-01-15
+
+
+================================================================================
+OPEN TICKETS (0) — the graveyard
+================================================================================
+

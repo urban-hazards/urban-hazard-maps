@@ -31,8 +31,21 @@ NEEDLE_TYPES: set[str] = {"Needle Pickup", "Needle Clean-up", "Needle Cleanup"}
 ENCAMPMENT_TYPES: set[str] = {"Encampments"}
 STREET_CLEANING_TYPES: set[str] = {"Requests for Street Cleaning"}
 
-# Encampment data only exists from 2025 onwards
+# Encampment data only exists as a type from 2025 onwards,
+# but the INFO_Encampments queue existed earlier (2023+).
 ENCAMPMENT_START_YEAR = 2025
+ENCAMPMENT_QUEUE_START_YEAR = 2023
+
+# Internal routing queues for encampment-related tickets.
+# Before the "Encampments" button existed (pre-2025), tickets were filed as
+# Street Cleaning, Ground Maintenance, etc. but routed to these queues.
+# The queue field is the most reliable signal for encampment tickets.
+ENCAMPMENT_QUEUES: set[str] = {
+    "INFO_Encampments",
+    "INFO_Homeless Issue",
+    "INFO_Unsheltered_Persons",
+    "INFO_CASS_Shelter_Site",
+}
 
 # --- Bounding box for Boston ---
 

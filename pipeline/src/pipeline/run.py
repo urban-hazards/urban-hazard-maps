@@ -10,22 +10,24 @@ from pipeline.analytics import compute_stats
 from pipeline.classifier import WasteClassifier
 from pipeline.cleaner import clean
 from pipeline.config import (
-    ENCAMPMENT_START_YEAR,
+    ENCAMPMENT_QUEUE_START_YEAR,
     ENCAMPMENT_TYPES,
     NEEDLE_TYPES,
     RESOURCE_IDS,
     STREET_CLEANING_TYPES,
 )
 from pipeline.enricher import enrich_records
-from pipeline.fetcher import fetch_year
+from pipeline.fetcher import fetch_encampment_year, fetch_year
 from pipeline.models import CleanedRecord
 
 logger = logging.getLogger(__name__)
 
 # Dataset name -> (types, start_year)
+# Note: encampments uses ENCAMPMENT_QUEUE_START_YEAR because fetch_encampment_year()
+# now pulls from both type (2025+) and queue (2023+). See fetcher.py.
 DATASET_CONFIG: dict[str, tuple[set[str], int]] = {
     "needles": (NEEDLE_TYPES, 2015),
-    "encampments": (ENCAMPMENT_TYPES, ENCAMPMENT_START_YEAR),
+    "encampments": (ENCAMPMENT_TYPES, ENCAMPMENT_QUEUE_START_YEAR),
     "waste": (STREET_CLEANING_TYPES, 2024),
 }
 
@@ -61,8 +63,9 @@ def _fetch_dataset_years(
                 all_raw.extend(cached)
                 continue
 
-        # Fetch from CKAN
-        records = fetch_year(year, types)
+        # Fetch from CKAN — encampments use a special fetcher that combines
+        # type-based and queue-based results
+        records = fetch_encampment_year(year) if dataset == "encampments" else fetch_year(year, types)
         if records:
             storage.write_json(s3_key, records)
             all_raw.extend(records)

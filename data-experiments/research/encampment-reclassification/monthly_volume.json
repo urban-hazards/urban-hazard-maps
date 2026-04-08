@@ -1,0 +1,405 @@
+{
+  "description": "Monthly encampment ticket volume for CRT review. 'Open' count is 311 system view \u2014 many were acted on but not closed due to tracking gap.",
+  "months": [
+    {
+      "month": "2023-01",
+      "new": 10,
+      "closed": 2,
+      "citizen": 9,
+      "employee": 0,
+      "call": 1,
+      "misrouted": 4,
+      "cumulative_open": 8
+    },
+    {
+      "month": "2023-02",
+      "new": 12,
+      "closed": 5,
+      "citizen": 9,
+      "employee": 1,
+      "call": 2,
+      "misrouted": 1,
+      "cumulative_open": 15
+    },
+    {
+      "month": "2023-03",
+      "new": 7,
+      "closed": 1,
+      "citizen": 6,
+      "employee": 0,
+      "call": 1,
+      "misrouted": 5,
+      "cumulative_open": 21
+    },
+    {
+      "month": "2023-04",
+      "new": 15,
+      "closed": 11,
+      "citizen": 8,
+      "employee": 0,
+      "call": 7,
+      "misrouted": 8,
+      "cumulative_open": 25
+    },
+    {
+      "month": "2023-05",
+      "new": 29,
+      "closed": 17,
+      "citizen": 29,
+      "employee": 0,
+      "call": 0,
+      "misrouted": 11,
+      "cumulative_open": 37
+    },
+    {
+      "month": "2023-06",
+      "new": 38,
+      "closed": 14,
+      "citizen": 35,
+      "employee": 2,
+      "call": 1,
+      "misrouted": 6,
+      "cumulative_open": 61
+    },
+    {
+      "month": "2023-07",
+      "new": 23,
+      "closed": 8,
+      "citizen": 22,
+      "employee": 0,
+      "call": 1,
+      "misrouted": 8,
+      "cumulative_open": 76
+    },
+    {
+      "month": "2023-08",
+      "new": 33,
+      "closed": 27,
+      "citizen": 29,
+      "employee": 0,
+      "call": 4,
+      "misrouted": 16,
+      "cumulative_open": 82
+    },
+    {
+      "month": "2023-09",
+      "new": 41,
+      "closed": 3,
+      "citizen": 39,
+      "employee": 0,
+      "call": 2,
+      "misrouted": 16,
+      "cumulative_open": 120
+    },
+    {
+      "month": "2023-10",
+      "new": 39,
+      "closed": 21,
+      "citizen": 36,
+      "employee": 0,
+      "call": 3,
+      "misrouted": 9,
+      "cumulative_open": 138
+    },
+    {
+      "month": "2023-11",
+      "new": 22,
+      "closed": 17,
+      "citizen": 19,
+      "employee": 0,
+      "call": 3,
+      "misrouted": 13,
+      "cumulative_open": 143
+    },
+    {
+      "month": "2023-12",
+      "new": 21,
+      "closed": 10,
+      "citizen": 19,
+      "employee": 0,
+      "call": 2,
+      "misrouted": 7,
+      "cumulative_open": 154
+    },
+    {
+      "month": "2024-01",
+      "new": 40,
+      "closed": 41,
+      "citizen": 11,
+      "employee": 3,
+      "call": 26,
+      "misrouted": 2,
+      "cumulative_open": 153
+    },
+    {
+      "month": "2024-02",
+      "new": 115,
+      "closed": 95,
+      "citizen": 9,
+      "employee": 0,
+      "call": 106,
+      "misrouted": 4,
+      "cumulative_open": 173
+    },
+    {
+      "month": "2024-03",
+      "new": 36,
+      "closed": 28,
+      "citizen": 17,
+      "employee": 4,
+      "call": 15,
+      "misrouted": 5,
+      "cumulative_open": 181
+    },
+    {
+      "month": "2024-04",
+      "new": 40,
+      "closed": 6,
+      "citizen": 36,
+      "employee": 0,
+      "call": 4,
+      "misrouted": 9,
+      "cumulative_open": 215
+    },
+    {
+      "month": "2024-05",
+      "new": 41,
+      "closed": 30,
+      "citizen": 35,
+      "employee": 0,
+      "call": 6,
+      "misrouted": 6,
+      "cumulative_open": 226
+    },
+    {
+      "month": "2024-06",
+      "new": 46,
+      "closed": 15,
+      "citizen": 38,
+      "employee": 2,
+      "call": 6,
+      "misrouted": 4,
+      "cumulative_open": 257
+    },
+    {
+      "month": "2024-07",
+      "new": 62,
+      "closed": 81,
+      "citizen": 56,
+      "employee": 2,
+      "call": 4,
+      "misrouted": 9,
+      "cumulative_open": 238
+    },
+    {
+      "month": "2024-08",
+      "new": 59,
+      "closed": 92,
+      "citizen": 56,
+      "employee": 0,
+      "call": 3,
+      "misrouted": 14,
+      "cumulative_open": 205
+    },
+    {
+      "month": "2024-09",
+      "new": 48,
+      "closed": 21,
+      "citizen": 39,
+      "employee": 2,
+      "call": 7,
+      "misrouted": 10,
+      "cumulative_open": 232
+    },
+    {
+      "month": "2024-10",
+      "new": 47,
+      "closed": 14,
+      "citizen": 42,
+      "employee": 3,
+      "call": 2,
+      "misrouted": 5,
+      "cumulative_open": 265
+    },
+    {
+      "month": "2024-11",
+      "new": 35,
+      "closed": 21,
+      "citizen": 30,
+      "employee": 0,
+      "call": 5,
+      "misrouted": 6,
+      "cumulative_open": 279
+    },
+    {
+      "month": "2024-12",
+      "new": 11,
+      "closed": 3,
+      "citizen": 11,
+      "employee": 0,
+      "call": 0,
+      "misrouted": 4,
+      "cumulative_open": 287
+    },
+    {
+      "month": "2025-01",
+      "new": 12,
+      "closed": 5,
+      "citizen": 11,
+      "employee": 1,
+      "call": 0,
+      "misrouted": 1,
+      "cumulative_open": 294
+    },
+    {
+      "month": "2025-02",
+      "new": 5,
+      "closed": 0,
+      "citizen": 4,
+      "employee": 1,
+      "call": 0,
+      "misrouted": 1,
+      "cumulative_open": 299
+    },
+    {
+      "month": "2025-03",
+      "new": 14,
+      "closed": 5,
+      "citizen": 8,
+      "employee": 6,
+      "call": 0,
+      "misrouted": 2,
+      "cumulative_open": 308
+    },
+    {
+      "month": "2025-04",
+      "new": 20,
+      "closed": 15,
+      "citizen": 11,
+      "employee": 8,
+      "call": 1,
+      "misrouted": 5,
+      "cumulative_open": 313
+    },
+    {
+      "month": "2025-05",
+      "new": 21,
+      "closed": 15,
+      "citizen": 7,
+      "employee": 13,
+      "call": 1,
+      "misrouted": 7,
+      "cumulative_open": 319
+    },
+    {
+      "month": "2025-06",
+      "new": 36,
+      "closed": 17,
+      "citizen": 12,
+      "employee": 23,
+      "call": 1,
+      "misrouted": 9,
+      "cumulative_open": 338
+    },
+    {
+      "month": "2025-07",
+      "new": 42,
+      "closed": 22,
+      "citizen": 16,
+      "employee": 21,
+      "call": 5,
+      "misrouted": 14,
+      "cumulative_open": 358
+    },
+    {
+      "month": "2025-08",
+      "new": 332,
+      "closed": 48,
+      "citizen": 150,
+      "employee": 165,
+      "call": 17,
+      "misrouted": 9,
+      "cumulative_open": 642
+    },
+    {
+      "month": "2025-09",
+      "new": 538,
+      "closed": 98,
+      "citizen": 230,
+      "employee": 271,
+      "call": 37,
+      "misrouted": 6,
+      "cumulative_open": 1082
+    },
+    {
+      "month": "2025-10",
+      "new": 334,
+      "closed": 174,
+      "citizen": 159,
+      "employee": 167,
+      "call": 8,
+      "misrouted": 5,
+      "cumulative_open": 1242
+    },
+    {
+      "month": "2025-11",
+      "new": 228,
+      "closed": 228,
+      "citizen": 97,
+      "employee": 118,
+      "call": 13,
+      "misrouted": 3,
+      "cumulative_open": 1242
+    },
+    {
+      "month": "2025-12",
+      "new": 103,
+      "closed": 66,
+      "citizen": 39,
+      "employee": 62,
+      "call": 2,
+      "misrouted": 3,
+      "cumulative_open": 1279
+    },
+    {
+      "month": "2026-01",
+      "new": 63,
+      "closed": 30,
+      "citizen": 34,
+      "employee": 28,
+      "call": 1,
+      "misrouted": 3,
+      "cumulative_open": 1312
+    },
+    {
+      "month": "2026-02",
+      "new": 75,
+      "closed": 32,
+      "citizen": 30,
+      "employee": 40,
+      "call": 5,
+      "misrouted": 3,
+      "cumulative_open": 1355
+    },
+    {
+      "month": "2026-03",
+      "new": 157,
+      "closed": 102,
+      "citizen": 70,
+      "employee": 83,
+      "call": 4,
+      "misrouted": 5,
+      "cumulative_open": 1410
+    },
+    {
+      "month": "2026-04",
+      "new": 18,
+      "closed": 10,
+      "citizen": 4,
+      "employee": 13,
+      "call": 1,
+      "misrouted": 1,
+      "cumulative_open": 1418
+    }
+  ]
+}
