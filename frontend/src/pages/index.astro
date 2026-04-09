@@ -91,7 +91,14 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			<h2 class="section-title">Trends &amp; Patterns</h2>
 			<div class="charts-grid">
 				<MonthlyTrend client:visible yearMonthly={stats.year_monthly} />
-				<HourlyChart client:visible hourly={stats.hourly} />
+				<HourlyChart
+					client:visible
+					datasets={{
+						Sharps: { hourly: stats.hourly, yearHourly: stats.year_hourly, years: stats.years },
+						Encampments: { hourly: encampmentStats.hourly, yearHourly: encampmentStats.year_hourly, years: encampmentStats.years },
+						"Human Waste": { hourly: wasteStats.hourly, yearHourly: wasteStats.year_hourly, years: wasteStats.years },
+					}}
+				/>
 			</div>
 		</section>
 

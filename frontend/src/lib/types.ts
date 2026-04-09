@@ -27,6 +27,7 @@ export interface PageStats {
 	years: number[]
 	hoods: NeighborhoodStat[]
 	hourly: number[]
+	year_hourly: Record<string, number[]>
 	year_monthly: Record<string, number[]>
 	zip_stats: ZipStat[]
 	generated: string
@@ -44,6 +45,7 @@ export interface DashboardStats {
 	points: number[][]
 	hoods: NeighborhoodStat[]
 	hourly: number[]
+	year_hourly: Record<string, number[]>
 	year_monthly: Record<string, number[]>
 	zip_stats: ZipStat[]
 	markers: MarkerData[]

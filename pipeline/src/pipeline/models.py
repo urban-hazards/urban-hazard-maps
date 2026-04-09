@@ -59,6 +59,7 @@ class DashboardStats(BaseModel):
     points: list[list[float | int]]
     hoods: list[NeighborhoodStat]
     hourly: list[int]
+    year_hourly: dict[str, list[int]]
     year_monthly: dict[str, list[int]]
     zip_stats: list[ZipStat]
     markers: list[MarkerData]

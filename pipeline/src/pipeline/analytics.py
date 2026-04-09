@@ -78,6 +78,12 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
     hourly_counter = Counter(r.hour for r in records)
     hourly_data = [hourly_counter.get(h, 0) for h in range(24)]
 
+    # Hourly counts by year
+    year_hourly: dict[str, list[int]] = {}
+    for y in years:
+        yr_hourly = Counter(r.hour for r in records if r.year == y)
+        year_hourly[str(y)] = [yr_hourly.get(h, 0) for h in range(24)]
+
     # Monthly counts by year
     year_monthly = {
         str(y): [sum(1 for r in records if r.year == y and r.month == m) for m in range(1, 13)] for y in years
@@ -103,6 +109,7 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
         points=points,
         hoods=hood_stats[:15],
         hourly=hourly_data,
+        year_hourly=year_hourly,
         year_monthly=year_monthly,
         zip_stats=zip_stats,
         markers=markers,
