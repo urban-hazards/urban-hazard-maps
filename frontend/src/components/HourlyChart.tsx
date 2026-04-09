@@ -34,10 +34,11 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 	const [activeYear, setActiveYear] = useState("all")
 
 	const datasetInfo = datasets[activeType]
+	const yearHourly = datasetInfo.yearHourly ?? {}
 	const hourly =
 		activeYear === "all"
-			? datasetInfo.hourly
-			: (datasetInfo.yearHourly[activeYear] ?? Array(24).fill(0))
+			? (datasetInfo.hourly ?? Array(24).fill(0))
+			: (yearHourly[activeYear] ?? Array(24).fill(0))
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -80,7 +81,7 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 	}, [hourly, activeType])
 
 	const types = Object.keys(datasets)
-	const years = datasetInfo.years
+	const years = datasetInfo.years ?? []
 
 	return (
 		<div className="card" style={{ padding: "20px 20px 16px" }}>
