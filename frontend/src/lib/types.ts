@@ -22,6 +22,18 @@ export interface MarkerData {
 	source?: "confirmed" | "detected" | null
 }
 
+export interface RoutingStats {
+	total_classified: number
+	bpw_rejection_count: number
+	bpw_rejection_pct: number
+	contractor_dispatch_count: number
+	contractor_dispatch_pct: number
+	closed_no_action_count: number
+	closed_no_action_pct: number
+	avg_hrs_no_action: number | null
+	avg_hrs_dispatched: number | null
+}
+
 export interface PageStats {
 	total: number
 	years: number[]
@@ -36,6 +48,7 @@ export interface PageStats {
 	peak_dow: string
 	avg_monthly: number
 	initial_heat: number[][]
+	routing_stats?: RoutingStats
 }
 
 export interface DashboardStats {
