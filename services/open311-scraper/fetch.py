@@ -29,7 +29,9 @@ Usage:
 import argparse
 import json
 import logging
+import math
 import os
+import random
 import sys
 import time
 import urllib.parse
@@ -118,6 +120,10 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
     "illegal-trash": (
         "Public Works Department:Code Enforcement:Improper Storage of Trash (Barrels)",
         "Residential Trash out Illegally",
+    ),
+    "street-cleaning": (
+        "Public Works Department:Street Cleaning:Requests for Street Cleaning",
+        "Requests for Street Cleaning",
     ),
 }
 
@@ -222,8 +228,9 @@ def fetch_day(day: date, service_code: str, delay: float) -> tuple[list[dict], f
             try:
                 data, retry_after = _do_request(url)
             except Exception as e:
-                log.error("  ERROR %s page %d: %s", day, page, e)
-                return all_records, delay
+                log.error("  ERROR %s page %d: %s (discarding %d partial records)",
+                          day, page, e, len(all_records))
+                return [], delay
 
             if data is not None:
                 break
@@ -310,6 +317,201 @@ def fetch_type(
     }
 
 
+def _fetch_api_count(day: date, service_code: str, delay: float) -> tuple[int, float]:
+    """Fetch the actual record count for a day from the API.
+
+    Fetches all records and counts them (no shortcut for count-only).
+    Returns (count, updated_delay).
+    """
+    records, delay = fetch_day(day, service_code, delay)
+    return len(records), delay
+
+
+def _verify_type(
+    s3,
+    slug: str,
+    service_code: str,
+    name: str,
+    start: date,
+    end: date,
+    delay: float,
+    sample_rate: float,
+) -> dict:
+    """Run verification checks on existing scraped data for one type.
+
+    Checks:
+      1. Gap detection — find missing days, re-fetch them
+      2. Record count verification — compare stored vs API counts
+      3. Cross-day consistency — flag days far below neighbors' average
+    """
+    prefix = f"open311/{slug}/"
+    existing = list_existing_days(s3, prefix)
+
+    # Build full date range
+    all_days: list[date] = []
+    current = start
+    while current <= end:
+        all_days.append(current)
+        current += timedelta(days=1)
+
+    stats = {
+        "slug": slug,
+        "name": name,
+        "total_days_in_range": len(all_days),
+        "existing_days": len(existing),
+        "gaps_found": 0,
+        "gaps_filled": 0,
+        "suspicious_zeros": 0,
+        "partial_detected": 0,
+        "count_verified_ok": 0,
+        "count_mismatch": 0,
+        "consistency_flagged": 0,
+    }
+
+    # --- Check 1: Gap detection (missing days) ---
+    missing_days = [d for d in all_days if str(d) not in existing]
+    stats["gaps_found"] = len(missing_days)
+    log.info("[%s] Gap detection: %d missing days out of %d", slug, len(missing_days), len(all_days))
+
+    for day in missing_days:
+        records, delay = fetch_day(day, service_code, delay)
+        if records:
+            save_day(s3, prefix, day, records)
+            stats["gaps_filled"] += 1
+            log.info("  [%s] Gap filled: %s (%d records)", slug, day, len(records))
+        else:
+            stats["suspicious_zeros"] += 1
+            log.warning("  [%s] Suspicious zero: %s (no records from API)", slug, day)
+        time.sleep(delay)
+
+    # Refresh existing days after gap filling
+    existing = list_existing_days(s3, prefix)
+
+    # --- Check 2: Record count verification ---
+    existing_sorted = sorted(existing)
+    if sample_rate < 1.0:
+        sample_size = max(1, int(len(existing_sorted) * sample_rate))
+        days_to_check = random.sample(existing_sorted, sample_size)
+        log.info("[%s] Record count check: sampling %d/%d days (%.0f%%)",
+                 slug, len(days_to_check), len(existing_sorted), sample_rate * 100)
+    else:
+        days_to_check = existing_sorted
+        log.info("[%s] Record count check: full scan of %d days", slug, len(days_to_check))
+
+    for day_str in days_to_check:
+        day = date.fromisoformat(day_str)
+        key = f"{prefix}{day}.json"
+
+        # Get stored count from metadata
+        try:
+            resp = s3.head_object(Bucket=BUCKET, Key=key)
+            stored_count_str = resp.get("Metadata", {}).get("record-count")
+            if stored_count_str is None:
+                continue
+            stored_count = int(stored_count_str)
+        except Exception:
+            continue
+
+        # Fetch actual count from API
+        api_count, delay = _fetch_api_count(day, service_code, delay)
+        time.sleep(delay)
+
+        if api_count == 0:
+            # API returned nothing — can't verify, skip
+            continue
+
+        if stored_count < api_count:
+            # Partial data — delete so next regular run re-fetches
+            s3.delete_object(Bucket=BUCKET, Key=key)
+            stats["partial_detected"] += 1
+            log.warning("  [%s] PARTIAL %s: stored %d < API %d — deleted for re-fetch",
+                        slug, day, stored_count, api_count)
+        elif stored_count > api_count:
+            log.info("  [%s] OVER-COUNT %s: stored %d > API %d (API may have deduped)",
+                     slug, day, stored_count, api_count)
+            stats["count_verified_ok"] += 1
+        else:
+            stats["count_verified_ok"] += 1
+
+    # --- Check 3: Cross-day consistency ---
+    # Load record counts for all existing days to compute rolling averages
+    day_counts: dict[str, int] = {}
+    for day_str in existing_sorted:
+        key = f"{prefix}{day_str}.json"
+        try:
+            resp = s3.head_object(Bucket=BUCKET, Key=key)
+            count_str = resp.get("Metadata", {}).get("record-count")
+            if count_str is not None:
+                day_counts[day_str] = int(count_str)
+        except Exception:
+            continue
+
+    if len(day_counts) >= 7:
+        sorted_days = sorted(day_counts.keys())
+        counts_list = [day_counts[d] for d in sorted_days]
+
+        for i, day_str in enumerate(sorted_days):
+            # Use a 7-day window centered on this day
+            window_start = max(0, i - 3)
+            window_end = min(len(counts_list), i + 4)
+            neighbors = counts_list[window_start:i] + counts_list[i + 1:window_end]
+
+            if not neighbors:
+                continue
+
+            avg = sum(neighbors) / len(neighbors)
+            if avg > 0 and day_counts[day_str] <= avg * 0.5:
+                stats["consistency_flagged"] += 1
+                log.warning("  [%s] CONSISTENCY %s: %d records vs %.0f neighbor avg (%.0f%%)",
+                            slug, day_str, day_counts[day_str], avg,
+                            day_counts[day_str] / avg * 100 if avg > 0 else 0)
+
+    return stats
+
+
+def run_verify(
+    s3,
+    types_to_verify: dict[str, tuple[str, str]],
+    start: date,
+    end: date,
+    delay: float,
+    sample_rate: float,
+) -> None:
+    """Run verify mode across all requested types and write report."""
+    all_stats = []
+    for slug, (service_code, name) in types_to_verify.items():
+        log.info("=== Verifying [%s] %s ===", slug, name)
+        stats = _verify_type(s3, slug, service_code, name, start, end, delay, sample_rate)
+        all_stats.append(stats)
+
+        log.info("[%s] Summary: %d gaps found, %d filled, %d suspicious zeros, "
+                 "%d partial deleted, %d verified OK, %d consistency flagged",
+                 slug, stats["gaps_found"], stats["gaps_filled"],
+                 stats["suspicious_zeros"], stats["partial_detected"],
+                 stats["count_verified_ok"], stats["consistency_flagged"])
+
+    # Write report
+    report = {
+        "run_time": datetime.utcnow().isoformat() + "Z",
+        "date_range": {"start": str(start), "end": str(end)},
+        "sample_rate": sample_rate,
+        "types": all_stats,
+        "totals": {
+            "gaps_found": sum(s["gaps_found"] for s in all_stats),
+            "gaps_filled": sum(s["gaps_filled"] for s in all_stats),
+            "suspicious_zeros": sum(s["suspicious_zeros"] for s in all_stats),
+            "partial_detected": sum(s["partial_detected"] for s in all_stats),
+            "count_verified_ok": sum(s["count_verified_ok"] for s in all_stats),
+            "consistency_flagged": sum(s["consistency_flagged"] for s in all_stats),
+        },
+    }
+
+    key = "open311/verify_report.json"
+    body = json.dumps(report, indent=2, default=str)
+    s3.put_object(Bucket=BUCKET, Key=key, Body=body.encode("utf-8"), ContentType="application/json")
+    log.info("Verify report written to s3://%s/%s", BUCKET, key)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Fetch Boston Open311 tickets to S3")
     parser.add_argument("--start", default=START_DATE, help="Start date (YYYY-MM-DD)")
@@ -317,6 +519,10 @@ def main():
     parser.add_argument("--type", default=None, help="Slug of a single type to fetch (e.g. 'needles', 'other')")
     parser.add_argument("--dry-run", action="store_true", help="Show plan without fetching")
     parser.add_argument("--delay", type=float, default=DELAY, help="Delay between requests in seconds")
+    parser.add_argument("--verify", action="store_true", help="Verify existing scraped data integrity")
+    parser.add_argument("--sample", type=float, default=None,
+                        help="Sample rate for verify mode (0.0-1.0, e.g. 0.1 for 10%%)")
+    parser.add_argument("--full", action="store_true", help="Full verify (check every day)")
     args = parser.parse_args()
 
     if not BUCKET:
@@ -337,8 +543,20 @@ def main():
         types_to_fetch = SERVICE_TYPES
 
     log.info("Date range: %s to %s", start, end)
-    log.info("Types to fetch: %s", ", ".join(types_to_fetch.keys()))
+    log.info("Types: %s", ", ".join(types_to_fetch.keys()))
 
+    # --- Verify mode ---
+    if args.verify:
+        if args.sample is not None:
+            sample_rate = max(0.0, min(1.0, args.sample))
+        elif args.full:
+            sample_rate = 1.0
+        else:
+            sample_rate = 1.0  # default to full on first run
+        run_verify(s3, types_to_fetch, start, end, args.delay, sample_rate)
+        return
+
+    # --- Normal fetch mode ---
     all_stats = []
     for slug, (service_code, name) in types_to_fetch.items():
         stats = fetch_type(s3, slug, service_code, name, start, end, args.delay, args.dry_run)

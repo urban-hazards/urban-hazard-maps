@@ -148,6 +148,13 @@ FALSE_POSITIVE_CONTEXTS: set[str] = {
 # Standard BPW rejection phrase — strong positive signal
 BPW_REJECTION_PATTERN = "bpw does not service human waste"
 
+# --- Open311 scraper S3 prefixes ---
+
+OPEN311_SCRAPER_PREFIX = "open311"
+SCRAPER_SLUGS_FOR_WASTE = ["street-cleaning"]
+SCRAPER_SLUGS_FOR_ENCAMPMENTS = ["encampments"]
+SCRAPER_SLUGS_FOR_NEEDLES = ["needles"]
+
 # --- S3 / Railway bucket storage ---
 
 BUCKET = os.environ.get("BUCKET", "")
