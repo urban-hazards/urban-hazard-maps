@@ -17,6 +17,7 @@ class CleanedRecord(BaseModel):
     street: str
     zipcode: str
     resp_hrs: float | None = None
+    source: str | None = None  # "confirmed" or "detected" (waste only)
 
 
 class NeighborhoodStat(BaseModel):
@@ -46,6 +47,7 @@ class MarkerData(BaseModel):
     hood: str
     street: str
     zip: str
+    source: str | None = None  # "confirmed" or "detected" (waste only)
 
 
 class DashboardStats(BaseModel):
@@ -57,6 +59,7 @@ class DashboardStats(BaseModel):
     points: list[list[float | int]]
     hoods: list[NeighborhoodStat]
     hourly: list[int]
+    year_hourly: dict[str, list[int]]
     year_monthly: dict[str, list[int]]
     zip_stats: list[ZipStat]
     markers: list[MarkerData]

@@ -19,6 +19,19 @@ export interface MarkerData {
 	hood: string
 	street: string
 	zip: string
+	source?: "confirmed" | "detected" | null
+}
+
+export interface RoutingStats {
+	total_classified: number
+	bpw_rejection_count: number
+	bpw_rejection_pct: number
+	contractor_dispatch_count: number
+	contractor_dispatch_pct: number
+	closed_no_action_count: number
+	closed_no_action_pct: number
+	avg_hrs_no_action: number | null
+	avg_hrs_dispatched: number | null
 }
 
 export interface PageStats {
@@ -26,6 +39,7 @@ export interface PageStats {
 	years: number[]
 	hoods: NeighborhoodStat[]
 	hourly: number[]
+	year_hourly: Record<string, number[]>
 	year_monthly: Record<string, number[]>
 	zip_stats: ZipStat[]
 	generated: string
@@ -34,6 +48,7 @@ export interface PageStats {
 	peak_dow: string
 	avg_monthly: number
 	initial_heat: number[][]
+	routing_stats?: RoutingStats
 }
 
 export interface DashboardStats {
@@ -43,6 +58,7 @@ export interface DashboardStats {
 	points: number[][]
 	hoods: NeighborhoodStat[]
 	hourly: number[]
+	year_hourly: Record<string, number[]>
 	year_monthly: Record<string, number[]>
 	zip_stats: ZipStat[]
 	markers: MarkerData[]

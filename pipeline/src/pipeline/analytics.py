@@ -48,8 +48,11 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
         if mo_recs:
             heat_keys[f"all-{m:02d}"] = _bin_records(mo_recs)
 
-    # Compact point array: [lat, lng, year, month]
-    points: list[list[float | int]] = [[r.lat, r.lng, r.year, r.month] for r in records]
+    # Compact point array: [lat, lng, year, month, source_flag]
+    # source_flag: 0 = confirmed (or no source), 1 = detected
+    points: list[list[float | int]] = [
+        [r.lat, r.lng, r.year, r.month, 1 if r.source == "detected" else 0] for r in records
+    ]
 
     # Neighborhood breakdown
     by_hood: dict[str, list[CleanedRecord]] = defaultdict(list)
@@ -75,6 +78,12 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
     hourly_counter = Counter(r.hour for r in records)
     hourly_data = [hourly_counter.get(h, 0) for h in range(24)]
 
+    # Hourly counts by year
+    year_hourly: dict[str, list[int]] = {}
+    for y in years:
+        yr_hourly = Counter(r.hour for r in records if r.year == y)
+        year_hourly[str(y)] = [yr_hourly.get(h, 0) for h in range(24)]
+
     # Monthly counts by year
     year_monthly = {
         str(y): [sum(1 for r in records if r.year == y and r.month == m) for m in range(1, 13)] for y in years
@@ -87,7 +96,8 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
     # Individual markers (cap at 3000 most recent)
     recent = sorted(records, key=lambda r: r.dt, reverse=True)[:3000]
     markers = [
-        MarkerData(lat=r.lat, lng=r.lng, dt=r.dt[:10], hood=r.hood, street=r.street, zip=r.zipcode) for r in recent
+        MarkerData(lat=r.lat, lng=r.lng, dt=r.dt[:10], hood=r.hood, street=r.street, zip=r.zipcode, source=r.source)
+        for r in recent
     ]
 
     dow = Counter(r.dow for r in records)
@@ -99,6 +109,7 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
         points=points,
         hoods=hood_stats[:15],
         hourly=hourly_data,
+        year_hourly=year_hourly,
         year_monthly=year_monthly,
         zip_stats=zip_stats,
         markers=markers,

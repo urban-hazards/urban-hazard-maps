@@ -11,6 +11,10 @@ dependencies = [
     "spacy>=3.8.0",
     "tenacity>=9.0.0",
     "python-dotenv>=1.0.0",
+    # spaCy English model — pinned as a direct URL dep so `uv sync` installs it
+    # reliably. Without this it silently disappears from the venv every time
+    # `uv sync` runs, breaking the waste classifier locally.
+    "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
 ]
 
 [project.scripts]
@@ -19,6 +23,11 @@ boston-pipeline = "pipeline.cli:app"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+# Required so the en_core_web_sm direct URL dep in [project.dependencies]
+# is accepted by hatchling.
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pipeline"]
