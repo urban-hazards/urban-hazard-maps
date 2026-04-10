@@ -44,11 +44,11 @@ UA = "BostonHazardResearch/1.0 (public-health-research)"
 
 # --- Rate limiting ---
 
-DELAY = 0.5
-MIN_DELAY = 0.3
-MAX_DELAY = 60
-BACKOFF_FACTOR = 2.0
-COOLDOWN_FACTOR = 0.9
+DELAY = 1.0
+MIN_DELAY = 0.8
+MAX_DELAY = 120
+BACKOFF_FACTOR = 2.5
+COOLDOWN_FACTOR = 0.95
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
@@ -133,14 +133,16 @@ def fetch_day(day: date, current_delay: float) -> tuple[list[dict], float]:
                 data = json.loads(resp.read())
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                for attempt in range(3):
+                for attempt in range(5):
                     delay = min(delay * BACKOFF_FACTOR, MAX_DELAY)
                     wait = delay * (attempt + 1)
-                    log.info("  RATE LIMITED on %s (attempt %d), waiting %.0fs", day, attempt + 1, wait)
+                    log.info("  RATE LIMITED on %s (attempt %d/5), waiting %.0fs", day, attempt + 1, wait)
                     time.sleep(wait)
                     try:
                         with urllib.request.urlopen(req, timeout=30) as resp:
                             data = json.loads(resp.read())
+                        # Recovered — keep delay high for a while to be polite
+                        delay = max(delay, 3.0)
                         break
                     except urllib.error.HTTPError as retry_e:
                         if retry_e.code != 429:
@@ -149,7 +151,7 @@ def fetch_day(day: date, current_delay: float) -> tuple[list[dict], float]:
                     except Exception:
                         pass
                 else:
-                    log.warning("  STILL LIMITED on %s after 3 retries, skipping", day)
+                    log.warning("  STILL LIMITED on %s after 5 retries, skipping (will retry next run)", day)
                     return [], delay
             else:
                 log.error("  ERROR %s page %d: %s", day, page, e)
