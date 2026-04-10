@@ -14,6 +14,7 @@ from pipeline.config import (
     ENCAMPMENT_TYPES,
     NEEDLE_TYPES,
     RESOURCE_IDS,
+    SCRAPER_SLUGS_FOR_WASTE,
     STREET_CLEANING_TYPES,
 )
 from pipeline.enricher import enrich_records
@@ -220,7 +221,11 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
     description_cache: dict[str, str | None] = storage.read_json("enriched/descriptions.json") or {}
     logger.info("Loaded %d cached descriptions", len(description_cache))
 
-    enriched_records, description_cache = enrich_records(to_enrich, description_cache)
+    enriched_records, description_cache = enrich_records(
+        to_enrich,
+        description_cache,
+        slugs=SCRAPER_SLUGS_FOR_WASTE,
+    )
     storage.write_json("enriched/descriptions.json", description_cache)
 
     # Step 4: Re-classify enriched records (descriptions may reveal more signal)

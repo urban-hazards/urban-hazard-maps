@@ -61,11 +61,14 @@ def file_exists(key: str, bucket: str | None = None) -> bool:
 
 
 def list_keys(prefix: str, bucket: str | None = None) -> list[str]:
-    """List object keys under a prefix."""
+    """List all object keys under a prefix (handles >1000 results)."""
     bucket = bucket or BUCKET
     try:
-        resp = _get_client().list_objects_v2(Bucket=bucket, Prefix=prefix)
-        return [obj["Key"] for obj in resp.get("Contents", [])]
+        paginator = _get_client().get_paginator("list_objects_v2")
+        keys: list[str] = []
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            keys.extend(obj["Key"] for obj in page.get("Contents", []))
+        return keys
     except Exception:
         logger.warning("Failed to list s3://%s/%s", bucket, prefix, exc_info=True)
         return []
