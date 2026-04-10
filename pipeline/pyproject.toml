@@ -10,6 +10,7 @@ dependencies = [
     "boto3>=1.35.0",
     "spacy>=3.8.0",
     "tenacity>=9.0.0",
+    "python-dotenv>=1.0.0",
     # spaCy English model — pinned as a direct URL dep so `uv sync` installs it
     # reliably. Without this it silently disappears from the venv every time
     # `uv sync` runs, breaking the waste classifier locally.

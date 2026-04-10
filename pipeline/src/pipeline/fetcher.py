@@ -11,6 +11,8 @@ from tenacity import before_sleep_log, retry, retry_if_exception_type, stop_afte
 
 from pipeline.config import (
     CKAN_BASE,
+    ENCAMPMENT_QUEUE_START_YEAR,
+    ENCAMPMENT_QUEUES,
     ENCAMPMENT_START_YEAR,
     ENCAMPMENT_TYPES,
     NEEDLE_TYPES,
@@ -125,11 +127,101 @@ def fetch_needle_year(year: int) -> list[dict[str, Any]]:
     return records
 
 
-def fetch_encampment_year(year: int) -> list[dict[str, Any]]:
-    """Fetch encampment records for a given year."""
-    if year < ENCAMPMENT_START_YEAR:
+def _fetch_queue_records_sql(resource_id: str, queues: set[str]) -> list[dict[str, Any]]:
+    """Use CKAN datastore_search_sql to pull rows matching given queues."""
+    queue_clauses = " OR ".join(f"\"queue\" = '{q}'" for q in queues)
+    sql = f'SELECT * FROM "{resource_id}" WHERE ({queue_clauses})'
+    url = f"{CKAN_BASE}/datastore_search_sql?sql={urllib.parse.quote(sql)}"
+    data = _api_get(url)
+    if data and data.get("success"):
+        return data["result"]["records"]  # type: ignore[no-any-return]
+    return []
+
+
+def _fetch_queue_records_paged(resource_id: str, queues: set[str]) -> list[dict[str, Any]]:
+    """Fallback: page through datastore_search with a queue filter."""
+    all_records: list[dict[str, Any]] = []
+    for queue in queues:
+        offset = 0
+        limit = 5000
+        while True:
+            filters = json.dumps({"queue": queue})
+            url = (
+                f"{CKAN_BASE}/datastore_search"
+                f"?resource_id={resource_id}"
+                f"&filters={urllib.parse.quote(filters)}"
+                f"&limit={limit}&offset={offset}"
+            )
+            data = _api_get(url)
+            if not data or not data.get("success"):
+                break
+            records = data["result"]["records"]
+            all_records.extend(records)
+            if len(records) < limit:
+                break
+            offset += limit
+    return all_records
+
+
+def fetch_by_queue(year: int, queues: set[str]) -> list[dict[str, Any]]:
+    """Fetch records routed to the given queues for a given year."""
+    rid = RESOURCE_IDS.get(year)
+    if not rid:
+        logger.warning("No resource ID for %d, skipping", year)
         return []
-    return fetch_year(year, ENCAMPMENT_TYPES)
+
+    logger.info("Fetching queues %d: trying SQL API...", year)
+    records = _fetch_queue_records_sql(rid, queues)
+    if records:
+        logger.info("Got %d queue records for %d", len(records), year)
+        return records
+
+    logger.info("Retrying %d with paged search...", year)
+    records = _fetch_queue_records_paged(rid, queues)
+    logger.info("Got %d queue records for %d", len(records), year)
+    return records
+
+
+def fetch_encampment_year(year: int) -> list[dict[str, Any]]:
+    """Fetch encampment records for a given year.
+
+    Uses two strategies and deduplicates:
+    1. type="Encampments" (2025+ only — when the button was added)
+    2. queue-based fetch (2023+ — catches pre-button tickets routed internally)
+    """
+    seen_ids: set[str] = set()
+    all_records: list[dict[str, Any]] = []
+    type_count = 0
+    queue_new_count = 0
+
+    # Strategy 1: fetch by type (2025+)
+    if year >= ENCAMPMENT_START_YEAR:
+        type_records = fetch_year(year, ENCAMPMENT_TYPES)
+        for r in type_records:
+            cid = str(r.get("case_enquiry_id", ""))
+            if cid and cid not in seen_ids:
+                seen_ids.add(cid)
+                all_records.append(r)
+                type_count += 1
+
+    # Strategy 2: fetch by queue (2023+)
+    if year >= ENCAMPMENT_QUEUE_START_YEAR:
+        queue_records = fetch_by_queue(year, ENCAMPMENT_QUEUES)
+        for r in queue_records:
+            cid = str(r.get("case_enquiry_id", ""))
+            if cid and cid not in seen_ids:
+                seen_ids.add(cid)
+                all_records.append(r)
+                queue_new_count += 1
+
+    logger.info(
+        "Encampments %d: %d total (%d from type, %d new from queues)",
+        year,
+        len(all_records),
+        type_count,
+        queue_new_count,
+    )
+    return all_records
 
 
 def fetch_street_cleaning_year(year: int) -> list[dict[str, Any]]:
