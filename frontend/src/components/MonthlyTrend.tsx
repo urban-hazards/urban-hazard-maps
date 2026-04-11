@@ -50,6 +50,18 @@ const COLORS = [
 	"#ff9da7",
 ]
 
+// Darker versions of COLORS for button text (ensures readability on white)
+const BUTTON_COLORS = [
+	"#3b5d82",
+	"#c06e12",
+	"#b8393b",
+	"#4e8a85",
+	"#3e7837",
+	"#b09a1a",
+	"#8a5c80",
+	"#d06a74",
+]
+
 const VISIBLE_COUNT = 3
 
 function trimPartialYear(vals: number[]): (number | null)[] {
@@ -214,7 +226,7 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 						onClick={() => soloYear(i)}
 						style={{
 							...btnStyle,
-							color: COLORS[i % COLORS.length],
+							color: BUTTON_COLORS[i % BUTTON_COLORS.length],
 							borderColor: COLORS[i % COLORS.length],
 							fontSize: "10px",
 							padding: "1px 6px",

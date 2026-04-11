@@ -667,7 +667,7 @@ export default function HeatMap({
 							</button>
 						)}
 
-						<div style={{ marginBottom: 10 }}>
+						<div style={{ marginBottom: 6 }}>
 							<div style={filterLabelStyle}>Data Layer</div>
 							<LayerRadio
 								value="needles"
@@ -703,13 +703,13 @@ export default function HeatMap({
 							style={{
 								display: "flex",
 								alignItems: "center",
-								gap: 6,
-								padding: "4px 0 8px",
+								gap: 5,
+								padding: "3px 0 6px",
 								cursor: "pointer",
-								fontSize: "12px",
+								fontSize: "11px",
 								color: "#555",
 								borderBottom: "1px solid rgba(0,0,0,0.06)",
-								marginBottom: 10,
+								marginBottom: 6,
 							}}
 						>
 							<input
@@ -722,7 +722,7 @@ export default function HeatMap({
 						</label>
 
 						{Object.keys(districtBoundaries).length > 0 && (
-							<div style={{ marginBottom: 10 }}>
+							<div style={{ marginBottom: 6 }}>
 								<div style={filterLabelStyle}>District Outlines</div>
 								<select
 									value={showBoundaries ?? ""}
@@ -801,7 +801,7 @@ export default function HeatMap({
 						</div>
 
 						{councilLabels.length > 0 && (
-							<div style={{ marginTop: 8 }}>
+							<div style={{ marginTop: 5 }}>
 								<div style={filterLabelStyle}>Council District</div>
 								<select
 									value={selCouncil}
@@ -823,7 +823,7 @@ export default function HeatMap({
 						)}
 
 						{policeLabels.length > 0 && (
-							<div style={{ marginTop: 8 }}>
+							<div style={{ marginTop: 5 }}>
 								<div style={filterLabelStyle}>Police District</div>
 								<select
 									value={selPolice}
@@ -845,7 +845,7 @@ export default function HeatMap({
 						)}
 
 						{stateRepLabels.length > 0 && (
-							<div style={{ marginTop: 8 }}>
+							<div style={{ marginTop: 5 }}>
 								<div style={filterLabelStyle}>State Rep</div>
 								<select
 									value={selRep}
@@ -867,7 +867,7 @@ export default function HeatMap({
 						)}
 
 						{stateSenateLabels.length > 0 && (
-							<div style={{ marginTop: 8 }}>
+							<div style={{ marginTop: 5 }}>
 								<div style={filterLabelStyle}>State Senate</div>
 								<select
 									value={selSenate}
@@ -1006,20 +1006,20 @@ function filterPanelStyle(mobile: boolean): React.CSSProperties {
 		backdropFilter: "blur(8px)",
 		border: "1px solid rgba(0,0,0,0.08)",
 		borderRadius: "8px",
-		padding: mobile ? "12px 14px 12px" : "12px 14px",
-		minWidth: mobile ? 180 : 160,
+		padding: mobile ? "10px 12px" : "10px 12px",
+		minWidth: mobile ? 170 : 150,
 		boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-		fontSize: "13px",
-		lineHeight: "1.4",
-		maxHeight: mobile ? "320px" : "460px",
+		fontSize: "12px",
+		lineHeight: "1.3",
+		maxHeight: mobile ? "320px" : "480px",
 		overflowY: "auto" as const,
 	}
 }
 
 const selectStyle: React.CSSProperties = {
 	width: "100%",
-	padding: "5px 8px",
-	fontSize: "13px",
+	padding: "3px 6px",
+	fontSize: "12px",
 	border: "1px solid #ddd",
 	borderRadius: "4px",
 	background: "#fff",
@@ -1029,11 +1029,11 @@ const selectStyle: React.CSSProperties = {
 
 const filterLabelStyle: React.CSSProperties = {
 	fontWeight: 700,
-	fontSize: "11px",
+	fontSize: "10px",
 	color: "#444",
 	textTransform: "uppercase",
 	letterSpacing: "0.05em",
-	marginBottom: 5,
+	marginBottom: 3,
 }
 
 function LayerRadio({
