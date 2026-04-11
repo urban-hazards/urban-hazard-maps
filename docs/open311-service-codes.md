@@ -200,9 +200,27 @@ neighborhoods. These are unmistakably a crew driving/walking a route and logging
 via the app — not citizens. Estimated ~924 tickets (~11% of app submissions)
 come from professional sweeps logged as "Citizens Connect App."
 
-The "Citizens Connect App" source label does NOT reliably distinguish citizen
-reports from professional sweep logging. A sweep classifier (time clustering +
-geographic sequence detection) could separate the two populations.
+Geographic analysis of these clusters disproved the sweep theory: most clusters
+span 2-5 miles across multiple neighborhoods, requiring 5-22 mph — physically
+impossible for one person walking. These are multiple citizens independently
+filing around the same time (midnight bar-closing, people walking home). Only a
+few tight-radius clusters (< 0.3 mi) remain ambiguous.
+
+**The "Citizens Connect App" source label appears reliable for needle tickets.**
+The midnight peak is real: many Bostonians are out at midnight and independently
+report needles. This is consistent with the Open311 description text (specific
+local context, auto-translated messages, photos).
+
+**Submitter data exists** in the Open311 API via `?extensions=true` — includes
+`first_name`, `last_name`, `email` in `extended_attributes`. This is PII we
+must NOT store or publish, but can be used for one-time analysis to confirm
+whether cluster tickets come from different people. Also exposed: structured
+form fields (`needle_qty`, `needle_loc_type`) which CKAN strips.
+
+**Structured form data available per ticket type:**
+- Needle Pickup: `needle_qty` (One, Few, Many), `needle_loc_type` (Public, Private)
+- These are in the `attributes` array and `details` dict on the API response
+- Other types likely have their own structured form fields — worth cataloging
 
 **Still worth investigating:** Constituent-call hour patterns (19% of tickets):
 - "Citizens Connect App" at midnight → real-time reports from people who are out
