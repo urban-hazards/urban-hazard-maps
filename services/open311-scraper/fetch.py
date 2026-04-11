@@ -54,7 +54,14 @@ OPEN311_BASE = "https://boston2-production.spotmobile.net/open311/v2"
 START_DATE = "2023-01-01"
 UA = "BostonHazardResearch/1.0 (public-health-research)"
 
-# All 16 service types exposed by the BOS:311 app.
+# Service types to scrape from the Open311 API.
+#
+# NOTE: The /services.json endpoint lists 16 types, but 4 use "input.*" prefix
+# codes (e.g. "input.Litter") that are BOS:311 app form identifiers — they tag
+# zero stored records. Real records use colon-delimited Subject:Reason:Type
+# codes. The correct codes below were verified against CKAN and live API queries.
+# See docs/open311-service-codes.md for the full mapping.
+#
 # slug -> (service_code, human_name)
 SERVICE_TYPES: dict[str, tuple[str, str]] = {
     "other": (
@@ -82,20 +89,24 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
         "Dead Animal Pickup",
     ),
     "graffiti": (
-        "input.Illegal Graffiti",
-        "Illegal Graffiti",
+        "Property Management:Graffiti:Graffiti Removal",
+        "Graffiti Removal",
     ),
-    "litter": (
-        "input.Litter",
-        "Litter",
+    "graffiti-pwd": (
+        "Public Works Department:Highway Maintenance:PWD Graffiti",
+        "PWD Graffiti",
+    ),
+    "litter-baskets": (
+        "Public Works Department:Highway Maintenance:Empty Litter Basket",
+        "Empty Litter Basket",
     ),
     "rodents": (
-        "input.Rodent Sighting",
-        "Rodent Sighting",
+        "Inspectional Services:Environmental Services:Rodent Activity",
+        "Rodent Activity",
     ),
     "trash-cans": (
-        "input.Overflowing Trash Can",
-        "Overflowing Trash Can",
+        "Inspectional Services:Environmental Services:Overflowing or Un-kept Dumpster",
+        "Overflowing or Un-kept Dumpster",
     ),
     "abandoned-vehicles": (
         "Transportation - Traffic Division:Enforcement & Abandoned Vehicles:Abandoned Vehicles",
@@ -284,6 +295,8 @@ def fetch_type(
 
     total_records = 0
     skipped = 0
+    consecutive_empty = 0
+    EMPTY_BAILOUT = 90  # skip type after 90 consecutive empty days (~3 months)
 
     for i, day in enumerate(days_needed):
         records, delay = fetch_day(day, service_code, delay)
@@ -295,11 +308,19 @@ def fetch_type(
                 skipped += 1
             else:
                 total_records += len(records)
+                consecutive_empty = 0
                 if len(records) > 0:
                     log.info("  [%s] %s: %d tickets (total: %d, %d/%d)",
                              slug, day, len(records), total_records, i + 1, len(days_needed))
         else:
             skipped += 1
+            consecutive_empty += 1
+
+        if consecutive_empty >= EMPTY_BAILOUT and total_records == 0:
+            log.error("  [%s] BAILOUT: %d consecutive empty days with 0 total records — "
+                      "service_code '%s' likely wrong. Skipping remaining %d days.",
+                      slug, consecutive_empty, service_code, len(days_needed) - i - 1)
+            break
 
         if i > 0 and i % 100 == 0:
             log.info("  [%s] PROGRESS: %d/%d days, %d records, %d skipped",
