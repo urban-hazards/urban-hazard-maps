@@ -108,6 +108,9 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 						}}
 					>
 						{t}
+						{t === "Human Waste" && (
+							<span style={{ fontSize: "9px", opacity: 0.7, marginLeft: 2 }}> (beta)</span>
+						)}
 					</button>
 				))}
 			</div>
