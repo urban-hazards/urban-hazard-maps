@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import type { DistrictBoundaries } from "../lib/bucket"
 import type { MarkerData } from "../lib/types"
 
 declare const L: typeof import("leaflet")
@@ -16,6 +17,15 @@ interface HeatMapProps {
 	total: number
 	encampmentTotal: number
 	wasteTotal: number
+	councilDistricts: string[]
+	councilLabels: string[]
+	policeDistricts: string[]
+	policeLabels: string[]
+	stateRepDistricts: string[]
+	stateRepLabels: string[]
+	stateSenateDistricts: string[]
+	stateSenateLabels: string[]
+	districtBoundaries: DistrictBoundaries
 }
 
 const NEEDLE_GRADIENT: Record<number, string> = {
@@ -66,19 +76,35 @@ const MONTHS = [
 	"December",
 ]
 
+type BoundaryLayer = "council" | "police" | "state_rep" | "state_senate"
+
+interface DistrictFilters {
+	council?: number
+	police?: number
+	rep?: number
+	senate?: number
+}
+
 function filterPoints(
 	points: number[][],
 	year: string,
 	month: number,
 	sourceFilter?: WasteSource,
+	df?: DistrictFilters,
 ): number[][] {
-	const filtered = points.filter(([, , yr, mo, src]) => {
+	const filtered = points.filter(([, , yr, mo, src, council, police, rep, senate]) => {
 		if (year !== "all" && yr !== Number(year)) return false
 		if (month !== 0 && mo !== month) return false
 		if (sourceFilter && sourceFilter !== "all") {
 			const isDetected = src === 1
 			if (sourceFilter === "confirmed" && isDetected) return false
 			if (sourceFilter === "detected" && !isDetected) return false
+		}
+		if (df) {
+			if (df.council && df.council > 0 && council !== df.council) return false
+			if (df.police && df.police > 0 && police !== df.police) return false
+			if (df.rep && df.rep > 0 && rep !== df.rep) return false
+			if (df.senate && df.senate > 0 && senate !== df.senate) return false
 		}
 		return true
 	})
@@ -96,6 +122,15 @@ export default function HeatMap({
 	encampmentYears,
 	wasteYears,
 	wasteTotal,
+	councilDistricts,
+	councilLabels,
+	policeDistricts,
+	policeLabels,
+	stateRepDistricts,
+	stateRepLabels,
+	stateSenateDistricts,
+	stateSenateLabels,
+	districtBoundaries,
 }: HeatMapProps) {
 	const mapRef = useRef<HTMLDivElement>(null)
 	const mapInstance = useRef<L.Map | null>(null)
@@ -105,6 +140,7 @@ export default function HeatMap({
 	const markerGroupRef = useRef<L.LayerGroup | null>(null)
 	const encampmentMarkerGroupRef = useRef<L.LayerGroup | null>(null)
 	const wasteMarkerGroupRef = useRef<L.LayerGroup | null>(null)
+	const boundaryLayerRef = useRef<L.GeoJSON | null>(null)
 
 	const defaultYear = String(years[years.length - 1] || "all")
 	const [selYear, setSelYear] = useState(defaultYear)
@@ -113,6 +149,14 @@ export default function HeatMap({
 	const dataLayerRef = useRef<DataLayer>("both")
 	const [wasteSource, setWasteSource] = useState<WasteSource>("all")
 	const wasteSourceRef = useRef<WasteSource>("all")
+	const [selCouncil, setSelCouncil] = useState(0)
+	const [selPolice, setSelPolice] = useState(0)
+	const [selRep, setSelRep] = useState(0)
+	const [selSenate, setSelSenate] = useState(0)
+	const selCouncilRef = useRef(0)
+	const selPoliceRef = useRef(0)
+	const selRepRef = useRef(0)
+	const selSenateRef = useRef(0)
 	const selYearRef = useRef(defaultYear)
 	const selMonthRef = useRef(0)
 	const [count, setCount] = useState(
@@ -126,6 +170,7 @@ export default function HeatMap({
 	const [isMobile, setIsMobile] = useState(false)
 	const [filterOpen, setFilterOpen] = useState(false)
 	const [showPins, setShowPins] = useState(true)
+	const [showBoundaries, setShowBoundaries] = useState<BoundaryLayer | null>(null)
 
 	const activeYears =
 		dataLayer === "encampments" ? encampmentYears : dataLayer === "waste" ? wasteYears : years
@@ -256,6 +301,26 @@ export default function HeatMap({
 			const markerMonth = Number.parseInt(m.dt.slice(5, 7), 10)
 			if (markerMonth !== mo) return false
 		}
+		const cf = selCouncilRef.current
+		if (cf > 0) {
+			const distName = councilDistricts[cf - 1] || ""
+			if ((m.council_district || "") !== distName) return false
+		}
+		const pf = selPoliceRef.current
+		if (pf > 0) {
+			const distName = policeDistricts[pf - 1] || ""
+			if ((m.police_district || "") !== distName) return false
+		}
+		const rf = selRepRef.current
+		if (rf > 0) {
+			const distName = stateRepDistricts[rf - 1] || ""
+			if ((m.state_rep_district || "") !== distName) return false
+		}
+		const sf = selSenateRef.current
+		if (sf > 0) {
+			const distName = stateSenateDistricts[sf - 1] || ""
+			if ((m.state_senate_district || "") !== distName) return false
+		}
 		return true
 	}
 
@@ -339,6 +404,75 @@ export default function HeatMap({
 		}
 	}
 
+	// Draw district boundary outlines on the map
+	function drawBoundaries(
+		map: L.Map,
+		layer: BoundaryLayer | null,
+		selectedIdx: number,
+		districts: string[],
+	) {
+		if (boundaryLayerRef.current) {
+			map.removeLayer(boundaryLayerRef.current)
+			boundaryLayerRef.current = null
+		}
+		if (!layer || !districtBoundaries[layer]) return
+
+		const features = districtBoundaries[layer]
+		if (!features || features.length === 0) return
+
+		// If a specific district is selected, only show that one with a slightly stronger style
+		// Otherwise show all boundaries for the toggled layer
+		const selectedDistId = selectedIdx > 0 ? districts[selectedIdx - 1] : null
+
+		const geojson: GeoJSON.FeatureCollection = {
+			type: "FeatureCollection",
+			features: features
+				.filter((f) => (selectedDistId ? f.id === selectedDistId : true))
+				.map((f) => ({
+					type: "Feature" as const,
+					properties: { id: f.id, selected: f.id === selectedDistId },
+					geometry: f.geometry,
+				})),
+		}
+
+		boundaryLayerRef.current = L.geoJSON(geojson, {
+			style: (feature) => ({
+				color: feature?.properties?.selected ? "#e85a1b" : "#555",
+				weight: feature?.properties?.selected ? 2.5 : 1.5,
+				opacity: feature?.properties?.selected ? 0.7 : 0.35,
+				fillColor: feature?.properties?.selected ? "#e85a1b" : "transparent",
+				fillOpacity: feature?.properties?.selected ? 0.05 : 0,
+				dashArray: feature?.properties?.selected ? undefined : "4 4",
+			}),
+		}).addTo(map)
+	}
+
+	// Update boundary outlines when toggle or selected district changes
+	// biome-ignore lint/correctness/useExhaustiveDependencies: boundary drawing depends on selection state
+	useEffect(() => {
+		if (!ready || !mapInstance.current) return
+		const map = mapInstance.current
+
+		// Determine which district is selected for the active boundary layer
+		let selectedIdx = 0
+		let districts: string[] = []
+		if (showBoundaries === "council") {
+			selectedIdx = selCouncil
+			districts = councilDistricts
+		} else if (showBoundaries === "police") {
+			selectedIdx = selPolice
+			districts = policeDistricts
+		} else if (showBoundaries === "state_rep") {
+			selectedIdx = selRep
+			districts = stateRepDistricts
+		} else if (showBoundaries === "state_senate") {
+			selectedIdx = selSenate
+			districts = stateSenateDistricts
+		}
+
+		drawBoundaries(map, showBoundaries, selectedIdx, districts)
+	}, [showBoundaries, selCouncil, selPolice, selRep, selSenate, ready])
+
 	// Toggle marker pins on/off
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional dependency on showPins
 	useEffect(() => {
@@ -356,6 +490,10 @@ export default function HeatMap({
 	useEffect(() => {
 		dataLayerRef.current = dataLayer
 		wasteSourceRef.current = wasteSource
+		selCouncilRef.current = selCouncil
+		selPoliceRef.current = selPolice
+		selRepRef.current = selRep
+		selSenateRef.current = selSenate
 		if (!ready || !mapInstance.current) return
 		const map = mapInstance.current
 
@@ -373,102 +511,96 @@ export default function HeatMap({
 		setSelYear(defaultYear)
 		setSelMonth(0)
 
+		const df: DistrictFilters = {
+			council: selCouncil,
+			police: selPolice,
+			rep: selRep,
+			senate: selSenate,
+		}
+
 		// Add appropriate layers
 		if (dataLayer === "needles" || dataLayer === "both") {
-			const pts = filterPoints(needlePoints, defaultYear, 0)
+			const pts = filterPoints(needlePoints, defaultYear, 0, undefined, df)
 			const layer = createHeatLayer(pts, NEEDLE_GRADIENT)
 			layer.addTo(map)
 			heatLayerRef.current = layer
-			setCount(needlePoints.filter(([, , yr]) => String(yr) === defaultYear).length)
+			setCount(pts.length)
 		}
 
 		if (dataLayer === "encampments" || dataLayer === "both") {
-			const pts = filterPoints(encampmentPoints, defaultYear, 0)
+			const pts = filterPoints(encampmentPoints, defaultYear, 0, undefined, df)
 			const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT)
 			layer.addTo(map)
 			encampmentHeatLayerRef.current = layer
-			setEncampmentCount(encampmentPoints.filter(([, , yr]) => String(yr) === defaultYear).length)
+			setEncampmentCount(pts.length)
 		}
 
 		if (dataLayer === "waste") {
-			const pts = filterPoints(wastePoints, defaultYear, 0, wasteSource)
+			const pts = filterPoints(wastePoints, defaultYear, 0, wasteSource, df)
 			const layer = createHeatLayer(pts, WASTE_GRADIENT)
 			layer.addTo(map)
 			wasteHeatLayerRef.current = layer
-			setWasteCount(
-				wastePoints.filter(([, , yr, , src]) => {
-					if (String(yr) !== defaultYear) return false
-					if (wasteSource === "confirmed" && src === 1) return false
-					if (wasteSource === "detected" && src !== 1) return false
-					return true
-				}).length,
-			)
+			setWasteCount(pts.length)
 		}
 
 		// Re-show markers if zoomed in and pins enabled
 		if (showPins && map.getZoom() >= 15) {
 			rebuildMarkers(map)
 		}
-	}, [dataLayer, wasteSource, ready])
+	}, [dataLayer, wasteSource, selCouncil, selPolice, selRep, selSenate, ready])
 
 	// Filter heatmap data client-side when filter changes
-	// biome-ignore lint/correctness/useExhaustiveDependencies: filtering depends on selYear/selMonth/dataLayer/wasteSource
+	// biome-ignore lint/correctness/useExhaustiveDependencies: filtering depends on selYear/selMonth/dataLayer/wasteSource/districts
 	useEffect(() => {
 		selYearRef.current = selYear
 		selMonthRef.current = selMonth
 		wasteSourceRef.current = wasteSource
+		selCouncilRef.current = selCouncil
+		selPoliceRef.current = selPolice
+		selRepRef.current = selRep
+		selSenateRef.current = selSenate
 		if (!ready || !mapInstance.current) return
 		const map = mapInstance.current
 
+		const df: DistrictFilters = {
+			council: selCouncil,
+			police: selPolice,
+			rep: selRep,
+			senate: selSenate,
+		}
+
 		if (dataLayer === "needles" || dataLayer === "both") {
 			if (heatLayerRef.current) map.removeLayer(heatLayerRef.current)
-			const pts = filterPoints(needlePoints, selYear, selMonth)
+			const pts = filterPoints(needlePoints, selYear, selMonth, undefined, df)
 			const layer = createHeatLayer(pts, NEEDLE_GRADIENT)
 			layer.addTo(map)
 			heatLayerRef.current = layer
-			const filteredCount = needlePoints.filter(([, , yr, mo]) => {
-				if (selYear !== "all" && yr !== Number(selYear)) return false
-				if (selMonth !== 0 && mo !== selMonth) return false
-				return true
-			}).length
-			setCount(filteredCount)
+			setCount(pts.length)
 		}
 
 		if (dataLayer === "encampments" || dataLayer === "both") {
 			if (encampmentHeatLayerRef.current) map.removeLayer(encampmentHeatLayerRef.current)
-			const pts = filterPoints(encampmentPoints, selYear, selMonth)
+			const pts = filterPoints(encampmentPoints, selYear, selMonth, undefined, df)
 			const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT)
 			layer.addTo(map)
 			encampmentHeatLayerRef.current = layer
-			const filteredCount = encampmentPoints.filter(([, , yr, mo]) => {
-				if (selYear !== "all" && yr !== Number(selYear)) return false
-				if (selMonth !== 0 && mo !== selMonth) return false
-				return true
-			}).length
-			setEncampmentCount(filteredCount)
+			setEncampmentCount(pts.length)
 		}
 
 		if (dataLayer === "waste") {
 			if (wasteHeatLayerRef.current) map.removeLayer(wasteHeatLayerRef.current)
-			const pts = filterPoints(wastePoints, selYear, selMonth, wasteSource)
+			const pts = filterPoints(wastePoints, selYear, selMonth, wasteSource, df)
 			const layer = createHeatLayer(pts, WASTE_GRADIENT)
 			layer.addTo(map)
 			wasteHeatLayerRef.current = layer
-			const filteredCount = wastePoints.filter(([, , yr, mo, src]) => {
-				if (selYear !== "all" && yr !== Number(selYear)) return false
-				if (selMonth !== 0 && mo !== selMonth) return false
-				if (wasteSource === "confirmed" && src === 1) return false
-				if (wasteSource === "detected" && src !== 1) return false
-				return true
-			}).length
-			setWasteCount(filteredCount)
+			setWasteCount(pts.length)
 		}
 
 		// Rebuild markers with new filter
 		if (map.getZoom() >= 15) {
 			rebuildMarkers(map)
 		}
-	}, [selYear, selMonth, ready, dataLayer, wasteSource])
+	}, [selYear, selMonth, selCouncil, selPolice, selRep, selSenate, ready, dataLayer, wasteSource])
 
 	const showFilterPanel = !isMobile || filterOpen
 
@@ -589,6 +721,27 @@ export default function HeatMap({
 							Show pins when zoomed in
 						</label>
 
+						{Object.keys(districtBoundaries).length > 0 && (
+							<div style={{ marginBottom: 10 }}>
+								<div style={filterLabelStyle}>District Outlines</div>
+								<select
+									value={showBoundaries ?? ""}
+									onChange={(e) =>
+										setShowBoundaries(e.target.value ? (e.target.value as BoundaryLayer) : null)
+									}
+									style={selectStyle}
+								>
+									<option value="">Off</option>
+									{districtBoundaries.council && <option value="council">City Council</option>}
+									{districtBoundaries.police && <option value="police">Police</option>}
+									{districtBoundaries.state_rep && <option value="state_rep">State Rep</option>}
+									{districtBoundaries.state_senate && (
+										<option value="state_senate">State Senate</option>
+									)}
+								</select>
+							</div>
+						)}
+
 						{dataLayer === "waste" && (
 							<div style={{ marginBottom: 8 }}>
 								<div style={filterLabelStyle}>Source</div>
@@ -646,6 +799,94 @@ export default function HeatMap({
 								))}
 							</select>
 						</div>
+
+						{councilLabels.length > 0 && (
+							<div style={{ marginTop: 8 }}>
+								<div style={filterLabelStyle}>Council District</div>
+								<select
+									value={selCouncil}
+									onChange={(e) => {
+										const v = Number(e.target.value)
+										setSelCouncil(v)
+										if (v > 0) setShowBoundaries("council")
+									}}
+									style={selectStyle}
+								>
+									<option value={0}>All Districts</option>
+									{councilLabels.map((label, i) => (
+										<option key={label} value={i + 1}>
+											{label}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
+
+						{policeLabels.length > 0 && (
+							<div style={{ marginTop: 8 }}>
+								<div style={filterLabelStyle}>Police District</div>
+								<select
+									value={selPolice}
+									onChange={(e) => {
+										const v = Number(e.target.value)
+										setSelPolice(v)
+										if (v > 0) setShowBoundaries("police")
+									}}
+									style={selectStyle}
+								>
+									<option value={0}>All Districts</option>
+									{policeLabels.map((label, i) => (
+										<option key={label} value={i + 1}>
+											{label}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
+
+						{stateRepLabels.length > 0 && (
+							<div style={{ marginTop: 8 }}>
+								<div style={filterLabelStyle}>State Rep</div>
+								<select
+									value={selRep}
+									onChange={(e) => {
+										const v = Number(e.target.value)
+										setSelRep(v)
+										if (v > 0) setShowBoundaries("state_rep")
+									}}
+									style={selectStyle}
+								>
+									<option value={0}>All Districts</option>
+									{stateRepLabels.map((label, i) => (
+										<option key={label} value={i + 1}>
+											{label}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
+
+						{stateSenateLabels.length > 0 && (
+							<div style={{ marginTop: 8 }}>
+								<div style={filterLabelStyle}>State Senate</div>
+								<select
+									value={selSenate}
+									onChange={(e) => {
+										const v = Number(e.target.value)
+										setSelSenate(v)
+										if (v > 0) setShowBoundaries("state_senate")
+									}}
+									style={selectStyle}
+								>
+									<option value={0}>All Districts</option>
+									{stateSenateLabels.map((label, i) => (
+										<option key={label} value={i + 1}>
+											{label}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
 					</div>
 				)}
 
