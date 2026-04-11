@@ -167,8 +167,37 @@ High-count tickets (20+ syringes, n=10): 6/10 on Mondays (weekend
 accumulation), all at expected hotspots (Mass Ave, South End, BMC area). No
 round-minute clustering, confirming real-time reporting not batch entry.
 
-**Still worth investigating:** Break down tickets by `source` field × hour to
-see if constituent-call tickets have different hour patterns than app tickets:
+### SHARPS team worker identification (from closure notes)
+
+Analysis of 10,737 Needle Pickup closures in 2024 revealed 6 identifiable
+SHARPS workers by their initials in closure notes. The closure format varies
+by worker but follows patterns like `[count][initials]` (e.g. "6dw") or
+`[text]. [INITIALS].` (e.g. "Needle recovered. JT.").
+
+| Worker | Closures | Schedule | Peak Close Hours (ET) | Syringe Count |
+|--------|----------|----------|----------------------|---------------|
+| JT | 2,480 | Mon-Fri, light wknd | 11PM-1AM | no parsed counts |
+| CD | 1,900 | Mon-Fri only | 5-6AM, 11AM | no parsed counts |
+| DW | 1,877 | Tue-Thu heavy | 11PM-3AM | 4,418 (avg 2.4) |
+| JG | 1,401 | Heavy Sun, light Fri | 5-6AM, 10AM | 1,525 (avg 2.2) |
+| DF | 1,391 | Sat-Sun-Mon | 11PM-1AM | no parsed counts |
+| DT | 750 | — | — | 5,913 (avg 7.9!) |
+
+Two shift patterns: overnight (JT, DW, DF: 11PM-3AM) and early morning
+(CD, JG: 5-6AM, 10-11AM). DT handles the heavy pickups at nearly 4x the
+average count per ticket.
+
+**NLP opportunity:** Parse syringe counts from all closure notes to build
+a real needle collection dataset. The count formats are: `[N]dw`, `[N]dt`,
+`[N] syringe(s) recovered by [initials]`, and freetext. Would give us actual
+pickup volumes, not just ticket counts.
+
+**Citizen vs employee on ticket creation:** Confirmed from Open311 API
+descriptions that midnight app tickets are genuine citizen reports — free text
+with photos, auto-translated messages, specific local context. SHARPS workers
+don't create tickets; they only close them with counts and initials.
+
+**Still worth investigating:** Constituent-call hour patterns (19% of tickets):
 - "Citizens Connect App" at midnight → real-time reports from people who are out
 - "Employee Generated" at midnight → batch entry, timestamp is logging time not observation time
 - "Constituent Call" at midnight → unlikely, call center hours matter
