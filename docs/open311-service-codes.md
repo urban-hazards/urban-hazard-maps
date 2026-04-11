@@ -192,10 +192,17 @@ a real needle collection dataset. The count formats are: `[N]dw`, `[N]dt`,
 `[N] syringe(s) recovered by [initials]`, and freetext. Would give us actual
 pickup volumes, not just ticket counts.
 
-**Citizen vs employee on ticket creation:** Confirmed from Open311 API
-descriptions that midnight app tickets are genuine citizen reports — free text
-with photos, auto-translated messages, specific local context. SHARPS workers
-don't create tickets; they only close them with counts and initials.
+**Citizen vs employee on ticket creation (REVISED):** Open311 descriptions
+show real citizen language on many tickets (free text, photos, auto-translated
+messages). However, **132 days in 2024 show clear sweep-route patterns**: 5-10
+tickets filed within 10-30 min across 4-10 unique locations spanning multiple
+neighborhoods. These are unmistakably a crew driving/walking a route and logging
+via the app — not citizens. Estimated ~924 tickets (~11% of app submissions)
+come from professional sweeps logged as "Citizens Connect App."
+
+The "Citizens Connect App" source label does NOT reliably distinguish citizen
+reports from professional sweep logging. A sweep classifier (time clustering +
+geographic sequence detection) could separate the two populations.
 
 **Still worth investigating:** Constituent-call hour patterns (19% of tickets):
 - "Citizens Connect App" at midnight → real-time reports from people who are out
