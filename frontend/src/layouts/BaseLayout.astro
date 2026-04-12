@@ -11,7 +11,7 @@ const siteUrl = "https://www.urbanhazardmaps.com"
 // Normalize: strip trailing slash, always use www
 const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/"
 const canonicalUrl = canonical || new URL(pathname, siteUrl).toString()
-const ogImage = `${siteUrl}/og-image.png`
+const ogImage = `${siteUrl}/og-image.jpg`
 ---
 
 <!doctype html>
