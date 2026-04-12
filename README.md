@@ -68,9 +68,9 @@ lefthook install
 ### Run locally
 
 ```bash
-# Start the backend (port 8000)
+# Start the backend (port 8080 — avoid 8000, which conflicts with google-workspace-mcp OAuth callback)
 cd backend
-uv run boston-needle-map serve
+uv run boston-needle-map serve --port 8080
 
 # In another terminal, start the frontend (port 4321)
 cd frontend

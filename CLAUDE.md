@@ -51,6 +51,17 @@ If `uv sync` removes it, reinstall with:
 - `pnpm lint` -- biome lint
 - `pnpm format` -- biome format
 
+## Knowledge Base (`docs/wiki/`)
+Topic-based wiki of what we've learned about Boston's 311 system. Start with
+`docs/wiki/INDEX.md` for the table of contents. Each file is self-contained.
+
+**Read the wiki before investigating 311 data questions** — it likely has the
+answer or context already. Update wiki files when you learn something new.
+
+Key topics: API reference, service code mapping, ticket routing flows, SHARPS
+team analysis, reporting patterns, "Other" ticket black hole, 14 data quality
+issues.
+
 ## Architecture
 - `pipeline/` -- Daily Python cron job (runs on Railway)
   - `src/pipeline/`
