@@ -13,7 +13,15 @@ const { generated } = Astro.props
 			<span class="header-sub">311 sharps &amp; encampment data</span>
 		</div>
 		<nav class="header-nav">
+			<a href="/data-quality" class="nav-link">Data Quality</a>
+			<a href="/fix" class="nav-link">How to Fix This</a>
 			<a href="/methodology" class="nav-link">Methodology</a>
+			<a
+				href="https://github.com/urban-hazards/urban-hazard-maps/discussions"
+				target="_blank"
+				rel="noopener"
+				class="nav-link"
+			>Feedback</a>
 		</nav>
 		<div class="header-right">
 			<span class="header-meta">
@@ -94,6 +102,7 @@ const { generated } = Astro.props
 		color: var(--color-text-muted);
 		text-decoration: none;
 		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.nav-link:hover {
@@ -125,6 +134,16 @@ const { generated } = Astro.props
 		text-decoration: none;
 	}
 
+	@media (max-width: 768px) {
+		.header-nav {
+			gap: 10px;
+		}
+
+		.nav-link {
+			font-size: 13px;
+		}
+	}
+
 	@media (max-width: 640px) {
 		.header-sub {
 			display: none;
@@ -136,6 +155,14 @@ const { generated } = Astro.props
 
 		.header-title {
 			font-size: 17px;
+		}
+
+		.header-nav {
+			gap: 8px;
+		}
+
+		.nav-link {
+			font-size: 12px;
 		}
 	}
 </style>

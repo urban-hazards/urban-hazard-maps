@@ -113,6 +113,21 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			stateSenateLabels={stats.state_senate_district_labels ?? stats.state_senate_districts ?? []}
 			districtBoundaries={districtBoundaries}
 		/>
+		<noscript>
+			<div style="text-align: center; padding: 24px;">
+				<img
+					src="/og-image.jpg"
+					alt="Heatmap of reported sharps and encampment locations across Boston neighborhoods, showing concentration patterns in the South End, Downtown, and Back Bay areas"
+					width="1200"
+					height="630"
+					style="max-width: 100%; height: auto; border-radius: 8px;"
+					loading="lazy"
+				/>
+				<p style="margin-top: 12px; color: var(--color-text-muted); font-size: 14px;">
+					Interactive map requires JavaScript. The image above shows the current heatmap overview.
+				</p>
+			</div>
+		</noscript>
 
 		<section class="section" aria-label="Trend charts">
 			<h2 class="section-title">Trends &amp; Patterns</h2>
