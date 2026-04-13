@@ -179,16 +179,31 @@ def list_existing_days(s3, prefix: str) -> set[str]:
 
 
 def save_day(s3, prefix: str, day: date, records: list[dict]) -> None:
-    """Write a day's records to S3 with record count in metadata."""
+    """Write a day's records to S3 with record count in metadata.
+
+    Retries up to 3 times with exponential backoff on transient S3 errors
+    (RequestCanceled, connection drops, timeouts).
+    """
     key = f"{prefix}{day}.json"
-    body = json.dumps(records, separators=(",", ":"))
-    s3.put_object(
-        Bucket=BUCKET,
-        Key=key,
-        Body=body.encode("utf-8"),
-        ContentType="application/json",
-        Metadata={"record-count": str(len(records))},
-    )
+    body = json.dumps(records, separators=(",", ":")).encode("utf-8")
+    for attempt in range(3):
+        try:
+            s3.put_object(
+                Bucket=BUCKET,
+                Key=key,
+                Body=body,
+                ContentType="application/json",
+                Metadata={"record-count": str(len(records))},
+            )
+            return
+        except Exception as e:
+            if attempt < 2:
+                wait = 2 ** (attempt + 1)  # 2s, 4s
+                log.warning("  S3 write failed for %s (attempt %d/3): %s — retrying in %ds",
+                            key, attempt + 1, e, wait)
+                time.sleep(wait)
+            else:
+                raise
 
 
 def verify_day(s3, prefix: str, day: date, expected_count: int) -> bool:
@@ -316,10 +331,19 @@ def fetch_type(
             skipped += 1
             consecutive_empty += 1
 
-        if consecutive_empty >= EMPTY_BAILOUT and total_records == 0:
-            log.error("  [%s] BAILOUT: %d consecutive empty days with 0 total records — "
-                      "service_code '%s' likely wrong. Skipping remaining %d days.",
-                      slug, consecutive_empty, service_code, len(days_needed) - i - 1)
+        if consecutive_empty >= EMPTY_BAILOUT:
+            if total_records == 0 and len(existing) == 0:
+                log.error("  [%s] BAILOUT: %d consecutive empty days with 0 total records "
+                          "and nothing in S3 — service_code '%s' likely wrong. "
+                          "Skipping remaining %d days.",
+                          slug, consecutive_empty, service_code, len(days_needed) - i - 1)
+                break
+            # Type has data (this run or prior runs) but we've gone past its start date
+            log.info("  [%s] Reached %d consecutive empty days — type likely doesn't go "
+                     "back this far. Skipping remaining %d days (total saved: %d this run, "
+                     "%d prior).",
+                     slug, consecutive_empty, len(days_needed) - i - 1,
+                     total_records, len(existing))
             break
 
         if i > 0 and i % 100 == 0:
@@ -580,8 +604,12 @@ def main():
     # --- Normal fetch mode ---
     all_stats = []
     for slug, (service_code, name) in types_to_fetch.items():
-        stats = fetch_type(s3, slug, service_code, name, start, end, args.delay, args.dry_run)
-        all_stats.append(stats)
+        try:
+            stats = fetch_type(s3, slug, service_code, name, start, end, args.delay, args.dry_run)
+            all_stats.append(stats)
+        except Exception as e:
+            log.error("[%s] FATAL: %s — skipping to next type", slug, e)
+            all_stats.append({"slug": slug, "name": name, "error": str(e)})
 
     # Write manifest
     manifest = {
