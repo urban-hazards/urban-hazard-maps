@@ -171,6 +171,10 @@ export default function HeatMap({
 	const [filterOpen, setFilterOpen] = useState(false)
 	const [showPins, setShowPins] = useState(true)
 	const [showBoundaries, setShowBoundaries] = useState<BoundaryLayer | null>(null)
+	const [heatIntensity, setHeatIntensity] = useState(50)
+	const heatIntensityRef = useRef(50)
+	const [heatMethod, setHeatMethod] = useState<HeatMethod>("tableau")
+	const heatMethodRef = useRef<HeatMethod>("tableau")
 
 	// Time scrubber state
 	const [isPlaying, setIsPlaying] = useState(false)
@@ -326,12 +330,24 @@ export default function HeatMap({
 
 			// Both heat layers on by default, filtered to latest year
 			const needleBinned = filterPoints(needlePoints, defaultYear, 0)
-			const needleLayer = createHeatLayer(needleBinned, NEEDLE_GRADIENT, 13)
+			const needleLayer = createHeatLayer(
+				needleBinned,
+				NEEDLE_GRADIENT,
+				13,
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			needleLayer.addTo(map)
 			heatLayerRef.current = needleLayer
 
 			const encampmentBinned = filterPoints(encampmentPoints, defaultYear, 0)
-			const encampmentLayer = createHeatLayer(encampmentBinned, ENCAMPMENT_GRADIENT, 13)
+			const encampmentLayer = createHeatLayer(
+				encampmentBinned,
+				ENCAMPMENT_GRADIENT,
+				13,
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			encampmentLayer.addTo(map)
 			encampmentHeatLayerRef.current = encampmentLayer
 
@@ -367,8 +383,8 @@ export default function HeatMap({
 		const zoom = map.getZoom()
 
 		// Rebuild heat layers when zoom crosses a threshold
-		const prevParams = getHeatParams(lastZoomRef.current)
-		const newParams = getHeatParams(zoom)
+		const prevParams = getHeatParams(lastZoomRef.current, heatMethodRef.current)
+		const newParams = getHeatParams(zoom, heatMethodRef.current)
 		if (prevParams.radius !== newParams.radius) {
 			const df: DistrictFilters = {
 				council: selCouncilRef.current,
@@ -386,7 +402,13 @@ export default function HeatMap({
 					undefined,
 					df,
 				)
-				heatLayerRef.current = createHeatLayer(pts, NEEDLE_GRADIENT, zoom)
+				heatLayerRef.current = createHeatLayer(
+					pts,
+					NEEDLE_GRADIENT,
+					zoom,
+					heatIntensityRef.current,
+					heatMethodRef.current,
+				)
 				heatLayerRef.current.addTo(map)
 			}
 			if ((layer === "encampments" || layer === "both") && encampmentHeatLayerRef.current) {
@@ -398,7 +420,13 @@ export default function HeatMap({
 					undefined,
 					df,
 				)
-				encampmentHeatLayerRef.current = createHeatLayer(pts, ENCAMPMENT_GRADIENT, zoom)
+				encampmentHeatLayerRef.current = createHeatLayer(
+					pts,
+					ENCAMPMENT_GRADIENT,
+					zoom,
+					heatIntensityRef.current,
+					heatMethodRef.current,
+				)
 				encampmentHeatLayerRef.current.addTo(map)
 			}
 			if (layer === "waste" && wasteHeatLayerRef.current) {
@@ -410,7 +438,13 @@ export default function HeatMap({
 					wasteSourceRef.current,
 					df,
 				)
-				wasteHeatLayerRef.current = createHeatLayer(pts, WASTE_GRADIENT, zoom)
+				wasteHeatLayerRef.current = createHeatLayer(
+					pts,
+					WASTE_GRADIENT,
+					zoom,
+					heatIntensityRef.current,
+					heatMethodRef.current,
+				)
 				wasteHeatLayerRef.current.addTo(map)
 			}
 		}
@@ -655,7 +689,13 @@ export default function HeatMap({
 		// Add appropriate layers
 		if (dataLayer === "needles" || dataLayer === "both") {
 			const pts = filterPoints(needlePoints, defaultYear, 0, undefined, df)
-			const layer = createHeatLayer(pts, NEEDLE_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				NEEDLE_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			heatLayerRef.current = layer
 			setCount(pts.length)
@@ -663,7 +703,13 @@ export default function HeatMap({
 
 		if (dataLayer === "encampments" || dataLayer === "both") {
 			const pts = filterPoints(encampmentPoints, defaultYear, 0, undefined, df)
-			const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				ENCAMPMENT_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			encampmentHeatLayerRef.current = layer
 			setEncampmentCount(pts.length)
@@ -671,7 +717,13 @@ export default function HeatMap({
 
 		if (dataLayer === "waste") {
 			const pts = filterPoints(wastePoints, defaultYear, 0, wasteSource, df)
-			const layer = createHeatLayer(pts, WASTE_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				WASTE_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			wasteHeatLayerRef.current = layer
 			setWasteCount(pts.length)
@@ -693,6 +745,8 @@ export default function HeatMap({
 		selPoliceRef.current = selPolice
 		selRepRef.current = selRep
 		selSenateRef.current = selSenate
+		heatIntensityRef.current = heatIntensity
+		heatMethodRef.current = heatMethod
 		if (!ready || !mapInstance.current) return
 		const map = mapInstance.current
 
@@ -706,7 +760,13 @@ export default function HeatMap({
 		if (dataLayer === "needles" || dataLayer === "both") {
 			if (heatLayerRef.current) map.removeLayer(heatLayerRef.current)
 			const pts = filterPoints(needlePoints, selYear, selMonth, undefined, df)
-			const layer = createHeatLayer(pts, NEEDLE_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				NEEDLE_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			heatLayerRef.current = layer
 			setCount(pts.length)
@@ -715,7 +775,13 @@ export default function HeatMap({
 		if (dataLayer === "encampments" || dataLayer === "both") {
 			if (encampmentHeatLayerRef.current) map.removeLayer(encampmentHeatLayerRef.current)
 			const pts = filterPoints(encampmentPoints, selYear, selMonth, undefined, df)
-			const layer = createHeatLayer(pts, ENCAMPMENT_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				ENCAMPMENT_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			encampmentHeatLayerRef.current = layer
 			setEncampmentCount(pts.length)
@@ -724,7 +790,13 @@ export default function HeatMap({
 		if (dataLayer === "waste") {
 			if (wasteHeatLayerRef.current) map.removeLayer(wasteHeatLayerRef.current)
 			const pts = filterPoints(wastePoints, selYear, selMonth, wasteSource, df)
-			const layer = createHeatLayer(pts, WASTE_GRADIENT, map.getZoom())
+			const layer = createHeatLayer(
+				pts,
+				WASTE_GRADIENT,
+				map.getZoom(),
+				heatIntensityRef.current,
+				heatMethodRef.current,
+			)
 			layer.addTo(map)
 			wasteHeatLayerRef.current = layer
 			setWasteCount(pts.length)
@@ -734,7 +806,19 @@ export default function HeatMap({
 		if (map.getZoom() >= 15) {
 			rebuildMarkers(map)
 		}
-	}, [selYear, selMonth, selCouncil, selPolice, selRep, selSenate, ready, dataLayer, wasteSource])
+	}, [
+		selYear,
+		selMonth,
+		selCouncil,
+		selPolice,
+		selRep,
+		selSenate,
+		ready,
+		dataLayer,
+		wasteSource,
+		heatIntensity,
+		heatMethod,
+	])
 
 	const showFilterPanel = !isMobile || filterOpen
 
@@ -932,6 +1016,41 @@ export default function HeatMap({
 									</option>
 								))}
 							</select>
+						</div>
+
+						<div style={{ marginTop: 8 }}>
+							<div style={filterLabelStyle}>Render Method</div>
+							<select
+								value={heatMethod}
+								onChange={(e) => setHeatMethod(e.target.value as HeatMethod)}
+								style={selectStyle}
+							>
+								{HEAT_METHODS.map((m) => (
+									<option key={m.value} value={m.value}>
+										{m.label} — {m.desc}
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div style={{ marginTop: 6 }}>
+							<div style={filterLabelStyle}>
+								Intensity <span style={{ fontWeight: 400, color: "#999" }}>{heatIntensity}%</span>
+							</div>
+							<input
+								type="range"
+								min={1}
+								max={100}
+								value={heatIntensity}
+								onChange={(e) => setHeatIntensity(Number(e.target.value))}
+								style={{
+									width: "100%",
+									accentColor: "#e85a1b",
+									cursor: "pointer",
+									margin: "2px 0",
+								}}
+								aria-label="Heat map intensity"
+							/>
 						</div>
 
 						{councilLabels.length > 0 && (
@@ -1267,28 +1386,94 @@ function LayerRadio({
 	)
 }
 
-function getHeatParams(zoom: number): { radius: number; blur: number } {
-	// Scale radius/blur so points blend properly at all zoom levels
-	// At low zoom points overlap naturally; at high zoom they need larger radius
-	if (zoom <= 11) return { radius: 18, blur: 15 }
-	if (zoom <= 12) return { radius: 22, blur: 18 }
-	if (zoom <= 13) return { radius: 28, blur: 22 }
-	if (zoom <= 14) return { radius: 35, blur: 28 }
-	if (zoom <= 15) return { radius: 45, blur: 35 }
-	return { radius: 55, blur: 40 }
+type HeatMethod =
+	| "tableau"
+	| "tableau-wide"
+	| "tableau-soft"
+	| "smooth"
+	| "tight"
+	| "density"
+	| "contrast"
+	| "coverage"
+	| "fine"
+
+const HEAT_METHODS: { value: HeatMethod; label: string; desc: string }[] = [
+	{ value: "tableau", label: "Tableau Classic", desc: "Wide gaussian, high coverage" },
+	{ value: "tableau-wide", label: "Tableau Wide", desc: "Extra spread, filled regions" },
+	{ value: "tableau-soft", label: "Tableau Soft", desc: "Gentle gradient, max blur" },
+	{ value: "smooth", label: "Smooth KDE", desc: "Balanced kernel density" },
+	{ value: "tight", label: "Tight Clusters", desc: "Precise hotspots" },
+	{ value: "fine", label: "Fine Detail", desc: "Small kernels, sharp edges" },
+	{ value: "density", label: "Point Density", desc: "Low blur, stacked dots" },
+	{ value: "contrast", label: "High Contrast", desc: "Steep peaks vs flat areas" },
+	{ value: "coverage", label: "Coverage Map", desc: "Shows where any data exists" },
+]
+
+interface HeatParams {
+	radius: number
+	blur: number
+	maxZoom: number
+	minOpacity: number
 }
 
-function createHeatLayer(pts: number[][], gradient: Record<number, string>, zoom = 13): L.Layer {
-	const { radius, blur } = getHeatParams(zoom)
+function getHeatParams(zoom: number, method: HeatMethod): HeatParams {
+	// Continuous zoom scale factor (1.0 at zoom 13)
+	const zoomScale =
+		zoom <= 11
+			? 0.64
+			: zoom <= 12
+				? 0.79
+				: zoom <= 13
+					? 1
+					: zoom <= 14
+						? 1.25
+						: zoom <= 15
+							? 1.6
+							: 1.96
+
+	// Each method defines base params at zoom 13. Radius and blur scale with zoom.
+	const methods: Record<HeatMethod, HeatParams> = {
+		// Tableau-style: wide kernels, blur ≈ radius, low maxZoom so sparse areas still show
+		tableau: { radius: 45, blur: 40, maxZoom: 14, minOpacity: 0.06 },
+		"tableau-wide": { radius: 60, blur: 55, maxZoom: 13, minOpacity: 0.08 },
+		"tableau-soft": { radius: 50, blur: 50, maxZoom: 14, minOpacity: 0.05 },
+		// Standard options
+		smooth: { radius: 32, blur: 28, maxZoom: 16, minOpacity: 0.04 },
+		tight: { radius: 16, blur: 10, maxZoom: 18, minOpacity: 0.08 },
+		fine: { radius: 20, blur: 14, maxZoom: 17, minOpacity: 0.06 },
+		density: { radius: 22, blur: 5, maxZoom: 17, minOpacity: 0.06 },
+		contrast: { radius: 28, blur: 20, maxZoom: 15, minOpacity: 0.01 },
+		coverage: { radius: 70, blur: 65, maxZoom: 12, minOpacity: 0.1 },
+	}
+
+	const p = methods[method]
+	return {
+		radius: Math.round(p.radius * zoomScale),
+		blur: Math.round(p.blur * zoomScale),
+		maxZoom: p.maxZoom,
+		minOpacity: p.minOpacity,
+	}
+}
+
+function createHeatLayer(
+	pts: number[][],
+	gradient: Record<number, string>,
+	zoom = 13,
+	intensity = 50,
+	method: HeatMethod = "tableau",
+): L.Layer {
+	const params = getHeatParams(zoom, method)
+	// Intensity 1-100 scales radius (0.2x–2.5x)
+	const scale = 0.2 + (intensity / 100) * 2.3
 	return (
 		L as Record<string, unknown> as {
 			heatLayer: (pts: number[][], opts: Record<string, unknown>) => L.Layer
 		}
 	).heatLayer(pts, {
-		radius,
-		blur,
-		maxZoom: 17,
-		minOpacity: 0.05,
+		radius: Math.round(params.radius * scale),
+		blur: Math.round(params.blur * scale),
+		maxZoom: params.maxZoom,
+		minOpacity: params.minOpacity * scale,
 		gradient,
 		pane: "heatmapPane",
 	})

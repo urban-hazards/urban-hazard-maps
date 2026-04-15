@@ -68,8 +68,12 @@ class DashboardStats(BaseModel):
     hoods: list[NeighborhoodStat]
     hourly: list[int]
     year_hourly: dict[str, list[int]]
+    hood_hourly: dict[str, list[int]] = {}
+    zip_hourly: dict[str, list[int]] = {}
     year_monthly: dict[str, list[int]]
     zip_stats: list[ZipStat]
+    year_hoods: dict[str, list[NeighborhoodStat]] = {}
+    year_zips: dict[str, list[ZipStat]] = {}
     markers: list[MarkerData]
     council_districts: list[str] = []
     police_districts: list[str] = []

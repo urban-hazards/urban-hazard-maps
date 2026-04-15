@@ -105,6 +105,13 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
         yr_hourly = Counter(r.hour for r in records if r.year == y)
         year_hourly[str(y)] = [yr_hourly.get(h, 0) for h in range(24)]
 
+    # Hourly counts by neighborhood (top 15 only)
+    top_hood_names = [h.name for h in hood_stats[:15]]
+    hood_hourly: dict[str, list[int]] = {}
+    for name in top_hood_names:
+        hc = Counter(r.hour for r in records if (r.hood or "Unknown") == name)
+        hood_hourly[name] = [hc.get(h, 0) for h in range(24)]
+
     # Monthly counts by year
     year_monthly = {
         str(y): [sum(1 for r in records if r.year == y and r.month == m) for m in range(1, 13)] for y in years
@@ -113,6 +120,42 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
     # Top zip codes
     zip_counts = Counter(r.zipcode for r in records if r.zipcode)
     zip_stats = [ZipStat(zip=z, count=c) for z, c in zip_counts.most_common(10)]
+
+    # Hourly counts by zip code (top 10 only)
+    top_zips = [z for z, _ in zip_counts.most_common(10)]
+    zip_hourly: dict[str, list[int]] = {}
+    for z in top_zips:
+        zc = Counter(r.hour for r in records if r.zipcode == z)
+        zip_hourly[z] = [zc.get(h, 0) for h in range(24)]
+
+    # Per-year neighborhood breakdown
+    year_hoods: dict[str, list[NeighborhoodStat]] = {}
+    for y in years:
+        yr_recs = [r for r in records if r.year == y]
+        yr_by_hood: dict[str, list[CleanedRecord]] = defaultdict(list)
+        for r in yr_recs:
+            yr_by_hood[r.hood or "Unknown"].append(r)
+        yr_hood_stats: list[NeighborhoodStat] = []
+        for name, recs in sorted(yr_by_hood.items(), key=lambda x: -len(x[1])):
+            streets = Counter(r.street for r in recs if r.street)
+            resp = [r.resp_hrs for r in recs if r.resp_hrs is not None]
+            yr_hood_stats.append(
+                NeighborhoodStat(
+                    name=name,
+                    slug=slugify(name),
+                    count=len(recs),
+                    pct=round(len(recs) / max(len(yr_recs), 1) * 100, 1),
+                    top_street=streets.most_common(1)[0][0] if streets else "\u2014",
+                    avg_resp=round(sum(resp) / max(len(resp), 1), 1),
+                )
+            )
+        year_hoods[str(y)] = yr_hood_stats[:15]
+
+    # Per-year zip codes
+    year_zips: dict[str, list[ZipStat]] = {}
+    for y in years:
+        yr_zip_counts = Counter(r.zipcode for r in records if r.year == y and r.zipcode)
+        year_zips[str(y)] = [ZipStat(zip=z, count=c) for z, c in yr_zip_counts.most_common(10)]
 
     # Individual markers (cap at 3000 most recent)
     recent = sorted(records, key=lambda r: r.dt, reverse=True)[:3000]
@@ -143,8 +186,12 @@ def compute_stats(records: list[CleanedRecord]) -> DashboardStats:
         hoods=hood_stats[:15],
         hourly=hourly_data,
         year_hourly=year_hourly,
+        hood_hourly=hood_hourly,
+        zip_hourly=zip_hourly,
         year_monthly=year_monthly,
         zip_stats=zip_stats,
+        year_hoods=year_hoods,
+        year_zips=year_zips,
         markers=markers,
         council_districts=council_values,
         police_districts=police_values,

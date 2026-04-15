@@ -6,7 +6,7 @@ import HourlyChart from "../components/HourlyChart"
 import MonthlyTrend from "../components/MonthlyTrend"
 import NeighborhoodTable from "../components/NeighborhoodTable"
 import StatsOverview from "../components/StatsOverview.astro"
-import ZipCodeList from "../components/ZipCodeList.astro"
+import ZipCodeList from "../components/ZipCodeList"
 import BaseLayout from "../layouts/BaseLayout.astro"
 import { fetchDistrictBoundaries, fetchMarkers, fetchPageStats, fetchPoints } from "../lib/bucket"
 import { formatNumber } from "../lib/seo"
@@ -132,13 +132,32 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 		<section class="section" aria-label="Trend charts">
 			<h2 class="section-title">Trends &amp; Patterns</h2>
 			<div class="charts-grid">
-				<MonthlyTrend client:visible yearMonthly={stats.year_monthly} />
+				<MonthlyTrend client:visible datasets={{
+					Sharps: { yearMonthly: stats.year_monthly, label: "Sharps" },
+					Encampments: { yearMonthly: encampmentStats.year_monthly, label: "Encampments" },
+					"Human Waste": { yearMonthly: wasteStats.year_monthly, label: "Human Waste" },
+				}} />
 				<HourlyChart
 					client:visible
 					datasets={{
-						Sharps: { hourly: stats.hourly, yearHourly: stats.year_hourly, years: stats.years },
-						Encampments: { hourly: encampmentStats.hourly, yearHourly: encampmentStats.year_hourly, years: encampmentStats.years },
-						"Human Waste": { hourly: wasteStats.hourly, yearHourly: wasteStats.year_hourly, years: wasteStats.years },
+						Sharps: {
+							hourly: stats.hourly, yearHourly: stats.year_hourly,
+							hoodHourly: stats.hood_hourly ?? {}, zipHourly: stats.zip_hourly ?? {},
+							years: stats.years,
+							hoods: stats.hoods.map(h => h.name), zips: stats.zip_stats.map(z => z.zip),
+						},
+						Encampments: {
+							hourly: encampmentStats.hourly, yearHourly: encampmentStats.year_hourly,
+							hoodHourly: encampmentStats.hood_hourly ?? {}, zipHourly: encampmentStats.zip_hourly ?? {},
+							years: encampmentStats.years,
+							hoods: encampmentStats.hoods.map(h => h.name), zips: encampmentStats.zip_stats.map(z => z.zip),
+						},
+						"Human Waste": {
+							hourly: wasteStats.hourly, yearHourly: wasteStats.year_hourly,
+							hoodHourly: wasteStats.hood_hourly ?? {}, zipHourly: wasteStats.zip_hourly ?? {},
+							years: wasteStats.years,
+							hoods: wasteStats.hoods.map(h => h.name), zips: wasteStats.zip_stats.map(z => z.zip),
+						},
 					}}
 				/>
 			</div>
@@ -147,13 +166,17 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 		<NeighborhoodTable
 			client:visible
 			datasets={{
-				Sharps: { hoods: neighborhoods, years: stats.years, label: "Sharps", color: "#e85a1b" },
-				Encampments: { hoods: encampmentNeighborhoods, years: encampmentStats.years, label: "Encampments", color: "#7b2d8e" },
-				"Human Waste": { hoods: wasteNeighborhoods, years: wasteStats.years, label: "Human Waste", color: "#8B6914" },
+				Sharps: { hoods: neighborhoods, yearHoods: stats.year_hoods ?? {}, years: stats.years, label: "Sharps", color: "#e85a1b" },
+				Encampments: { hoods: encampmentNeighborhoods, yearHoods: encampmentStats.year_hoods ?? {}, years: encampmentStats.years, label: "Encampments", color: "#7b2d8e" },
+				"Human Waste": { hoods: wasteNeighborhoods, yearHoods: wasteStats.year_hoods ?? {}, years: wasteStats.years, label: "Human Waste", color: "#8B6914" },
 			}}
 		/>
 
-		<ZipCodeList zipStats={stats.zip_stats} />
+		<ZipCodeList client:visible datasets={{
+			Sharps: { zipStats: stats.zip_stats, yearZips: stats.year_zips ?? {}, years: stats.years, label: "Sharps" },
+			Encampments: { zipStats: encampmentStats.zip_stats, yearZips: encampmentStats.year_zips ?? {}, years: encampmentStats.years, label: "Encampments" },
+			"Human Waste": { zipStats: wasteStats.zip_stats, yearZips: wasteStats.year_zips ?? {}, years: wasteStats.years, label: "Human Waste" },
+		}} />
 
 		<section class="section about-section" aria-label="About this data">
 			<h2 class="section-title">About This Data</h2>

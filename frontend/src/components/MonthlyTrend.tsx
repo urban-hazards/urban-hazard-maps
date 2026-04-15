@@ -21,8 +21,13 @@ Chart.register(
 )
 Chart.defaults.font.family = '"Source Sans 3", system-ui, sans-serif'
 
-interface MonthlyTrendProps {
+interface DatasetMonthly {
 	yearMonthly: Record<string, number[]>
+	label: string
+}
+
+interface MonthlyTrendProps {
+	datasets: Record<string, DatasetMonthly>
 }
 
 const MONTHS_SHORT = [
@@ -62,6 +67,12 @@ const BUTTON_COLORS = [
 	"#d06a74",
 ]
 
+const TYPE_COLORS: Record<string, string> = {
+	Sharps: "#e85a1b",
+	Encampments: "#7b2d8e",
+	"Human Waste": "#8B6914",
+}
+
 const VISIBLE_COUNT = 3
 
 function trimPartialYear(vals: number[]): (number | null)[] {
@@ -83,10 +94,18 @@ function trimPartialYear(vals: number[]): (number | null)[] {
 	return vals
 }
 
-export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
+export default function MonthlyTrend({ datasets }: MonthlyTrendProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const chartRef = useRef<Chart | null>(null)
+	const types = Object.keys(datasets)
+	const [activeType, setActiveType] = useState(types[0])
 	const [, setToggle] = useState(0)
+
+	const rawYearMonthly = datasets[activeType]?.yearMonthly ?? {}
+	// Filter out years with no data (all zeros)
+	const yearMonthly = Object.fromEntries(
+		Object.entries(rawYearMonthly).filter(([, vals]) => vals.some((v) => v > 0)),
+	)
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -114,13 +133,14 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 				plugins: {
 					legend: {
 						labels: {
-							font: { size: 11 },
-							boxWidth: 12,
+							font: { size: 12, weight: "bold" },
+							boxWidth: 14,
+							padding: 10,
 							generateLabels(chart) {
 								const original = Chart.defaults.plugins.legend.labels.generateLabels(chart)
 								return original.map((label) => ({
 									...label,
-									fontColor: label.hidden ? "#888" : label.fillStyle,
+									fontColor: label.hidden ? "#aaa" : "#333",
 								}))
 							},
 						},
@@ -188,7 +208,7 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 				<div className="card-title" style={{ margin: 0 }}>
 					Monthly Trend by Year
 				</div>
-				<div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+				<div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
 					<button type="button" aria-label="Show all years" onClick={showAll} style={btnStyle}>
 						Show all
 					</button>
@@ -197,6 +217,34 @@ export default function MonthlyTrend({ yearMonthly }: MonthlyTrendProps) {
 					</button>
 				</div>
 			</div>
+			{types.length > 1 && (
+				<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "8px 0 4px" }}>
+					{types.map((t) => (
+						<button
+							key={t}
+							type="button"
+							aria-label={`Show ${t} monthly trend`}
+							onClick={() => setActiveType(t)}
+							style={{
+								padding: "3px 10px",
+								fontSize: "11px",
+								border: `1px solid ${TYPE_COLORS[t] || "#999"}`,
+								borderRadius: "12px",
+								background: activeType === t ? TYPE_COLORS[t] || "#999" : "transparent",
+								color: activeType === t ? "#fff" : TYPE_COLORS[t] || "#999",
+								cursor: "pointer",
+								fontFamily: "inherit",
+								fontWeight: activeType === t ? 600 : 400,
+							}}
+						>
+							{t}
+							{t === "Human Waste" && (
+								<span style={{ fontSize: "9px", opacity: 0.7, marginLeft: 2 }}> (beta)</span>
+							)}
+						</button>
+					))}
+				</div>
+			)}
 			{hiddenCount > 0 && (
 				<div
 					style={{

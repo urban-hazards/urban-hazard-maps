@@ -44,8 +44,12 @@ export interface PageStats {
 	hoods: NeighborhoodStat[]
 	hourly: number[]
 	year_hourly: Record<string, number[]>
+	hood_hourly?: Record<string, number[]>
+	zip_hourly?: Record<string, number[]>
 	year_monthly: Record<string, number[]>
 	zip_stats: ZipStat[]
+	year_hoods?: Record<string, NeighborhoodStat[]>
+	year_zips?: Record<string, ZipStat[]>
 	council_districts?: string[]
 	council_district_labels?: string[]
 	police_districts?: string[]

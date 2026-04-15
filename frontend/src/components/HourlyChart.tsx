@@ -7,7 +7,11 @@ Chart.defaults.font.family = '"Source Sans 3", system-ui, sans-serif'
 interface DatasetInfo {
 	hourly: number[]
 	yearHourly: Record<string, number[]>
+	hoodHourly: Record<string, number[]>
+	zipHourly: Record<string, number[]>
 	years: number[]
+	hoods: string[]
+	zips: string[]
 }
 
 interface HourlyChartProps {
@@ -27,18 +31,39 @@ const TYPE_COLORS: Record<string, string> = {
 	"Human Waste": "#76b7b2",
 }
 
+type FilterMode = "year" | "hood" | "zip"
+
 export default function HourlyChart({ datasets }: HourlyChartProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const chartRef = useRef<Chart | null>(null)
 	const [activeType, setActiveType] = useState("Sharps")
+	const [filterMode, setFilterMode] = useState<FilterMode>("year")
 	const [activeYear, setActiveYear] = useState("all")
+	const [activeHood, setActiveHood] = useState("all")
+	const [activeZip, setActiveZip] = useState("all")
 
 	const datasetInfo = datasets[activeType]
 	const yearHourly = datasetInfo.yearHourly ?? {}
-	const hourly =
-		activeYear === "all"
-			? (datasetInfo.hourly ?? Array(24).fill(0))
-			: (yearHourly[activeYear] ?? Array(24).fill(0))
+	const hoodHourly = datasetInfo.hoodHourly ?? {}
+	const zipHourly = datasetInfo.zipHourly ?? {}
+
+	let hourly: number[]
+	if (filterMode === "year") {
+		hourly =
+			activeYear === "all"
+				? (datasetInfo.hourly ?? Array(24).fill(0))
+				: (yearHourly[activeYear] ?? Array(24).fill(0))
+	} else if (filterMode === "hood") {
+		hourly =
+			activeHood === "all"
+				? (datasetInfo.hourly ?? Array(24).fill(0))
+				: (hoodHourly[activeHood] ?? Array(24).fill(0))
+	} else {
+		hourly =
+			activeZip === "all"
+				? (datasetInfo.hourly ?? Array(24).fill(0))
+				: (zipHourly[activeZip] ?? Array(24).fill(0))
+	}
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -82,10 +107,14 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 
 	const types = Object.keys(datasets)
 	const years = datasetInfo.years ?? []
+	const hoods = datasetInfo.hoods ?? []
+	const zips = datasetInfo.zips ?? []
 
 	return (
 		<div className="card" style={{ padding: "20px 20px 16px" }}>
 			<div className="card-title">Requests by Hour of Day</div>
+
+			{/* Type toggle */}
 			<div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "8px 0" }}>
 				{types.map((t) => (
 					<button
@@ -95,6 +124,8 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 						onClick={() => {
 							setActiveType(t)
 							setActiveYear("all")
+							setActiveHood("all")
+							setActiveZip("all")
 						}}
 						style={{
 							padding: "3px 10px",
@@ -115,50 +146,145 @@ export default function HourlyChart({ datasets }: HourlyChartProps) {
 					</button>
 				))}
 			</div>
-			<div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "8px" }}>
-				<button
-					type="button"
-					aria-label="Show all years"
-					onClick={() => setActiveYear("all")}
-					style={{
-						padding: "2px 8px",
-						fontSize: "10px",
-						border: "1px solid #ccc",
-						borderRadius: "10px",
-						background: activeYear === "all" ? "#555" : "transparent",
-						color: activeYear === "all" ? "#fff" : "#666",
-						cursor: "pointer",
-						fontFamily: "inherit",
-						fontWeight: activeYear === "all" ? 600 : 400,
-					}}
-				>
-					All
-				</button>
-				{years.map((y) => (
+
+			{/* Filter mode tabs */}
+			<div
+				style={{
+					display: "flex",
+					gap: "4px",
+					marginBottom: "6px",
+					borderBottom: "1px solid #e0e0e0",
+					paddingBottom: "6px",
+				}}
+			>
+				{(
+					[
+						["year", "By Year"],
+						["hood", "By Neighborhood"],
+						["zip", "By Zip"],
+					] as const
+				).map(([mode, label]) => (
 					<button
-						key={y}
+						key={mode}
 						type="button"
-						aria-label={`Show year ${y}`}
-						onClick={() => setActiveYear(String(y))}
+						onClick={() => setFilterMode(mode)}
 						style={{
-							padding: "2px 8px",
-							fontSize: "10px",
-							border: "1px solid #ccc",
-							borderRadius: "10px",
-							background: activeYear === String(y) ? "#555" : "transparent",
-							color: activeYear === String(y) ? "#fff" : "#666",
+							padding: "3px 10px",
+							fontSize: "11px",
+							border: "none",
+							borderBottom: filterMode === mode ? "2px solid #555" : "2px solid transparent",
+							background: "none",
+							color: filterMode === mode ? "#333" : "#999",
 							cursor: "pointer",
 							fontFamily: "inherit",
-							fontWeight: activeYear === String(y) ? 600 : 400,
+							fontWeight: filterMode === mode ? 600 : 400,
 						}}
 					>
-						{y}
+						{label}
 					</button>
 				))}
 			</div>
+
+			{/* Filter options */}
+			{filterMode === "year" && (
+				<div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "8px" }}>
+					<PillButton
+						active={activeYear === "all"}
+						onClick={() => setActiveYear("all")}
+						label="All"
+					/>
+					{years.map((y) => (
+						<PillButton
+							key={y}
+							active={activeYear === String(y)}
+							onClick={() => setActiveYear(String(y))}
+							label={String(y)}
+						/>
+					))}
+				</div>
+			)}
+
+			{filterMode === "hood" && (
+				<div style={{ marginBottom: "8px" }}>
+					<select
+						value={activeHood}
+						onChange={(e) => setActiveHood(e.target.value)}
+						style={selectStyle}
+					>
+						<option value="all">All Neighborhoods</option>
+						{hoods.map((h) => (
+							<option key={h} value={h}>
+								{h}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
+
+			{filterMode === "zip" && (
+				<div style={{ marginBottom: "8px" }}>
+					<select
+						value={activeZip}
+						onChange={(e) => setActiveZip(e.target.value)}
+						style={selectStyle}
+					>
+						<option value="all">All Zip Codes</option>
+						{zips.map((z) => (
+							<option key={z} value={z}>
+								{z}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
+
 			<div style={{ padding: "4px 0" }}>
 				<canvas ref={canvasRef} height={120} aria-label="Requests by hour of day bar chart" />
 			</div>
 		</div>
 	)
+}
+
+function PillButton({
+	active,
+	onClick,
+	label,
+}: {
+	active: boolean
+	onClick: () => void
+	label: string
+}) {
+	return (
+		<button
+			type="button"
+			aria-label={`Show ${label}`}
+			onClick={onClick}
+			style={{
+				padding: "3px 10px",
+				fontSize: "11px",
+				border: "1px solid #ccc",
+				borderRadius: "10px",
+				background: active ? "#555" : "transparent",
+				color: active ? "#fff" : "#555",
+				cursor: "pointer",
+				fontFamily: "inherit",
+				fontWeight: active ? 600 : 400,
+			}}
+		>
+			{label}
+		</button>
+	)
+}
+
+const selectStyle: React.CSSProperties = {
+	padding: "4px 8px",
+	fontSize: "12px",
+	border: "1px solid #ccc",
+	borderRadius: "6px",
+	background: "#fff",
+	color: "#333",
+	fontFamily: "inherit",
+	cursor: "pointer",
+	width: "100%",
+	maxWidth: 220,
 }
