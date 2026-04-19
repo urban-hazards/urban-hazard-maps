@@ -1039,8 +1039,8 @@ export default function HeatMap({
 							</div>
 							<input
 								type="range"
-								min={1}
-								max={100}
+								min={-100}
+								max={200}
 								value={heatIntensity}
 								onChange={(e) => setHeatIntensity(Number(e.target.value))}
 								style={{
@@ -1463,19 +1463,22 @@ function createHeatLayer(
 	method: HeatMethod = "tableau",
 ): L.Layer {
 	const params = getHeatParams(zoom, method)
-	// Intensity 1-100 scales radius exponentially (0.04x–0.2x). Most usable renders
-	// land in ~0.06x–0.13x, so slider middle hits that range; top-end caps well
-	// short of the map-covering zone.
+	// Intensity -100..200 scales radius exponentially (0.008x–1.0x). 50 = needle
+	// baseline; negative values give tight hotspots for sparse layers.
 	const scale = 0.04 * 5 ** (intensity / 100)
+	// Floor radius/blur so leaflet-heat doesn't fall back to internal defaults
+	// when it gets 0 — that causes huge blobs on dense layers at low intensity.
+	const radius = Math.max(3, Math.round(params.radius * scale))
+	const blur = Math.min(radius, Math.max(2, Math.round(params.blur * scale)))
 	return (
 		L as Record<string, unknown> as {
 			heatLayer: (pts: number[][], opts: Record<string, unknown>) => L.Layer
 		}
 	).heatLayer(pts, {
-		radius: Math.round(params.radius * scale),
-		blur: Math.round(params.blur * scale),
+		radius,
+		blur,
 		maxZoom: params.maxZoom,
-		minOpacity: params.minOpacity * scale,
+		minOpacity: Math.max(0.01, params.minOpacity * scale),
 		gradient,
 		pane: "heatmapPane",
 	})
