@@ -13,8 +13,10 @@ from pipeline.config import (
     ENCAMPMENT_QUEUE_START_YEAR,
     ENCAMPMENT_TYPES,
     NEEDLE_TYPES,
+    OPEN311_WASTE_START_DATE,
     RESOURCE_IDS,
     SCRAPER_SLUGS_FOR_WASTE,
+    SCRAPER_SLUGS_FOR_WASTE_INPUT,
     STREET_CLEANING_TYPES,
 )
 from pipeline.districts import DistrictLookup
@@ -257,17 +259,63 @@ def _compute_routing_stats(
 def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
     """Classify street cleaning records for human waste, enrich, compute stats.
 
+    Ingests two sources:
+    1. CKAN "Requests for Street Cleaning" (passed in as raw_records)
+    2. Open311 scraped "Other" corpus (loaded here from S3)
+
+    Reclassified Other tickets never appear in CKAN — they're invisible to the
+    bulk export. Dedupe by case_enquiry_id is a safety net; in practice the
+    overlap is near-zero. See issue #57 §4b-2 for verification.
+
     Returns the number of high-confidence waste matches.
     """
+    from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
+
+    # Build CKAN ID set before cleaning (for dedupe against Open311)
+    ckan_ids: set[str] = {str(r.get("case_enquiry_id", "")) for r in raw_records}
+    ckan_ids.discard("")
+
+    # Load Other corpus from Open311 scraper
+    today = datetime.now().date()
+    open311_raw = load_records_from_s3(
+        SCRAPER_SLUGS_FOR_WASTE_INPUT,
+        OPEN311_WASTE_START_DATE,
+        today,
+    )
+
+    # Dedupe: drop Other records whose service_request_id already exists in CKAN
+    dupes_dropped = 0
+    open311_unique: list[dict[str, Any]] = []
+    for rec in open311_raw:
+        sr_id = str(rec.get("service_request_id", ""))
+        if sr_id in ckan_ids:
+            dupes_dropped += 1
+        else:
+            open311_unique.append(rec)
+
+    # Normalize Open311 records to CKAN-like format
+    open311_normalized = [normalize_open311_record(r) for r in open311_unique]
+
+    # Merge: CKAN first (canonical), then Open311 Other
+    all_raw = raw_records + open311_normalized
+    logger.info(
+        "Waste input: ckan=%d, open311_loaded=%d, open311_dupes_dropped=%d, open311_normalized=%d, total_candidates=%d",
+        len(raw_records),
+        len(open311_raw),
+        dupes_dropped,
+        len(open311_normalized),
+        len(all_raw),
+    )
+
     # Step 1: Classify on closure_reason first (fast, no API calls)
     classifier = WasteClassifier()
-    initial_results = classifier.classify_batch(raw_records)
+    initial_results = classifier.classify_batch(all_raw)
 
     # Step 2: Identify records that need enrichment:
     # - High/medium confidence matches (already have signal)
     # - Records routed to INFO_HumanWaste queue (confirmed waste)
     to_enrich: list[dict[str, Any]] = []
-    for rec, res in zip(raw_records, initial_results, strict=True):
+    for rec, res in zip(all_raw, initial_results, strict=True):
         queue = rec.get("queue", "")
         if res.confidence in ("high", "medium") or "HumanWaste" in queue:
             to_enrich.append(rec)
@@ -301,7 +349,7 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
             all_results.append(res)
 
     # Add initial matches not already in enriched set
-    for rec, res in zip(raw_records, initial_results, strict=True):
+    for rec, res in zip(all_raw, initial_results, strict=True):
         cid = str(rec.get("case_enquiry_id", ""))
         if cid not in enriched_ids and res.confidence in ("high", "medium"):
             all_matches.append(rec)
@@ -314,7 +362,7 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
         len(all_matches),
         n_high,
         n_medium,
-        len(raw_records),
+        len(all_raw),
     )
 
     # Save full classification results
