@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from pipeline import storage
@@ -23,6 +23,7 @@ from pipeline.districts import DistrictLookup
 from pipeline.enricher import enrich_records
 from pipeline.fetcher import fetch_encampment_year, fetch_year
 from pipeline.models import CleanedRecord
+from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
 
 logger = logging.getLogger(__name__)
 
@@ -269,14 +270,12 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
 
     Returns the number of high-confidence waste matches.
     """
-    from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
-
     # Build CKAN ID set before cleaning (for dedupe against Open311)
     ckan_ids: set[str] = {str(r.get("case_enquiry_id", "")) for r in raw_records}
     ckan_ids.discard("")
 
     # Load Other corpus from Open311 scraper
-    today = datetime.now().date()
+    today = datetime.now(UTC).date()
     open311_raw = load_records_from_s3(
         SCRAPER_SLUGS_FOR_WASTE_INPUT,
         OPEN311_WASTE_START_DATE,

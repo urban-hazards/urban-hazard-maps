@@ -9,7 +9,9 @@ Verifies:
 """
 
 import json
+from dataclasses import dataclass, field
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
 
@@ -140,5 +142,108 @@ class TestWasteMergeDedupe:
     def test_normalized_records_have_required_fields(self) -> None:
         normalized = normalize_open311_record(OPEN311_WASTE_POSITIVE)
         required = ["case_enquiry_id", "open_dt", "latitude", "longitude", "closure_reason"]
-        for field in required:
-            assert field in normalized, f"Missing field: {field}"
+        for f in required:
+            assert f in normalized, f"Missing field: {f}"
+
+
+@dataclass
+class _FakeResult:
+    """Minimal ClassificationResult stand-in."""
+
+    case_id: str = ""
+    score: float = 0.0
+    confidence: str = "none"
+    matched_terms: list[str] = field(default_factory=list)
+    matched_phrases: list[str] = field(default_factory=list)
+    context_boosters: list[str] = field(default_factory=list)
+    false_positive_flags: list[str] = field(default_factory=list)
+    bpw_rejection: bool = False
+    source_texts: dict[str, str] = field(default_factory=dict)
+
+
+def _make_fake_classifier(waste_ids: set[str]) -> MagicMock:
+    """Return a mock WasteClassifier whose classify_batch returns high for waste_ids."""
+
+    def classify_batch(records: list[dict[str, Any]]) -> list[_FakeResult]:
+        results = []
+        for r in records:
+            cid = str(r.get("case_enquiry_id", ""))
+            queue = r.get("queue", "")
+            if cid in waste_ids or "HumanWaste" in queue:
+                results.append(_FakeResult(case_id=cid, score=0.9, confidence="high"))
+            else:
+                results.append(_FakeResult(case_id=cid, score=0.0, confidence="none"))
+        return results
+
+    mock = MagicMock()
+    mock.classify_batch = classify_batch
+    return mock
+
+
+class TestProcessWasteIntegration:
+    """Integration test for _process_waste dedupe + merge path.
+
+    Mocks spaCy classifier, enricher, and districts to isolate the
+    merge/dedupe contract without external dependencies.
+    """
+
+    def test_merge_dedupe_and_source_tagging(self, s3_bucket: Any) -> None:
+        client, bucket = s3_bucket
+
+        # Seed Other corpus in S3
+        client.put_object(
+            Bucket=bucket,
+            Key="open311/other/2024-06-15.json",
+            Body=json.dumps([OPEN311_DUPLICATE, OPEN311_WASTE_POSITIVE, OPEN311_NOT_WASTE]),
+        )
+
+        # IDs the classifier should mark as waste
+        waste_ids = {
+            CKAN_CONFIRMED["case_enquiry_id"],
+            OPEN311_WASTE_POSITIVE["service_request_id"],
+        }
+        fake_classifier = _make_fake_classifier(waste_ids)
+
+        with (
+            patch("pipeline.run.WasteClassifier", return_value=fake_classifier),
+            patch("pipeline.run.enrich_records", side_effect=lambda recs, cache, **kw: (recs, cache)),
+            patch("pipeline.run._enrich_districts"),
+            patch("pipeline.run.compute_stats") as mock_stats,
+            patch("pipeline.run.storage") as mock_storage,
+        ):
+            # compute_stats needs to return something with the right shape
+            mock_stats_result = MagicMock()
+            mock_stats_result.total = 0
+            mock_stats_result.markers = []
+            mock_stats_result.points = []
+            mock_stats_result.heat_keys = {"all": []}
+            mock_stats.return_value = mock_stats_result
+
+            # storage.read_json for description cache
+            mock_storage.read_json.return_value = {}
+            mock_storage.list_keys.return_value = ["open311/other/2024-06-15.json"]
+
+            # Re-read the actual S3 data for the Other corpus load
+            from pipeline import storage as real_storage
+
+            mock_storage.read_json.side_effect = lambda key: real_storage.read_json(key)
+            mock_storage.list_keys.side_effect = lambda prefix: real_storage.list_keys(prefix)
+
+            from pipeline.run import _process_waste
+
+            _process_waste([CKAN_CONFIRMED], force=False)
+
+        # Verify compute_stats received the right records
+        call_args = mock_stats.call_args
+        cleaned_records = call_args[0][0]
+
+        # Should have 2 records: CKAN confirmed + Open311 waste-positive
+        # Duplicate (same ID as CKAN) dropped, non-waste excluded by classifier
+        assert len(cleaned_records) == 2
+
+        sources = {r.source for r in cleaned_records}
+        assert "confirmed" in sources
+        assert "detected" in sources
+
+        # No record should be missing source
+        assert all(r.source is not None for r in cleaned_records)

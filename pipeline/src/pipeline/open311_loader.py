@@ -2,6 +2,7 @@
 
 import logging
 import re
+from collections.abc import Iterator
 from datetime import date
 from typing import Any
 
@@ -14,18 +15,16 @@ logger = logging.getLogger(__name__)
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})\.json$")
 
 
-def load_descriptions_from_s3(
+def _iter_day_records(
     slugs: list[str],
     start_date: date,
     end_date: date,
-) -> dict[str, dict[str, str | None]]:
-    """Load scraped Open311 records from S3.
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield (slug, record) pairs from S3 day-files in the date range.
 
-    Returns {service_request_id: {description, media_url, status_notes}}.
+    Shared iteration logic for both description-only and full-record loaders.
+    Skips records without a service_request_id.
     """
-    result: dict[str, dict[str, str | None]] = {}
-    total_loaded = 0
-
     for slug in slugs:
         prefix = f"{OPEN311_SCRAPER_PREFIX}/{slug}/"
         keys = storage.list_keys(prefix)
@@ -47,18 +46,30 @@ def load_descriptions_from_s3(
                 continue
 
             for record in records:
-                sr_id = record.get("service_request_id")
-                if not sr_id:
+                if not record.get("service_request_id"):
                     continue
+                yield slug, record
 
-                result[str(sr_id)] = {
-                    "description": record.get("description"),
-                    "media_url": record.get("media_url"),
-                    "status_notes": record.get("status_notes"),
-                }
-                total_loaded += 1
 
-    logger.info("Loaded %d Open311 descriptions from S3 across %d slugs", total_loaded, len(slugs))
+def load_descriptions_from_s3(
+    slugs: list[str],
+    start_date: date,
+    end_date: date,
+) -> dict[str, dict[str, str | None]]:
+    """Load scraped Open311 records from S3.
+
+    Returns {service_request_id: {description, media_url, status_notes}}.
+    """
+    result: dict[str, dict[str, str | None]] = {}
+
+    for _slug, record in _iter_day_records(slugs, start_date, end_date):
+        result[str(record["service_request_id"])] = {
+            "description": record.get("description"),
+            "media_url": record.get("media_url"),
+            "status_notes": record.get("status_notes"),
+        }
+
+    logger.info("Loaded %d Open311 descriptions from S3 across %d slugs", len(result), len(slugs))
     return result
 
 
@@ -74,36 +85,11 @@ def load_records_from_s3(
     than a gap). Each returned dict carries `_open311_slug` for traceability.
     """
     result: list[dict[str, Any]] = []
-    total_loaded = 0
 
-    for slug in slugs:
-        prefix = f"{OPEN311_SCRAPER_PREFIX}/{slug}/"
-        keys = storage.list_keys(prefix)
+    for slug, record in _iter_day_records(slugs, start_date, end_date):
+        result.append({**record, "_open311_slug": slug})
 
-        day_keys: list[str] = []
-        for key in keys:
-            match = _DATE_RE.search(key)
-            if not match:
-                continue
-            key_date = date.fromisoformat(match.group(1))
-            if start_date <= key_date <= end_date:
-                day_keys.append(key)
-
-        logger.info("Loading %d day-files from s3 for slug=%s (full records)", len(day_keys), slug)
-
-        for key in day_keys:
-            records = storage.read_json(key)
-            if not records or not isinstance(records, list):
-                continue
-
-            for record in records:
-                if not record.get("service_request_id"):
-                    continue
-                record["_open311_slug"] = slug
-                result.append(record)
-                total_loaded += 1
-
-    logger.info("Loaded %d raw Open311 records from S3 across %d slugs", total_loaded, len(slugs))
+    logger.info("Loaded %d raw Open311 records from S3 across %d slugs", len(result), len(slugs))
     return result
 
 
