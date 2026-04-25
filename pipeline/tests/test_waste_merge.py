@@ -93,6 +93,22 @@ class TestNormalizeOpen311Record:
         assert result["open311_description"] == "Human feces on the sidewalk near the bus stop"
         assert result["closure_reason"] == "Referred to BPHC"
 
+    def test_parses_neighborhood_from_address(self) -> None:
+        """Address 'street, hood, Ma, zip' should parse into separate fields."""
+        result = normalize_open311_record(OPEN311_WASTE_POSITIVE)
+        assert result["neighborhood"] == "Roxbury"
+        assert result["location_street_name"] == "150 Southampton St"
+        assert result["location_zipcode"] == "02118"
+
+    def test_parses_address_without_zip(self) -> None:
+        record = {
+            **OPEN311_WASTE_POSITIVE,
+            "address": "Intersection Of Kirk St And Montview St, West Roxbury, Ma",
+        }
+        result = normalize_open311_record(record)
+        assert result["neighborhood"] == "West Roxbury"
+        assert result["location_zipcode"] == ""
+
 
 class TestLoadRecordsFromS3:
     def test_loads_and_tags_slug(self, s3_bucket: Any) -> None:

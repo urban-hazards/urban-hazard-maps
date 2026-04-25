@@ -85,6 +85,11 @@ def enrich_records(
 
         case_id = str(case_id)
 
+        # Already has a description (e.g. from Open311 Other corpus) — don't overwrite
+        if record.get("open311_description"):
+            skipped += 1
+            continue
+
         # Check in-memory cache first
         if case_id in description_cache:
             record["open311_description"] = description_cache[case_id]

@@ -108,6 +108,15 @@ def normalize_open311_record(record: dict[str, Any]) -> dict[str, Any]:
     status = (record.get("status") or "").strip().lower()
     closed_dt = record.get("updated_datetime", "") if status == "closed" else ""
 
+    # Parse address: "street, neighborhood, Ma, zip" or "street, neighborhood, Ma"
+    address = record.get("address", "") or ""
+    parts = [p.strip() for p in address.split(",")]
+    street = parts[0] if len(parts) >= 1 else ""
+    neighborhood = parts[1] if len(parts) >= 2 else ""
+    zipcode = record.get("zipcode", "")
+    if not zipcode and len(parts) >= 4:
+        zipcode = parts[3]
+
     return {
         "case_enquiry_id": record.get("service_request_id", ""),
         "open_dt": record.get("requested_datetime", ""),
@@ -118,9 +127,9 @@ def normalize_open311_record(record: dict[str, Any]) -> dict[str, Any]:
         "queue": record.get("service_code", ""),
         "latitude": record.get("lat"),
         "longitude": record.get("long"),
-        "neighborhood": record.get("address", ""),
-        "location_street_name": record.get("address", ""),
-        "location_zipcode": record.get("zipcode", ""),
+        "neighborhood": neighborhood,
+        "location_street_name": street,
+        "location_zipcode": zipcode,
         "closure_reason": record.get("status_notes", ""),
         "open311_description": record.get("description"),
     }
