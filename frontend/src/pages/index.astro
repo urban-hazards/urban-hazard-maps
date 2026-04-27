@@ -163,14 +163,16 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			</div>
 		</section>
 
-		<NeighborhoodTable
-			client:visible
-			datasets={{
-				Sharps: { hoods: neighborhoods, yearHoods: stats.year_hoods ?? {}, years: stats.years, label: "Sharps", color: "#e85a1b" },
-				Encampments: { hoods: encampmentNeighborhoods, yearHoods: encampmentStats.year_hoods ?? {}, years: encampmentStats.years, label: "Encampments", color: "#7b2d8e" },
-				"Human Waste": { hoods: wasteNeighborhoods, yearHoods: wasteStats.year_hoods ?? {}, years: wasteStats.years, label: "Human Waste", color: "#8B6914" },
-			}}
-		/>
+		{import.meta.env.SHOW_NEIGHBORHOOD_TABLE === 'true' && (
+			<NeighborhoodTable
+				client:visible
+				datasets={{
+					Sharps: { hoods: neighborhoods, yearHoods: stats.year_hoods ?? {}, years: stats.years, label: "Sharps", color: "#e85a1b" },
+					Encampments: { hoods: encampmentNeighborhoods, yearHoods: encampmentStats.year_hoods ?? {}, years: encampmentStats.years, label: "Encampments", color: "#7b2d8e" },
+					"Human Waste": { hoods: wasteNeighborhoods, yearHoods: wasteStats.year_hoods ?? {}, years: wasteStats.years, label: "Human Waste", color: "#8B6914" },
+				}}
+			/>
+		)}
 
 		<ZipCodeList client:visible datasets={{
 			Sharps: { zipStats: stats.zip_stats, yearZips: stats.year_zips ?? {}, years: stats.years, label: "Sharps" },
