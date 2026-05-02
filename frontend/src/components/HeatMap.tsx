@@ -312,7 +312,11 @@ export default function HeatMap({
 			}
 
 			if (!mapRef.current) return
-			const map = L.map(mapRef.current, { center: [42.332, -71.078], zoom: 13 })
+			const map = L.map(mapRef.current, {
+				center: [42.332, -71.078],
+				zoom: 13,
+				dragging: false,
+			})
 			mapInstance.current = map
 
 			// Custom panes so boundaries always render above heatmaps
