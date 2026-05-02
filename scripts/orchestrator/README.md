@@ -14,9 +14,14 @@ that builds outbound payloads. Three layers, all enforced in code:
    `.ssh/*`. Match → `ScrubError` → dispatch aborts.
 2. **Allow-list per ticket.** `tickets.yml#allowed_files` is the only source of
    truth. No globs, no directory walks reach Kimi.
-3. **Regex redaction.** OpenAI/GitHub/AWS/Anthropic/OpenRouter/Moonshot keys,
-   JWTs, IPv4 addresses, absolute URLs, postgres URLs all replaced with
-   `[REDACTED_*]`. Counts logged to `logs/<id>/redactions.json`.
+3. **Regex redaction (intentionally narrow).** OpenAI/GitHub/AWS/Anthropic/
+   OpenRouter/Moonshot keys, JWTs, postgres URLs, **private** IPv4 only
+   (RFC 1918), URLs with **inline credentials**, AWS-signed URLs, and
+   `*.internal` / `*.local` / `*.localhost` / `*.intra` URLs.
+   **Public URLs and public IPs are intentionally NOT redacted** — full-file
+   output mode round-trips placeholders into the rewritten source, so broad
+   URL redaction broke `data-quality.astro` regeneration in the Apr 2026
+   calibration. Counts logged to `logs/<id>/redactions.json`.
 4. **Strategy strip on ticket markdown.** Sections under `Strategy|Roadmap|
    Future|Vulnerab|Legal|Internal|Notes|Priority|Source|Context` headings are
    removed. Used as a fallback only when no `kimi_brief` is set.
@@ -30,12 +35,16 @@ wave dispatch. If they fail, the dispatcher refuses to start.
 
 ## Budget guardrails
 
-- Per Kimi call: ≤ 25K input tokens, ≤ 4K output tokens.
-- Per ticket: ≤ $0.05 cumulative spend (initial + retries).
-- Per wave: projected spend (per-ticket cap × ticket count) ≤ $0.30 without
-  `--budget-override`.
-- Live watchdog: pause when wave spend crosses $0.20.
-- Pricing baked in: Kimi K2.6 on OpenRouter at $0.74/M input, $3.49/M output.
+- Per Kimi call: ≤ 25K input tokens, ≤ 10K output tokens.
+- Per ticket: ≤ $0.50 cumulative spend (initial + retries).
+- Per wave: projected spend ≤ $5.00 without `--budget-override`.
+- Live watchdog: pause when wave spend crosses $3.00.
+- Pricing baked in (per-million tokens, in / out, OpenRouter):
+  - `moonshotai/kimi-k2`: $0.55 / $2.20  ← **default** (non-thinking)
+  - `moonshotai/kimi-k2.5`: $0.74 / $3.49
+  - `moonshotai/kimi-k2.6`: $0.74 / $3.49 (thinking; chews max_tokens budget)
+  - `moonshotai/kimi-k2-thinking`: $0.60 / $2.50
+- Override the model with `KIMI_MODEL=...` env var.
 
 The dispatcher reads OpenRouter's returned `usage` block and accumulates
 `spent_usd` in `logs/<id>/usage.json`.
@@ -59,7 +68,9 @@ uv run --with pyyaml python scripts/orchestrator/dispatch.py \
 # Live single ticket: scrub → Kimi → apply diff → pnpm build → Codex → log
 uv run --with pyyaml python scripts/orchestrator/dispatch.py --ticket G1a
 
-# Whole wave (all pending tickets at this wave level, parallel-safe)
+# Whole wave (all pending tickets at this wave level, sequential)
+# NOTE: not safe to run two --wave invocations concurrently — they share
+# /tmp/uhm_work/<id> and kimi/<id> branches.
 uv run --with pyyaml python scripts/orchestrator/dispatch.py --wave 1
 ```
 
@@ -109,6 +120,29 @@ tickets.yml entry
 3. Dry-run with `--print-payload` and review `logs/<id>/payload.json`. Confirm
    no leakage of strategy, names, or unscoped files.
 4. Live run with `--ticket <id>`.
+
+## Process — what does what
+
+The pipeline is intentionally three layers, with Claude (the orchestrator
+operator) in the middle as a sanity check, NOT a passive merger:
+
+1. **Claude authors** the `kimi_brief` and `allowed_files` for each ticket,
+   deciding what scope to send to Kimi.
+2. **Kimi K2 generates** the patch (full-file output mode).
+3. **Claude reviews** the diff against the **source ticket** in
+   `/tmp/uhm_issues/<id>.md` — not just the narrowed brief — and corrects
+   small issues by hand (typos, missed acceptance bullets, stylistic drift).
+4. **Codex audits** the result against the source ticket and the diff. The
+   audit prompt now explicitly receives the source ticket so it can flag
+   silently-dropped scope.
+5. **Claude opens a draft PR** that honestly describes what was shipped vs
+   deferred — never "Closes ticket X" if X has dropped acceptance items.
+6. **Brian reviews and merges**.
+
+Skipping step 3 (which the Apr 2026 calibration did) makes Codex tautological:
+it audits Kimi's narrowed scope and stamps it APPROVED, then the PR claims
+ticket-completion based on that stamp. The brief becomes the ground truth and
+the source spec is forgotten.
 
 ## File-size sweet spot
 

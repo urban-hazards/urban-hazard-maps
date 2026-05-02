@@ -32,10 +32,19 @@ Repo conventions (excerpt):
 {conventions}
 
 Ticket: {ticket_id}
-Mechanical brief:
+
+ORIGINAL ticket source — this is the ground truth. The diff must satisfy
+every acceptance bullet here, not just the narrowed brief below. If items
+were silently dropped, call them out:
+---
+{source_ticket}
+---
+
+Mechanical brief that was sent to the patch generator (may be narrower than
+the source ticket on purpose, but call out any silently-dropped scope):
 {brief}
 
-Acceptance criteria:
+Narrowed acceptance criteria sent to the generator:
 {acceptance}
 
 Proposed unified diff:
@@ -43,7 +52,11 @@ Proposed unified diff:
 {diff}
 ```
 
-Decide: does this diff satisfy the acceptance criteria, follow repo conventions, avoid introducing security or correctness regressions, and look like code a human reviewer would approve?
+Decide: does this diff satisfy the SOURCE ticket's acceptance criteria,
+follow repo conventions, avoid introducing security or correctness
+regressions, and look like code a human reviewer would approve? If the
+brief silently dropped scope from the source, that itself is grounds for
+NEEDS_CHANGES.
 
 Output exactly one of:
 - `APPROVED` — short rationale on the next line, max 2 sentences.
@@ -67,12 +80,14 @@ def audit(
     acceptance: list[str],
     diff: str,
     conventions: str,
+    source_ticket: str = "",
     timeout: int = 300,
 ) -> AuditResult:
     codex = _ensure_codex_available()
     prompt = PROMPT_TEMPLATE.format(
         conventions=conventions[:3000],
         ticket_id=ticket_id,
+        source_ticket=source_ticket[:8000] or "(no source ticket file provided)",
         brief=brief,
         acceptance="\n".join(f"- {c}" for c in acceptance),
         diff=diff[:50_000],

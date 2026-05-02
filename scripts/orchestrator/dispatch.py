@@ -317,12 +317,24 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
             continue
 
         final_diff = diff_against_base(worktree)
+        # Audit against the SOURCE ticket markdown (not the narrowed brief),
+        # so Codex catches silently-dropped acceptance criteria. The brief is
+        # also passed for context — Codex sees both and can flag the gap.
+        source_text = ""
+        if ticket.ticket_source:
+            try:
+                src = Path(ticket.ticket_source)
+                if src.exists():
+                    source_text = src.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                pass
         audit_result = audit(
             ticket_id=ticket.id,
             brief=payload.instructions,
             acceptance=payload.acceptance,
             diff=final_diff,
             conventions=claude_md_excerpt(),
+            source_ticket=source_text,
         )
         write_log(ticket.id, f"audit_{iteration}.txt", audit_result.feedback)
         final_audit = audit_result

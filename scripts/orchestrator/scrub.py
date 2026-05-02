@@ -88,16 +88,42 @@ class Payload:
 
 
 def check_deny_list(path: str) -> None:
-    name = Path(path).name
-    parts = Path(path).parts
+    """Reject paths that match any deny-list glob.
+
+    Match is CASE-INSENSITIVE (so `.ENV`, `Secrets.JSON` are caught) and
+    walks every path component (so nested `ops/.ssh/config` is caught even
+    though the leaf name `config` looks innocuous).
+    """
+    p = Path(path)
+    parts_lower = tuple(part.lower() for part in p.parts)
+    name_lower = p.name.lower()
     for pattern in DENY_GLOBS:
-        if fnmatch.fnmatch(name, pattern):
+        pat_lower = pattern.lower()
+        # 1. leaf-name match: catches "Secrets.json" vs "secrets.*"
+        if fnmatch.fnmatch(name_lower, pat_lower):
             raise ScrubError(f"deny-list: {path!r} matches {pattern!r}")
-        if "/" in pattern and fnmatch.fnmatch(path, pattern):
-            raise ScrubError(f"deny-list: {path!r} matches {pattern!r}")
-        for part in parts:
-            if fnmatch.fnmatch(part, pattern):
-                raise ScrubError(f"deny-list: {path!r} contains denied segment {part!r} ({pattern!r})")
+        # 2. full-path glob (for slash-bearing patterns like .aws/* or .ssh/*)
+        if "/" in pat_lower:
+            # match against the full path, AND against any nested suffix that
+            # starts with the first segment of the pattern. Catches `ops/.ssh/config`.
+            path_lower = "/".join(parts_lower)
+            if fnmatch.fnmatch(path_lower, pat_lower):
+                raise ScrubError(f"deny-list: {path!r} matches {pattern!r}")
+            head = pat_lower.split("/", 1)[0]
+            for i, segment in enumerate(parts_lower):
+                if fnmatch.fnmatch(segment, head):
+                    suffix = "/".join(parts_lower[i:])
+                    if fnmatch.fnmatch(suffix, pat_lower):
+                        raise ScrubError(
+                            f"deny-list: {path!r} contains nested {pattern!r} "
+                            f"(at {parts_lower[i]!r})"
+                        )
+        # 3. any single segment matches (catches .env nested anywhere)
+        for part in parts_lower:
+            if fnmatch.fnmatch(part, pat_lower):
+                raise ScrubError(
+                    f"deny-list: {path!r} contains denied segment {part!r} ({pattern!r})"
+                )
 
 
 def redact(text: str) -> tuple[str, list[Redaction]]:
@@ -172,7 +198,25 @@ def build_payload(
         instructions, instr_redactions = redact(kimi_brief)
         redactions.extend(instr_redactions)
     else:
-        raw = Path(ticket_source).read_text(encoding="utf-8", errors="replace")
+        # Route ticket_source through the same gate as allowed_files.
+        # Without this, a blank kimi_brief lets the manifest read any local
+        # path (including secrets) and forward it to Kimi.
+        ticket_path = Path(ticket_source)
+        check_deny_list(str(ticket_path))
+        if ticket_path.is_absolute():
+            # Ticket sources live under /tmp/uhm_issues by convention. Allow
+            # absolute paths only if they're under that directory or under
+            # the repo root; refuse anything else.
+            allowed_roots = (Path("/tmp/uhm_issues").resolve(), repo_root.resolve())
+            resolved = ticket_path.resolve()
+            if not any(
+                str(resolved).startswith(str(root)) for root in allowed_roots
+            ):
+                raise ScrubError(
+                    f"ticket_source {ticket_source!r} must live under "
+                    f"/tmp/uhm_issues or the repo root"
+                )
+        raw = ticket_path.read_text(encoding="utf-8", errors="replace")
         stripped_md, dropped = strip_strategy_sections(raw)
         stripped.extend(dropped)
         instructions, instr_redactions = redact(stripped_md)

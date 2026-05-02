@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -37,6 +38,30 @@ PRICE_OUTPUT_PER_TOKEN = _out_per_m / 1_000_000
 PER_CALL_INPUT_TOKEN_CEILING = 25_000
 PER_CALL_OUTPUT_TOKEN_CEILING = 10_000
 PER_TICKET_USD_CAP = 0.50
+
+
+# Patterns to scrub from upstream body excerpts before they land in disk
+# logs / error messages. The OpenRouter response body is normally just a
+# completion, but on error it can echo headers / our own request payload.
+# Belt-and-suspenders: strip anything that looks like a credential before
+# this string ever reaches summary.json.
+_BODY_SCRUB_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"),     "[REDACTED_ANTHROPIC_KEY]"),
+    (re.compile(r"\bsk-or-v1-[A-Za-z0-9]{20,}"),     "[REDACTED_OPENROUTER_KEY]"),
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{20,}"),         "[REDACTED_OPENAI_KEY]"),
+    (re.compile(r"\bghp_[A-Za-z0-9]{30,}"),          "[REDACTED_GITHUB_PAT]"),
+    (re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"),     "[REDACTED_AWS_KEY]"),
+    (re.compile(r"Bearer\s+[A-Za-z0-9_.\-]{16,}",
+                re.IGNORECASE),                       "Bearer [REDACTED_BEARER]"),
+    (re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"), "[REDACTED_JWT]"),
+)
+
+
+def _scrub_body_for_log(text: str) -> str:
+    out = text
+    for pat, repl in _BODY_SCRUB_PATTERNS:
+        out = pat.sub(repl, out)
+    return out
 
 
 class BudgetExceeded(Exception):
@@ -145,19 +170,20 @@ class KimiClient:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 raw_body = resp.read().decode("utf-8")
         except urllib.error.HTTPError as e:
-            raise KimiError(f"OpenRouter HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:500]}")
+            err_body = _scrub_body_for_log(e.read().decode("utf-8", "replace"))[:500]
+            raise KimiError(f"OpenRouter HTTP {e.code}: {err_body}")
         except urllib.error.URLError as e:
             raise KimiError(f"OpenRouter unreachable: {e.reason}")
         try:
             payload = json.loads(raw_body)
         except json.JSONDecodeError as e:
             # Defensive: OpenRouter occasionally returns truncated/streamed bodies.
-            # Save the body for forensic and raise a typed error so dispatcher
-            # logs it and continues with other tickets.
-            self._last_raw_body = raw_body
+            # Scrub before persisting; the body can echo headers / our own
+            # Authorization on certain error paths.
+            self._last_raw_body = _scrub_body_for_log(raw_body)
             raise KimiError(
                 f"OpenRouter returned non-JSON body ({len(raw_body)} bytes, "
-                f"parse error at char {e.pos}): {raw_body[:500]!r}"
+                f"parse error at char {e.pos}): {self._last_raw_body[:500]!r}"
             )
 
         choices = payload.get("choices") or []
