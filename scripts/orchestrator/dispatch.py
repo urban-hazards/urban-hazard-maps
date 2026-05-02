@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -56,15 +57,55 @@ PER_TICKET_RETRY_LIMIT = 2
 
 KIMI_SYSTEM = """You are a careful frontend engineer working on the Boston Urban Hazard Maps repo (Astro SSR + React + TailwindCSS + TypeScript with no semicolons, tabs for indentation, Biome lint).
 
-Output ONLY a unified diff (the kind `git apply` accepts), nothing else. Do not include prose, markdown fences, or commentary. The diff must apply cleanly against the file contents I show you.
+Output protocol — strict, no exceptions:
+- For every file you modify or create, emit a single block in this exact form:
 
-If a file does not exist yet, create it via the standard /dev/null source convention:
-  diff --git a/new/path b/new/path
-  new file mode 100644
-  --- /dev/null
-  +++ b/new/path
+    <<<FILE: relative/path/to/file.ext>>>
+    ... complete new file contents go here ...
+    <<<END>>>
 
-Keep edits minimal and scoped to the files listed in the allow-list. Do not touch any other file."""
+- Use the COMPLETE new file contents, not a diff. If you change one line in a 100-line file, output all 100 lines with that one line changed.
+- Each file gets exactly one block. Multiple files = multiple blocks, back to back.
+- The path between FILE: and >>> must be the relative path I gave you in the allow-list.
+- No prose before, between, or after the blocks. No markdown fences. No commentary. No "here is the file" prefaces.
+- If a file is unchanged, do NOT emit a block for it.
+- Keep edits minimal and scoped to files I listed. Do not touch any other file."""
+
+FILE_BLOCK_RE = re.compile(r"<<<FILE:\s*(.+?)>>>\n(.*?)\n<<<END>>>", re.DOTALL)
+
+
+def parse_file_blocks(text: str, allowed: set[str]) -> tuple[dict[str, str], list[str]]:
+    """Returns ({path: contents}, [errors])."""
+    matches = FILE_BLOCK_RE.findall(text)
+    if not matches:
+        return {}, ["no <<<FILE: ...>>> blocks found in response"]
+    files: dict[str, str] = {}
+    errors: list[str] = []
+    for path, contents in matches:
+        path = path.strip()
+        if path not in allowed:
+            errors.append(f"file {path!r} not in allow-list")
+            continue
+        files[path] = contents
+    return files, errors
+
+
+def write_files_to_worktree(worktree: Path, files: dict[str, str]) -> tuple[bool, str]:
+    for rel, contents in files.items():
+        target = worktree / rel
+        if not str(target.resolve()).startswith(str(worktree.resolve())):
+            return False, f"path escape: {rel!r}"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Ensure trailing newline so editor diffs and biome are happy
+        if contents and not contents.endswith("\n"):
+            contents = contents + "\n"
+        target.write_text(contents, encoding="utf-8")
+    add = subprocess.run(
+        ["git", "add", "-A"], cwd=str(worktree), text=True, capture_output=True, check=False
+    )
+    if add.returncode != 0:
+        return False, add.stderr.strip()
+    return True, ""
 
 
 @dataclass
@@ -114,7 +155,7 @@ def render_user_prompt(payload: Payload) -> str:
         "## Acceptance criteria",
         *(f"- {c}" for c in payload.acceptance),
         "",
-        "## Allowed files (do not touch anything else)",
+        "## Allowed files",
     ]
     for path, contents in payload.files.items():
         parts.append("")
@@ -126,7 +167,11 @@ def render_user_prompt(payload: Payload) -> str:
         else:
             parts.append("(file does not exist yet — create it)")
     parts.append("")
-    parts.append("Now output the unified diff and nothing else.")
+    parts.append(
+        "Now output one <<<FILE: path>>>...<<<END>>> block per modified or "
+        "created file. Complete file contents only — no diffs, no fences, "
+        "no prose."
+    )
     return "\n".join(parts)
 
 
@@ -241,10 +286,20 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
         write_log(ticket.id, f"kimi_response_{iteration}.txt", content)
         write_log(ticket.id, "usage.json", budget.as_dict())
 
-        diff = _strip_diff_fences(content)
-        ok, msg = apply_unified_diff(worktree, diff)
+        files, parse_errors = parse_file_blocks(content, set(ticket.allowed_files))
+        if parse_errors:
+            write_log(ticket.id, f"parse_errors_{iteration}.txt", "\n".join(parse_errors))
+        if not files:
+            feedback_for_kimi = (
+                "Your response contained no valid <<<FILE: path>>>...<<<END>>> blocks. "
+                "Re-emit, with one block per file, complete contents inside, no prose, "
+                "no fences, no commentary. Path must match the allow-list exactly."
+            )
+            continue
+
+        ok, msg = write_files_to_worktree(worktree, files)
         if not ok:
-            feedback_for_kimi = f"git apply rejected your diff:\n{msg}\nReturn a corrected unified diff."
+            feedback_for_kimi = f"file write failed: {msg}\nRe-emit using the protocol exactly."
             write_log(ticket.id, f"apply_error_{iteration}.txt", msg)
             continue
 
@@ -292,17 +347,6 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
     return summary
 
 
-def _strip_diff_fences(text: str) -> str:
-    text = text.strip()
-    if text.startswith("```"):
-        # Strip leading and trailing fence
-        lines = text.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines)
-    return text + ("\n" if not text.endswith("\n") else "")
 
 
 def main(argv: list[str] | None = None) -> int:

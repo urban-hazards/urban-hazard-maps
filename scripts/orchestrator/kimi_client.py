@@ -14,9 +14,11 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 
-# Default to K2.6 (thinking model) — the diff quality is the dominant
-# concern, budget headroom is generous. Override via KIMI_MODEL env var.
-MODEL = os.environ.get("KIMI_MODEL", "moonshotai/kimi-k2.6")
+# Default to non-thinking K2 (original 0711). K2.6's thinking channel
+# consumes the entire output budget on file-modification tickets, leaving
+# no room for visible content. K2 with full-file output mode is reliable
+# and ~5x cheaper. Override via KIMI_MODEL env var.
+MODEL = os.environ.get("KIMI_MODEL", "moonshotai/kimi-k2")
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
 # OpenRouter pricing per million tokens (in / out)
@@ -141,11 +143,22 @@ class KimiClient:
         )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
+                raw_body = resp.read().decode("utf-8")
         except urllib.error.HTTPError as e:
             raise KimiError(f"OpenRouter HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:500]}")
         except urllib.error.URLError as e:
             raise KimiError(f"OpenRouter unreachable: {e.reason}")
+        try:
+            payload = json.loads(raw_body)
+        except json.JSONDecodeError as e:
+            # Defensive: OpenRouter occasionally returns truncated/streamed bodies.
+            # Save the body for forensic and raise a typed error so dispatcher
+            # logs it and continues with other tickets.
+            self._last_raw_body = raw_body
+            raise KimiError(
+                f"OpenRouter returned non-JSON body ({len(raw_body)} bytes, "
+                f"parse error at char {e.pos}): {raw_body[:500]!r}"
+            )
 
         choices = payload.get("choices") or []
         if not choices:
