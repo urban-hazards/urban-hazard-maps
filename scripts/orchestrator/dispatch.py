@@ -331,8 +331,13 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
             break
         if audit_result.verdict == "NEEDS_CHANGES":
             feedback_for_kimi = audit_result.feedback
-            reset_worktree(worktree)
-            continue
+            # Only roll back if we have retries left. Otherwise keep the last
+            # working diff in the worktree so the human reviewer can pick up
+            # from it — losing it forces a re-dispatch.
+            if iteration <= PER_TICKET_RETRY_LIMIT:
+                reset_worktree(worktree)
+                continue
+            break
         # ERROR verdict — bail to manual review
         break
 

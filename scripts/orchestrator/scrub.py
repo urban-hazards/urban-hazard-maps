@@ -45,14 +45,15 @@ REDACTION_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("openrouter_key",   re.compile(r"\bsk-or-v1-[A-Za-z0-9]{20,}"),                  "[REDACTED_OPENROUTER_KEY]"),
     ("moonshot_key",     re.compile(r"\bsk-[A-Za-z0-9]{40,}"),                        "[REDACTED_MOONSHOT_KEY]"),
     ("jwt",              re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"), "[REDACTED_JWT]"),
-    ("ipv4",             re.compile(r"(?<!\d)(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?!\d)"), "[REDACTED_IPV4]"),
-    ("absolute_url",     re.compile(r"https?://[^\s\"'<>`)]+"),                       "[REDACTED_URL]"),
+    # URL/IP redaction is intentionally narrow: full-file Kimi output round-trips
+    # placeholders back into source files (caught Apr 2026 on A2).
+    # Public URLs in client-side source ARE public — only flag actual secrets.
+    ("credentialed_url", re.compile(r"https?://[^\s/@\"'<>`]+:[^\s/@\"'<>`]+@[^\s\"'<>`)]+"), "[REDACTED_CRED_URL]"),
+    ("aws_signed_url",   re.compile(r"https?://[^\s\"'<>`)]*[?&](?:Signature|X-Amz-Signature)=[^\s\"'<>`)&]+(?:[^\s\"'<>`)]*)?"), "[REDACTED_SIGNED_URL]"),
+    ("internal_url",     re.compile(r"https?://(?:[a-zA-Z0-9-]+\.)*(?:internal|local|localhost|intra)(?:[/:][^\s\"'<>`)]*)?"), "[REDACTED_INTERNAL_URL]"),
+    ("private_ipv4",     re.compile(r"(?<!\d)(?:10\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)|172\.(?:1[6-9]|2\d|3[01])\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)|192\.168\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d))(?!\d)"), "[REDACTED_PRIVATE_IPV4]"),
     ("postgres_url",     re.compile(r"postgres(?:ql)?://[^\s\"'<>`]+"),               "[REDACTED_DB_URL]"),
 )
-
-# IPv4 whitelist: localhost-ish loopback addresses are mechanically useful
-# (e.g. 127.0.0.1 in dev configs) so we re-substitute these after the broad pass.
-LOOPBACK_OK = re.compile(r"\[REDACTED_IPV4\](?=:?\d{0,5})")
 
 
 STRATEGY_HEADING = re.compile(

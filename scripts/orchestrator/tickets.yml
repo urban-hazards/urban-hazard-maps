@@ -71,25 +71,30 @@ tickets:
       (South End). Remove the card and remove the matching phrase from the
       intro paragraph. Do not attempt to derive a replacement label.
 
-      Concretely, edit ONLY `frontend/src/components/StatsOverview.astro`:
+      Edit ONLY `frontend/src/components/StatsOverview.astro`. Do exactly
+      these two things:
 
-      1. In the `<p class="stats-intro">` paragraph, delete the sub-clause
-         that reads:
-            with <strong>{peakHood}</strong> consistently reporting the
-            highest volume at an
-         …so the sentence flows directly from "around <strong>{formatHour(
-         peakHour)}</strong>," into "an average of <strong>{formatNumber(
-         Math.round(avgMonthly))}</strong> requests per month citywide."
-         The grammar must remain natural — re-punctuate as needed (e.g. drop
-         the trailing comma after `peakHour`).
+      1. Replace the entire `<p class="stats-intro">...</p>` paragraph with
+         this exact text (preserving tabs at the start of each line):
+
+            <p class="stats-intro">
+                Between <strong>{yearRange}</strong>, Boston residents submitted
+                <strong>{formatNumber(total)}</strong> sharps collection requests through the city's
+                311 system, spanning <strong>{neighborhoodCount}</strong> neighborhoods. Peak activity
+                occurs on <strong>{peakDow}s</strong> around <strong>{formatHour(peakHour)}</strong>,
+                averaging <strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month
+                citywide.
+            </p>
+
+         (Note: the indentation in the actual file is TABS, one level inside
+         the `<section>`. Match the existing tab indentation exactly.)
 
       2. Delete the entire `<div class="stat-card card">` block whose
          `<div class="stat-label">` reads "Highest Volume Neighborhood".
 
-      3. The `peakHood` prop will become unused after step 1. Leave the
-         `Props` interface and the destructure unchanged — the prop is still
-         passed by callers, and Biome only warns on unused locals not unused
-         destructured fields. Don't refactor adjacent code.
+      Leave the `Props` interface and destructure unchanged. The `peakHood`
+      prop becomes unused but is still passed by callers — leaving it in the
+      interface is intentional. Don't refactor adjacent code.
 
       Code style: tabs, no semicolons, TypeScript strict. The component must
       compile under `pnpm build`.
@@ -107,39 +112,28 @@ tickets:
     wave: 1
     status: pending
     ticket_source: /tmp/uhm_issues/A2.md
+    # Scoped narrower than the source ticket: only hides the chart + the stat
+    # card. The data-quality page note is deferred to a manual follow-up
+    # because that file is 600+ lines and full-file regeneration drops/
+    # paraphrases content (caught Apr 2026: K2 turned `border-radius: 2px;`
+    # into `border-radius: px;`).
     kimi_brief: |
       The "Requests by Hour of Day" chart and the "Peak Hour of Day" stat
       card both surface a 12 AM peak that is suspected to be an artifact of
       bulk-loaded ticket timestamps, not real submission times. Hide both
-      from the public site until the cause is diagnosed. Add a short note on
-      the Data Quality page so visitors who notice the absence have context.
+      from the public site until the cause is diagnosed.
 
-      Make exactly three edits, no more.
+      Make exactly two edits, no more.
 
       1. In `frontend/src/pages/index.astro`:
-           - Remove the `import HourlyChart from "../components/HourlyChart"`
-             line.
-           - Remove the entire `<HourlyChart …>` JSX element and any
-             whitespace-only line it leaves behind.
+           - Remove the line `import HourlyChart from "../components/HourlyChart"`.
+           - Remove the entire `<HourlyChart …/>` JSX element. If removing
+             leaves a now-empty wrapper line of whitespace, drop that too.
 
       2. In `frontend/src/components/StatsOverview.astro`:
-           - Delete the `<div class="stat-card card">` block whose
+           - Delete the entire `<div class="stat-card card">` block whose
              `<div class="stat-label">` reads "Peak Hour of Day".
-           - Leave all other cards untouched.
-
-      3. In `frontend/src/pages/data-quality.astro`:
-           - Insert a new `<section>` block immediately after the
-             `<nav class="breadcrumb">` element, BEFORE the
-             `<h1 class="page-title">`. The section must contain:
-               * an `<h2>` reading "Hour-of-day data temporarily hidden"
-               * a single `<p>` reading exactly:
-                 "We've removed the hour-of-day chart and the related stat
-                 from the home page while we investigate an apparent overnight
-                 spike that is unlikely to reflect actual reporting times.
-                 Likely causes include bulk-loaded ticket timestamps; we'll
-                 restore the chart once we can show it accurately."
-           - Match surrounding indentation (tabs).
-           - Do not modify any other section of data-quality.astro.
+           - Leave all other cards untouched, including their order.
 
       Code style: tabs, no semicolons, TypeScript strict. The site must
       compile under `pnpm build`. The `peakHour` prop on `StatsOverview` is
@@ -149,13 +143,12 @@ tickets:
       - "frontend/src/pages/index.astro no longer imports HourlyChart"
       - "frontend/src/pages/index.astro no longer renders <HourlyChart>"
       - "frontend/src/components/StatsOverview.astro no longer contains the label 'Peak Hour of Day'"
-      - "frontend/src/pages/data-quality.astro contains an <h2> reading 'Hour-of-day data temporarily hidden' inserted between the breadcrumb and the page title"
+      - "Five stat cards remain in StatsOverview.astro"
       - "pnpm build completes without errors"
       - "No other files modified"
     allowed_files:
       - frontend/src/pages/index.astro
       - frontend/src/components/StatsOverview.astro
-      - frontend/src/pages/data-quality.astro
     depends_on: []
 
   - id: B4

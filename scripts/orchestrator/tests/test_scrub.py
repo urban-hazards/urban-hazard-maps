@@ -98,16 +98,49 @@ def test_redacts_jwt() -> None:
     assert "eyJhbGciOi" not in out
 
 
-def test_redacts_ipv4() -> None:
-    text = "host: 192.168.1.42 port: 5432"
-    out, _ = redact(text)
-    assert "192.168.1.42" not in out
+@pytest.mark.parametrize(
+    "ip",
+    ["192.168.1.42", "10.0.0.1", "172.16.0.50", "172.31.255.254"],
+)
+def test_redacts_private_ipv4(ip: str) -> None:
+    out, _ = redact(f"host: {ip} port: 5432")
+    assert ip not in out
 
 
-def test_redacts_absolute_urls() -> None:
-    text = "fetch('https://internal.example.com/admin/api/v1/users')"
+def test_does_not_redact_public_ipv4() -> None:
+    # Full-file mode round-trips placeholders into source files; public IPs in
+    # source are usually example/CIDR demos, not secrets.
+    text = "Cloudflare DNS is 1.1.1.1 and Google is 8.8.8.8"
     out, _ = redact(text)
-    assert "internal.example.com" not in out
+    assert "1.1.1.1" in out
+    assert "8.8.8.8" in out
+
+
+def test_redacts_credentialed_url() -> None:
+    text = "DATABASE=https://admin:hunter2@db.example.com/foo"
+    out, _ = redact(text)
+    assert "hunter2" not in out
+    assert "admin" not in out
+
+
+def test_does_not_redact_public_url() -> None:
+    # Public URLs in client-side source code are not secrets — they're shipped
+    # to the browser. Redacting them broke full-file regeneration of source.
+    text = '<a href="https://www.example.com/path">link</a>'
+    out, _ = redact(text)
+    assert "www.example.com" in out
+
+
+def test_redacts_signed_url() -> None:
+    text = "https://s3.amazonaws.com/bucket/key?X-Amz-Signature=abcdef0123456789"
+    out, _ = redact(text)
+    assert "X-Amz-Signature=abcdef" not in out
+
+
+def test_redacts_internal_url() -> None:
+    text = "fetch('https://api.internal/v1/users')"
+    out, _ = redact(text)
+    assert "api.internal" not in out
 
 
 def test_redacts_postgres_url() -> None:

@@ -110,8 +110,22 @@ tickets.yml entry
    no leakage of strategy, names, or unscoped files.
 4. Live run with `--ticket <id>`.
 
+## File-size sweet spot
+
+Empirically (May 2026 calibration on 4 frontend tickets):
+
+| File size | Full-file mode | Notes |
+|---|---|---|
+| < 200 lines | ✅ converges in 1 iter | A1, B4, G1a, A2's small files |
+| 200–500 lines | ⚠️ 1–3 iters, occasional transcription nits | A2's `index.astro` (270 lines) — needed Codex feedback for a CSS selector typo |
+| 500–1000 lines | ❌ K2 starts dropping characters | Caught: `border-radius: 2px;` → `border-radius: px;` on a 600-line `data-quality.astro` |
+| > 1000 lines | ❌ output truncates at max_tokens | `HeatMap.tsx` (1,100 lines) — never reaches `<<<END>>>` |
+
+Tickets that require modifying files > 500 lines should be done by hand or refactored into smaller-file edits (e.g. extract a new component, then dispatch a small ticket that wires it).
+
 ## What's out of scope
 
 - Pipeline tickets (Scott's domain).
 - Auto-merge — every PR is draft; Brian reviews and merges by hand.
 - Anything that requires editing `.env`, Railway config, or other secrets.
+- Tickets that touch files > ~500 lines (see table above).
