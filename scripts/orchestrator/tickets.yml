@@ -1,0 +1,272 @@
+# UHM ticket manifest for the Kimi+Codex orchestrator.
+#
+# Each entry:
+#   id              -- short ticket id (matches /tmp/uhm_issues/<id>.md)
+#   wave            -- 1 = parallel batch, 2 = sequential after wave 1
+#   status          -- pending | held | done
+#   ticket_source   -- path to human-readable ticket markdown (NEVER auto-sent
+#                      to Kimi without strategy-strip; see scrub.py)
+#   kimi_brief      -- mechanical instruction that Kimi sees. No narrative,
+#                      no proper names, no political context. Hand-authored.
+#   acceptance      -- pass/fail criteria the audit checks
+#   allowed_files   -- whitelist of files Kimi may read or modify. Manifest
+#                      is the only source of truth here.
+#   depends_on      -- ids that must merge before this one runs
+
+tickets:
+  - id: G1a
+    wave: 1
+    status: done   # calibration pass 2026-05-01, $0.0067, codex APPROVED
+    ticket_source: /tmp/uhm_issues/G1a.md
+    kimi_brief: |
+      Add a "Personnel availability" toggle chip to the Urban Hazard Maps
+      frontend. This is a self-contained scaffold; do not modify HeatMap.tsx.
+
+      Concretely, do exactly two things:
+
+      1. Create `frontend/src/data/personnel-availability.json` containing:
+            { "ranges": [] }
+         The shape is intentional: a single object with a `ranges` array,
+         where each entry will eventually look like
+            { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD", "label": "string" }
+         but the array is empty for now.
+
+      2. Create a new React component at
+         `frontend/src/components/PersonnelAvailabilityChip.tsx`. It must:
+           - Be a default-exported function component, no props.
+           - Import the JSON via `import data from "../data/personnel-availability.json"`.
+           - Render a small toggle chip styled with TailwindCSS classes
+             ("inline-flex", "items-center", "gap-1", "rounded-full",
+             "border", "px-2", "py-0.5", "text-xs"). When pressed, the chip
+             toggles a local `enabled` boolean stored with `useState`.
+           - Display the label "Personnel availability" followed by a count
+             "(N ranges)" where N = data.ranges.length.
+           - When enabled, apply class `bg-slate-700 text-white`; when
+             disabled, apply class `bg-white text-slate-700`.
+           - No external dependencies beyond React. No fetch calls.
+
+      Code style: no semicolons, tabs for indentation, TypeScript strict.
+      The component must compile under `pnpm build` (Astro check + build).
+    acceptance:
+      - "frontend/src/data/personnel-availability.json exists with shape {ranges: []}"
+      - "frontend/src/components/PersonnelAvailabilityChip.tsx exists and default-exports a React component"
+      - "Component imports JSON via relative path and renders chip text 'Personnel availability (0 ranges)'"
+      - "pnpm build completes without errors"
+      - "No edits to HeatMap.tsx, index.astro, or any other existing file"
+    allowed_files:
+      - frontend/src/data/personnel-availability.json
+      - frontend/src/components/PersonnelAvailabilityChip.tsx
+      - frontend/src/components/Footer.astro      # reference: small Astro component for style
+    depends_on: []
+
+  # Wave 1 stubs — kimi_brief to be authored before dispatch
+  - id: A1
+    wave: 1
+    status: pending
+    ticket_source: /tmp/uhm_issues/A1.md
+    kimi_brief: |
+      The Astro frontend currently shows a "Highest Volume Neighborhood" stat
+      card with the value "Roxbury", which is wrong: the underlying 311
+      neighborhood field is unreliable and the actual hotspot is in zip 02118
+      (South End). Remove the card and remove the matching phrase from the
+      intro paragraph. Do not attempt to derive a replacement label.
+
+      Concretely, edit ONLY `frontend/src/components/StatsOverview.astro`:
+
+      1. In the `<p class="stats-intro">` paragraph, delete the sub-clause
+         that reads:
+            with <strong>{peakHood}</strong> consistently reporting the
+            highest volume at an
+         …so the sentence flows directly from "around <strong>{formatHour(
+         peakHour)}</strong>," into "an average of <strong>{formatNumber(
+         Math.round(avgMonthly))}</strong> requests per month citywide."
+         The grammar must remain natural — re-punctuate as needed (e.g. drop
+         the trailing comma after `peakHour`).
+
+      2. Delete the entire `<div class="stat-card card">` block whose
+         `<div class="stat-label">` reads "Highest Volume Neighborhood".
+
+      3. The `peakHood` prop will become unused after step 1. Leave the
+         `Props` interface and the destructure unchanged — the prop is still
+         passed by callers, and Biome only warns on unused locals not unused
+         destructured fields. Don't refactor adjacent code.
+
+      Code style: tabs, no semicolons, TypeScript strict. The component must
+      compile under `pnpm build`.
+    acceptance:
+      - "frontend/src/components/StatsOverview.astro no longer contains the substring 'Highest Volume Neighborhood'"
+      - "frontend/src/components/StatsOverview.astro no longer contains the substring 'consistently reporting the highest volume'"
+      - "Five stat cards remain (Total, Peak Hour of Day, Busiest Day of Week, Average Monthly Requests, Neighborhoods Reporting)"
+      - "pnpm build completes without errors"
+      - "No edits to any file other than StatsOverview.astro"
+    allowed_files:
+      - frontend/src/components/StatsOverview.astro
+    depends_on: []
+
+  - id: A2
+    wave: 1
+    status: pending
+    ticket_source: /tmp/uhm_issues/A2.md
+    kimi_brief: |
+      The "Requests by Hour of Day" chart and the "Peak Hour of Day" stat
+      card both surface a 12 AM peak that is suspected to be an artifact of
+      bulk-loaded ticket timestamps, not real submission times. Hide both
+      from the public site until the cause is diagnosed. Add a short note on
+      the Data Quality page so visitors who notice the absence have context.
+
+      Make exactly three edits, no more.
+
+      1. In `frontend/src/pages/index.astro`:
+           - Remove the `import HourlyChart from "../components/HourlyChart"`
+             line.
+           - Remove the entire `<HourlyChart …>` JSX element and any
+             whitespace-only line it leaves behind.
+
+      2. In `frontend/src/components/StatsOverview.astro`:
+           - Delete the `<div class="stat-card card">` block whose
+             `<div class="stat-label">` reads "Peak Hour of Day".
+           - Leave all other cards untouched.
+
+      3. In `frontend/src/pages/data-quality.astro`:
+           - Insert a new `<section>` block immediately after the
+             `<nav class="breadcrumb">` element, BEFORE the
+             `<h1 class="page-title">`. The section must contain:
+               * an `<h2>` reading "Hour-of-day data temporarily hidden"
+               * a single `<p>` reading exactly:
+                 "We've removed the hour-of-day chart and the related stat
+                 from the home page while we investigate an apparent overnight
+                 spike that is unlikely to reflect actual reporting times.
+                 Likely causes include bulk-loaded ticket timestamps; we'll
+                 restore the chart once we can show it accurately."
+           - Match surrounding indentation (tabs).
+           - Do not modify any other section of data-quality.astro.
+
+      Code style: tabs, no semicolons, TypeScript strict. The site must
+      compile under `pnpm build`. The `peakHour` prop on `StatsOverview` is
+      still passed from index.astro — leave it in the `Props` interface, do
+      not refactor it away.
+    acceptance:
+      - "frontend/src/pages/index.astro no longer imports HourlyChart"
+      - "frontend/src/pages/index.astro no longer renders <HourlyChart>"
+      - "frontend/src/components/StatsOverview.astro no longer contains the label 'Peak Hour of Day'"
+      - "frontend/src/pages/data-quality.astro contains an <h2> reading 'Hour-of-day data temporarily hidden' inserted between the breadcrumb and the page title"
+      - "pnpm build completes without errors"
+      - "No other files modified"
+    allowed_files:
+      - frontend/src/pages/index.astro
+      - frontend/src/components/StatsOverview.astro
+      - frontend/src/pages/data-quality.astro
+    depends_on: []
+
+  - id: B4
+    wave: 1
+    status: pending   # scoped to scaffold-only; full integration deferred per ticket
+    ticket_source: /tmp/uhm_issues/B4.md
+    kimi_brief: |
+      Scaffold a tiny heat-curve utility module so future heatmap rendering
+      work can pick from three named curve shapes without re-deriving the
+      math. This is scaffold-only — no UI changes, no HeatMap.tsx edits.
+
+      Create exactly one new file at `frontend/src/lib/heat-curves.ts`
+      containing:
+
+      1. A type alias `export type HeatCurve = "linear" | "logarithmic" | "exponential"`.
+
+      2. Three pure functions that map a normalized intensity in [0, 1] to a
+         normalized intensity in [0, 1]. Clamp inputs to the closed interval
+         before computing; return values must also lie in [0, 1].
+
+           export function linear(t: number): number
+           export function logarithmic(t: number): number
+           export function exponential(t: number): number
+
+         Use these formulas:
+           - linear(t)        => t
+           - logarithmic(t)   => Math.log10(1 + 9 * t)
+                                 (maps 0 -> 0, 1 -> 1; emphasizes low end)
+           - exponential(t)   => (Math.exp(t) - 1) / (Math.E - 1)
+                                 (maps 0 -> 0, 1 -> 1; emphasizes high end)
+
+      3. A const map for lookup:
+           export const HEAT_CURVES: Record<HeatCurve, (t: number) => number> = {
+               linear, logarithmic, exponential,
+           }
+
+      Code style: tabs, no semicolons, TypeScript strict. No imports. No
+      side effects. Module must compile under `pnpm build`.
+    acceptance:
+      - "frontend/src/lib/heat-curves.ts exists"
+      - "Module exports HeatCurve type, linear, logarithmic, exponential, HEAT_CURVES"
+      - "All three functions clamp t to [0, 1] before computing"
+      - "pnpm build completes without errors"
+      - "No edits to any existing file"
+    allowed_files:
+      - frontend/src/lib/heat-curves.ts
+    depends_on: []
+
+  - id: C1
+    wave: 1
+    status: pending   # scoped to a single config change; full audit is a follow-up
+    ticket_source: /tmp/uhm_issues/C1.md
+    kimi_brief: |
+      Disable map panning while keeping zoom enabled. Per the ticket
+      decision, panning adds no value for the public viewer — the data fits
+      the default frame and panning lets viewers get lost. Other UI cleanups
+      (hover-vs-click, control audit, methodology note) are out of scope for
+      this single edit; they will be tracked as follow-ups.
+
+      Make exactly one focused change to
+      `frontend/src/components/HeatMap.tsx`:
+
+      1. Locate the line that reads (around line 315):
+           const map = L.map(mapRef.current, { center: [42.332, -71.078], zoom: 13 })
+
+      2. Add a `dragging: false` option to the options object so it becomes:
+           const map = L.map(mapRef.current, {
+               center: [42.332, -71.078],
+               zoom: 13,
+               dragging: false,
+           })
+
+      3. Use tabs for indentation, no semicolons, TypeScript strict. The
+         multi-line object literal style is fine.
+
+      Do not modify any other line in the file. Do not touch other map
+      options, layers, event handlers, or styles. The only behavior change
+      should be that the user can no longer pan the map; zoom continues to
+      work.
+    acceptance:
+      - "frontend/src/components/HeatMap.tsx contains 'dragging: false' inside the L.map options object"
+      - "No other lines in HeatMap.tsx are modified"
+      - "pnpm build completes without errors"
+      - "No other files touched"
+    allowed_files:
+      - frontend/src/components/HeatMap.tsx
+    depends_on: []
+
+  - id: B1
+    wave: 2
+    status: stub
+    ticket_source: /tmp/uhm_issues/B1.md
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B4]   # B1 touches HeatMap, sequence after B4 lands
+
+  - id: B2
+    wave: 2
+    status: stub
+    ticket_source: /tmp/uhm_issues/B2.md
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B1]
+
+  - id: B3
+    wave: 2
+    status: held
+    ticket_source: /tmp/uhm_issues/B3.md
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B2]
