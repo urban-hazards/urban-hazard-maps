@@ -123,7 +123,12 @@ jobs:
       - name: Pull trufflehog Docker image
         run: docker pull ghcr.io/trufflesecurity/trufflehog:latest
       - name: Run trufflehog scan
-        run: docker run --rm -v "$PWD:/repo" ghcr.io/trufflesecurity/trufflehog:latest git file:///repo --fail --no-update
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/trufflesecurity/trufflehog:latest \
+            git file:///repo \
+            --fail \
+            --no-update \
+            --exclude-paths=/repo/.github/trufflehog-excludes.txt
 
   notify-on-secret-found:
     name: Notify on secret found
