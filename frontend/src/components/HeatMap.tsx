@@ -316,6 +316,7 @@ export default function HeatMap({
 				center: [42.332, -71.078],
 				zoom: 13,
 				dragging: false,
+				keyboardPanDelta: 0,
 			})
 			mapInstance.current = map
 
