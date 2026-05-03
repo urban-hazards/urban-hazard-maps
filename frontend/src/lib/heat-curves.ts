@@ -1,18 +1,20 @@
 export type HeatCurve = "linear" | "logarithmic" | "exponential"
 
+function clamp01(t: number): number {
+	if (Number.isNaN(t)) return 0
+	return Math.max(0, Math.min(1, t))
+}
+
 export function linear(t: number): number {
-	const clamped = Math.max(0, Math.min(1, t))
-	return clamped
+	return clamp01(t)
 }
 
 export function logarithmic(t: number): number {
-	const clamped = Math.max(0, Math.min(1, t))
-	return Math.log10(1 + 9 * clamped)
+	return Math.log10(1 + 9 * clamp01(t))
 }
 
 export function exponential(t: number): number {
-	const clamped = Math.max(0, Math.min(1, t))
-	return (Math.exp(clamped) - 1) / (Math.E - 1)
+	return (Math.exp(clamp01(t)) - 1) / (Math.E - 1)
 }
 
 export const HEAT_CURVES: Record<HeatCurve, (t: number) => number> = {
