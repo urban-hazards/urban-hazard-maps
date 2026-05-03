@@ -11,6 +11,12 @@
 #   acceptance      -- pass/fail criteria the audit checks
 #   allowed_files   -- whitelist of files Kimi may read or modify. Manifest
 #                      is the only source of truth here.
+#   scope_note      -- (optional) explanation passed to Codex when the brief
+#                      intentionally narrows scope vs the source ticket. Tells
+#                      the auditor "this is a partial implementation by design;
+#                      here's what's deferred and why." Without this, a
+#                      narrowed brief looks like silently-dropped scope and
+#                      Codex correctly returns NEEDS_CHANGES.
 #   depends_on      -- ids that must merge before this one runs
 
 tickets:
@@ -57,6 +63,14 @@ tickets:
       - frontend/src/data/personnel-availability.json
       - frontend/src/components/PersonnelAvailabilityChip.tsx
       - frontend/src/components/Footer.astro      # reference: small Astro component for style
+    scope_note: |
+      Scaffold-only by design. The source ticket asks for a hand-maintained
+      vacation-date dataset, a map overlay/filter wired to those dates, and
+      an optional monthly-trend annotation. None of those are in this PR
+      because the underlying data (vacation dates) hasn't been collected
+      yet. This PR delivers the empty-shell artifacts (JSON + chip
+      component) so the data-collection follow-up has a target shape.
+      Map integration is a separate ticket once dates are available.
     depends_on: []
 
   # Wave 1 stubs — kimi_brief to be authored before dispatch
@@ -106,17 +120,18 @@ tickets:
       - "No edits to any file other than StatsOverview.astro"
     allowed_files:
       - frontend/src/components/StatsOverview.astro
+    scope_note: |
+      Code change in this PR is complete: the offending Roxbury card and
+      the misleading intro phrase are removed. The source ticket also
+      asks for a follow-up issue about why the 311 neighborhood field
+      disagrees with coordinates — that is a process item to be filed in
+      GitHub Issues, not in this PR.
     depends_on: []
 
   - id: A2
     wave: 1
     status: pending
     ticket_source: /tmp/uhm_issues/A2.md
-    # Scoped narrower than the source ticket: only hides the chart + the stat
-    # card. The data-quality page note is deferred to a manual follow-up
-    # because that file is 600+ lines and full-file regeneration drops/
-    # paraphrases content (caught Apr 2026: K2 turned `border-radius: 2px;`
-    # into `border-radius: px;`).
     kimi_brief: |
       The "Requests by Hour of Day" chart and the "Peak Hour of Day" stat
       card both surface a 12 AM peak that is suspected to be an artifact of
@@ -149,6 +164,34 @@ tickets:
     allowed_files:
       - frontend/src/pages/index.astro
       - frontend/src/components/StatsOverview.astro
+    scope_note: |
+      Hides the suspect Hour-of-Day chart + Peak Hour stat card from the
+      public site. The original kimi_brief specified only "delete the
+      stat card + remove the JSX import"; in practice that left two
+      regressions that block the source ticket's intent:
+        - The intro paragraph in StatsOverview.astro still rendered
+          "Peak activity occurs on {peakDow}s around {formatHour(peakHour)}",
+          re-surfacing the suspect 12 AM time the source ticket wanted
+          hidden. This patch removes that clause (and the now-unused
+          formatHour import + peakHour destructure). peakHour stays in
+          the Props interface since callers still pass it.
+        - With <HourlyChart /> removed, the .charts-grid in index.astro
+          stayed at `grid-template-columns: 1fr 1fr`, leaving
+          MonthlyTrend stranded half-width with an empty column. This
+          patch collapses charts-grid to 1 column.
+      Both follow-on edits are inside files the brief already authorized
+      and are necessary to satisfy the source ticket's hide-the-suspect-
+      time intent. They are NOT silent scope drops; they are scope-
+      correct fixes the brief should have called out explicitly.
+
+      Two source-ticket items remain deferred to follow-up tickets:
+        1. The Data Quality page note about hour-of-day under
+           investigation. Deferred because data-quality.astro is 600+
+           lines, well past the full-file-regen safe size (caught Apr
+           2026: K2 turned `border-radius: 2px;` into `border-radius:
+           px;` on a similar-sized file). Will be added by hand.
+        2. The "diagnose the overnight spike" follow-up issue is a
+           process item to be filed in GitHub Issues, not in this PR.
     depends_on: []
 
   - id: B4
@@ -195,11 +238,20 @@ tickets:
       - "No edits to any existing file"
     allowed_files:
       - frontend/src/lib/heat-curves.ts
+    scope_note: |
+      Scaffold-only by design. The source ticket is a research spike
+      (prototype 3 curve variants on real data, capture screenshots,
+      pick a default with Brian + Andrew, expose others as a dev-mode
+      toggle). This PR ships the math primitives so the live integration
+      can be done in a follow-up that touches HeatMap.tsx — which is
+      1,100+ lines and unsafe for the orchestrator's full-file output
+      mode. The follow-up will be done by hand (or via a tightly-scoped
+      surgical edit) once the curves are wired in.
     depends_on: []
 
   - id: C1
     wave: 1
-    status: pending   # scoped to a single config change; full audit is a follow-up
+    status: pending
     ticket_source: /tmp/uhm_issues/C1.md
     kimi_brief: |
       Disable map panning while keeping zoom enabled. Per the ticket
@@ -235,6 +287,32 @@ tickets:
       - "No other files touched"
     allowed_files:
       - frontend/src/components/HeatMap.tsx
+    scope_note: |
+      Two-option edit in this PR (dragging: false + keyboardPanDelta: 0).
+      The original kimi_brief specified only `dragging: false`, but
+      Leaflet treats keyboard navigation as a separate handler — arrow
+      keys would still pan the map. We don't use `keyboard: false`
+      because that disables the entire keyboard handler including
+      `+`/`-` zoom keys, which violates the source ticket's "Keep zoom
+      enabled". Setting `keyboardPanDelta: 0` keeps the keyboard
+      handler active (zoom keys still work) but reduces arrow-key pan
+      distance to zero pixels. This is NOT a silent scope drop; it is
+      the minimal correct way to satisfy "disable map panning while
+      keeping zoom enabled".
+
+      The source ticket is a broader UX-cleanup pass; the following
+      items are explicitly deferred to follow-up tickets:
+        - Region-click to commit a district filter and reveal pins for
+          that region (requires net-new click handlers on the boundary
+          GeoJSON layer in HeatMap.tsx, plus filter-state plumbing).
+        - Hover-as-preview-only behavior (paired with the above).
+        - Full control audit + hide-non-public-controls pass.
+        - Methodology page note documenting what was removed.
+      The deferral is so we can ship the highest user-confusion-to-
+      effort change ahead of the public release and revisit the rest
+      after it stabilizes. Note: this PR was hand-applied because the
+      orchestrator's full-file output mode truncated 3x on HeatMap.tsx
+      (1,100+ lines, beyond the documented safe size of 500 lines).
     depends_on: []
 
   - id: B1

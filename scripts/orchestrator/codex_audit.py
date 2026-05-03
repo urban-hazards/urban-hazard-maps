@@ -26,7 +26,11 @@ class AuditResult:
 _VERDICT_RE = re.compile(r"\b(APPROVED|NEEDS_CHANGES)\b")
 
 
-PROMPT_TEMPLATE = """You are auditing an AI-generated patch against a ticket spec for the Urban Hazard Maps project (Astro + React + TailwindCSS). Be terse and adversarial.
+PROMPT_TEMPLATE = """You are auditing an AI-generated patch against a ticket spec for the Urban Hazard Maps project (Astro SSR + React islands; plain CSS via global.css with custom properties — NO Tailwind, NO CSS framework). Be terse and adversarial.
+
+When auditing styling, REJECT any patch that uses utility-class CSS frameworks (Tailwind, UnoCSS, etc.) — this project does not have a processor for those classes and they will render as no-ops. Components style via className with project-defined CSS classes (see global.css) or inline `style={{}}` for one-offs.
+
+When a patch regenerates an existing file in full (rather than a focused edit), diff the regenerated file against the original and flag ANY change OUTSIDE the scope the brief authorized. Transcription errors (lost characters, mangled selectors, dropped semicolons in CSS, paraphrased comments) are common in full-file output mode and acceptance criteria do not catch them. Treat unintended changes as failures.
 
 Repo conventions (excerpt):
 {conventions}
@@ -47,15 +51,24 @@ the source ticket on purpose, but call out any silently-dropped scope):
 Narrowed acceptance criteria sent to the generator:
 {acceptance}
 
+Scope note from the orchestrator operator (explains intentional narrowing
+of scope vs the source ticket — what was deferred and why). If this is
+non-empty, treat the items it lists as out-of-scope-by-design rather than
+silent drops, and verdict only on the in-scope work:
+---
+{scope_note}
+---
+
 Proposed unified diff:
 ```
 {diff}
 ```
 
-Decide: does this diff satisfy the SOURCE ticket's acceptance criteria,
-follow repo conventions, avoid introducing security or correctness
-regressions, and look like code a human reviewer would approve? If the
-brief silently dropped scope from the source, that itself is grounds for
+Decide: does this diff satisfy the in-scope work (source ticket
+acceptance MINUS the items the scope_note explicitly defers), follow repo
+conventions, avoid introducing security or correctness regressions, and
+look like code a human reviewer would approve? If the brief silently
+dropped scope that the scope_note does NOT cover, that is grounds for
 NEEDS_CHANGES.
 
 Output exactly one of:
@@ -81,6 +94,7 @@ def audit(
     diff: str,
     conventions: str,
     source_ticket: str = "",
+    scope_note: str = "",
     timeout: int = 300,
 ) -> AuditResult:
     codex = _ensure_codex_available()
@@ -90,6 +104,7 @@ def audit(
         source_ticket=source_ticket[:8000] or "(no source ticket file provided)",
         brief=brief,
         acceptance="\n".join(f"- {c}" for c in acceptance),
+        scope_note=scope_note.strip() or "(no scope_note set — full source ticket scope expected)",
         diff=diff[:50_000],
     )
     try:
