@@ -118,6 +118,7 @@ class Ticket:
     acceptance: list[str]
     allowed_files: list[str]
     depends_on: list[str]
+    scope_note: str = ""
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Ticket":
@@ -130,6 +131,7 @@ class Ticket:
             acceptance=list(raw.get("acceptance") or []),
             allowed_files=list(raw.get("allowed_files") or []),
             depends_on=list(raw.get("depends_on") or []),
+            scope_note=raw.get("scope_note", "") or "",
         )
 
 
@@ -207,6 +209,11 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
         raise SystemExit(f"ticket {ticket.id} is held; not eligible for dispatch")
     if ticket.status == "done":
         raise SystemExit(f"ticket {ticket.id} already done; skip or change status")
+    if ticket.status == "manual":
+        raise SystemExit(
+            f"ticket {ticket.id} is marked manual (hand-applied / unsafe to dispatch); "
+            "edit and audit by hand"
+        )
 
     payload = build_payload(
         ticket_id=ticket.id,
@@ -335,6 +342,7 @@ def dispatch_one(ticket: Ticket, *, print_payload_only: bool, allow_no_key: bool
             diff=final_diff,
             conventions=claude_md_excerpt(),
             source_ticket=source_text,
+            scope_note=ticket.scope_note,
         )
         write_log(ticket.id, f"audit_{iteration}.txt", audit_result.feedback)
         final_audit = audit_result

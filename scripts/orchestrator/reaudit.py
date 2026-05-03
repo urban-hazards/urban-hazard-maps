@@ -61,6 +61,26 @@ def _load_tickets() -> list[dict]:
         return yaml.safe_load(f)["tickets"]
 
 
+def _branch_exists(branch: str) -> bool:
+    """True if `branch` resolves locally OR on origin."""
+    for ref in (branch, f"origin/{branch}"):
+        res = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", ref],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode == 0:
+            return True
+    return False
+
+
+# Statuses where a kimi/<id> branch is expected to exist (open PR or in flight).
+# stub/held/done are skipped — stub/held have no branch yet, done branches are
+# typically deleted on merge.
+DISPATCHABLE_STATUSES = {"pending"}
+
+
 def reaudit(ticket_ids: list[str]) -> dict[str, str]:
     tickets = {t["id"]: t for t in _load_tickets()}
     verdicts: dict[str, str] = {}
@@ -71,10 +91,21 @@ def reaudit(ticket_ids: list[str]) -> dict[str, str]:
             continue
 
         t = tickets[tid]
+        status = t.get("status", "pending")
+        branch = f"kimi/{tid}"
+
+        if status not in DISPATCHABLE_STATUSES:
+            print(f"[{tid}] status={status} — skipping (no open kimi branch expected)")
+            verdicts[tid] = "SKIPPED"
+            continue
+        if not _branch_exists(branch):
+            print(f"[{tid}] branch {branch} not found — skipping")
+            verdicts[tid] = "SKIPPED"
+            continue
+
         source_path = Path(t["ticket_source"])
         source_text = source_path.read_text() if source_path.exists() else ""
 
-        branch = f"kimi/{tid}"
         try:
             diff = _diff_against_main(branch)
         except subprocess.CalledProcessError as e:

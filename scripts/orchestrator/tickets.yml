@@ -22,7 +22,7 @@
 tickets:
   - id: G1a
     wave: 1
-    status: done   # calibration pass 2026-05-01, $0.0067, codex APPROVED
+    status: done   # PR #110 merged 2026-05-03 (calibration pass 2026-05-01, $0.0067)
     ticket_source: /tmp/uhm_issues/G1a.md
     kimi_brief: |
       Add a "Personnel availability" toggle chip to the Urban Hazard Maps
@@ -76,7 +76,7 @@ tickets:
   # Wave 1 stubs — kimi_brief to be authored before dispatch
   - id: A1
     wave: 1
-    status: pending
+    status: done   # PR #112 merged 2026-05-03
     ticket_source: /tmp/uhm_issues/A1.md
     kimi_brief: |
       The Astro frontend currently shows a "Highest Volume Neighborhood" stat
@@ -130,7 +130,7 @@ tickets:
 
   - id: A2
     wave: 1
-    status: pending
+    status: done   # PR #113 merged 2026-05-03
     ticket_source: /tmp/uhm_issues/A2.md
     kimi_brief: |
       The "Requests by Hour of Day" chart and the "Peak Hour of Day" stat
@@ -196,7 +196,7 @@ tickets:
 
   - id: B4
     wave: 1
-    status: pending   # scoped to scaffold-only; full integration deferred per ticket
+    status: done   # PR #111 merged 2026-05-03 (scaffold-only; full integration deferred per ticket)
     ticket_source: /tmp/uhm_issues/B4.md
     kimi_brief: |
       Scaffold a tiny heat-curve utility module so future heatmap rendering
@@ -251,7 +251,7 @@ tickets:
 
   - id: C1
     wave: 1
-    status: pending
+    status: done   # PR #114 merged 2026-05-03 (single-line edit; full UI audit deferred)
     ticket_source: /tmp/uhm_issues/C1.md
     kimi_brief: |
       Disable map panning while keeping zoom enabled. Per the ticket
@@ -326,7 +326,7 @@ tickets:
 
   - id: B2
     wave: 2
-    status: pending  # hand-applied — HeatMap.tsx is 1485 lines, beyond orchestrator's safe full-file size
+    status: done   # PR #127 merged 2026-05-03 (hand-applied — HeatMap.tsx 1485 lines, past orchestrator's safe size)
     ticket_source: /tmp/uhm_issues/B2.md
     kimi_brief: |
       Three surgical edits to `frontend/src/components/HeatMap.tsx` only.
