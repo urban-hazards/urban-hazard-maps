@@ -809,7 +809,7 @@ export default function HeatMap({
 		}
 
 		// Rebuild markers with new filter
-		if (map.getZoom() >= 15) {
+		if (showPins && map.getZoom() >= 15) {
 			rebuildMarkers(map)
 		}
 	}, [
