@@ -119,11 +119,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # fetch-depth: 0 fetches ALL branches into the local clone. With
+          # `--no-update --fail`, trufflehog then scanned credential-shaped
+          # strings in unrelated branches' history (e.g. test fixtures on
+          # the orchestrator branch) and failed every PR. Use depth 2 so
+          # we have one commit of context for the diff range and nothing
+          # else.
+          fetch-depth: 2
+      - name: Determine PR commit range
+        id: range
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          # Make sure the base commit is fetched so trufflehog can diff
+          # against it. With fetch-depth: 2 the base may not be present.
+          git fetch --depth=1 origin "$BASE_SHA" || true
+          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - name: Pull trufflehog Docker image
         run: docker pull ghcr.io/trufflesecurity/trufflehog:latest
-      - name: Run trufflehog scan
-        run: docker run --rm -v "$PWD:/repo" ghcr.io/trufflesecurity/trufflehog:latest git file:///repo --fail --no-update
+      - name: Run trufflehog scan (PR diff only)
+        # Scan only commits the PR introduces (BASE..HEAD). Pre-existing
+        # credential-shaped content in main's history is not the PR's
+        # responsibility — that lives in the rotate-and-block-with-push-
+        # protection layer, not in PR CI.
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/trufflesecurity/trufflehog:latest \
+            git file:///repo \
+            --since-commit=${{ steps.range.outputs.base }} \
+            --branch=${{ steps.range.outputs.head }} \
+            --fail \
+            --no-update \
+            --exclude-paths=/repo/.github/trufflehog-excludes.txt
 
   notify-on-secret-found:
     name: Notify on secret found

@@ -1,0 +1,9 @@
+# Paths excluded from TruffleHog secret scanning. One regex per line.
+#
+# Defense-in-depth alongside the BASE..HEAD scope in pr.yml — anything
+# in this list is also skipped if it slips into a PR diff.
+#
+# These are test fixtures that contain credential-shaped strings BY DESIGN
+# (the strings exercise the redactor in scripts/orchestrator/scrub.py).
+# Real secrets must never be added here — review carefully on every change.
+scripts/orchestrator/tests/test_scrub\.py$
