@@ -8,13 +8,23 @@ export default function PersonnelAvailabilityChip() {
 
 	const count = data.ranges.length
 
-	const activeClasses = enabled ? "bg-slate-700 text-white" : "bg-white text-slate-700"
-
 	return (
 		<button
 			type="button"
 			onClick={toggle}
-			className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${activeClasses}`}
+			aria-pressed={enabled}
+			style={{
+				display: "inline-flex",
+				alignItems: "center",
+				gap: "6px",
+				padding: "4px 10px",
+				fontSize: "12px",
+				borderRadius: "999px",
+				border: "1px solid var(--color-border, #d1d5db)",
+				background: enabled ? "var(--color-text, #334155)" : "var(--color-surface, #ffffff)",
+				color: enabled ? "#ffffff" : "var(--color-text, #334155)",
+				cursor: "pointer",
+			}}
 		>
 			Personnel availability ({count} ranges)
 		</button>
