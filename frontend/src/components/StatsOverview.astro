@@ -1,5 +1,5 @@
 ---
-import { formatHour, formatNumber } from "../lib/seo"
+import { formatNumber } from "../lib/seo"
 
 interface Props {
 	total: number
@@ -11,7 +11,7 @@ interface Props {
 	years: number[]
 }
 
-const { total, peakHood, peakHour, peakDow, avgMonthly, neighborhoodCount, years } = Astro.props
+const { total, peakDow, avgMonthly, years } = Astro.props
 
 const yearRange = years.length > 0 ? `${years[0]}\u2013${years[years.length - 1]}` : "N/A"
 ---
@@ -21,24 +21,13 @@ const yearRange = years.length > 0 ? `${years[0]}\u2013${years[years.length - 1]
 	<p class="stats-intro">
 		Between <strong>{yearRange}</strong>, Boston residents submitted
 		<strong>{formatNumber(total)}</strong> sharps collection requests through the city's
-		311 system, spanning <strong>{neighborhoodCount}</strong> neighborhoods. Peak activity
-		occurs on <strong>{peakDow}s</strong> around <strong>{formatHour(peakHour)}</strong>,
-		with <strong>{peakHood}</strong> consistently reporting the highest volume at an
-		average of <strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month
-		citywide.
+		311 system. Peak activity occurs on <strong>{peakDow}s</strong>, averaging
+		<strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month citywide.
 	</p>
 	<div class="stats-grid">
 		<div class="stat-card card primary">
 			<div class="stat-value">{formatNumber(total)}</div>
 			<div class="stat-label">Total Requests ({yearRange})</div>
-		</div>
-		<div class="stat-card card">
-			<div class="stat-value">{peakHood}</div>
-			<div class="stat-label">Highest Volume Neighborhood</div>
-		</div>
-		<div class="stat-card card">
-			<div class="stat-value">{formatHour(peakHour)}</div>
-			<div class="stat-label">Peak Hour of Day</div>
 		</div>
 		<div class="stat-card card">
 			<div class="stat-value">{peakDow}</div>
@@ -47,10 +36,6 @@ const yearRange = years.length > 0 ? `${years[0]}\u2013${years[years.length - 1]
 		<div class="stat-card card">
 			<div class="stat-value">{formatNumber(Math.round(avgMonthly))}</div>
 			<div class="stat-label">Average Monthly Requests</div>
-		</div>
-		<div class="stat-card card">
-			<div class="stat-value">{neighborhoodCount}</div>
-			<div class="stat-label">Neighborhoods Reporting</div>
 		</div>
 	</div>
 </section>

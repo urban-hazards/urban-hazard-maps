@@ -169,7 +169,7 @@ export default function HeatMap({
 	const [ready, setReady] = useState(false)
 	const [isMobile, setIsMobile] = useState(false)
 	const [filterOpen, setFilterOpen] = useState(false)
-	const [showPins, setShowPins] = useState(true)
+	const [showPins, setShowPins] = useState(false)
 	const [showBoundaries, setShowBoundaries] = useState<BoundaryLayer | null>(null)
 	const [heatIntensity, setHeatIntensity] = useState(50)
 	const heatIntensityRef = useRef(50)
@@ -312,7 +312,12 @@ export default function HeatMap({
 			}
 
 			if (!mapRef.current) return
-			const map = L.map(mapRef.current, { center: [42.332, -71.078], zoom: 13 })
+			const map = L.map(mapRef.current, {
+				center: [42.332, -71.078],
+				zoom: 13,
+				dragging: false,
+				keyboardPanDelta: 0,
+			})
 			mapInstance.current = map
 
 			// Custom panes so boundaries always render above heatmaps
@@ -326,6 +331,7 @@ export default function HeatMap({
 					'&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
 				subdomains: "abcd",
 				maxZoom: 19,
+				opacity: 0.7,
 			}).addTo(map)
 
 			// Both heat layers on by default, filtered to latest year
@@ -803,7 +809,7 @@ export default function HeatMap({
 		}
 
 		// Rebuild markers with new filter
-		if (map.getZoom() >= 15) {
+		if (showPins && map.getZoom() >= 15) {
 			rebuildMarkers(map)
 		}
 	}, [
