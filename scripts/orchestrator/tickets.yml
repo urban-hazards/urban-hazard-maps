@@ -341,3 +341,15 @@ tickets:
     acceptance: []
     allowed_files: []
     depends_on: [B2]
+
+  - id: B0_defaults
+    wave: 2
+    status: stub
+    ticket_source: /tmp/uhm_issues/B0_defaults.md
+    # Tracking issue: GH #126. Sets B1/B2/B3 results as the public default
+    # on first paint. Trivial HeatMap.tsx initial-state edit, but easy to
+    # forget — file as a separate ticket so it doesn't slip.
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B1, B2, B3]
