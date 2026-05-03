@@ -1,0 +1,412 @@
+# UHM ticket manifest for the Kimi+Codex orchestrator.
+#
+# Each entry:
+#   id              -- short ticket id (matches /tmp/uhm_issues/<id>.md)
+#   wave            -- 1 = parallel batch, 2 = sequential after wave 1
+#   status          -- pending | held | done
+#   ticket_source   -- path to human-readable ticket markdown (NEVER auto-sent
+#                      to Kimi without strategy-strip; see scrub.py)
+#   kimi_brief      -- mechanical instruction that Kimi sees. No narrative,
+#                      no proper names, no political context. Hand-authored.
+#   acceptance      -- pass/fail criteria the audit checks
+#   allowed_files   -- whitelist of files Kimi may read or modify. Manifest
+#                      is the only source of truth here.
+#   scope_note      -- (optional) explanation passed to Codex when the brief
+#                      intentionally narrows scope vs the source ticket. Tells
+#                      the auditor "this is a partial implementation by design;
+#                      here's what's deferred and why." Without this, a
+#                      narrowed brief looks like silently-dropped scope and
+#                      Codex correctly returns NEEDS_CHANGES.
+#   depends_on      -- ids that must merge before this one runs
+
+tickets:
+  - id: G1a
+    wave: 1
+    status: done   # PR #110 merged 2026-05-03 (calibration pass 2026-05-01, $0.0067)
+    ticket_source: /tmp/uhm_issues/G1a.md
+    kimi_brief: |
+      Add a "Personnel availability" toggle chip to the Urban Hazard Maps
+      frontend. This is a self-contained scaffold; do not modify HeatMap.tsx.
+
+      Concretely, do exactly two things:
+
+      1. Create `frontend/src/data/personnel-availability.json` containing:
+            { "ranges": [] }
+         The shape is intentional: a single object with a `ranges` array,
+         where each entry will eventually look like
+            { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD", "label": "string" }
+         but the array is empty for now.
+
+      2. Create a new React component at
+         `frontend/src/components/PersonnelAvailabilityChip.tsx`. It must:
+           - Be a default-exported function component, no props.
+           - Import the JSON via `import data from "../data/personnel-availability.json"`.
+           - Render a small toggle chip styled with TailwindCSS classes
+             ("inline-flex", "items-center", "gap-1", "rounded-full",
+             "border", "px-2", "py-0.5", "text-xs"). When pressed, the chip
+             toggles a local `enabled` boolean stored with `useState`.
+           - Display the label "Personnel availability" followed by a count
+             "(N ranges)" where N = data.ranges.length.
+           - When enabled, apply class `bg-slate-700 text-white`; when
+             disabled, apply class `bg-white text-slate-700`.
+           - No external dependencies beyond React. No fetch calls.
+
+      Code style: no semicolons, tabs for indentation, TypeScript strict.
+      The component must compile under `pnpm build` (Astro check + build).
+    acceptance:
+      - "frontend/src/data/personnel-availability.json exists with shape {ranges: []}"
+      - "frontend/src/components/PersonnelAvailabilityChip.tsx exists and default-exports a React component"
+      - "Component imports JSON via relative path and renders chip text 'Personnel availability (0 ranges)'"
+      - "pnpm build completes without errors"
+      - "No edits to HeatMap.tsx, index.astro, or any other existing file"
+    allowed_files:
+      - frontend/src/data/personnel-availability.json
+      - frontend/src/components/PersonnelAvailabilityChip.tsx
+      - frontend/src/components/Footer.astro      # reference: small Astro component for style
+    scope_note: |
+      Scaffold-only by design. The source ticket asks for a hand-maintained
+      vacation-date dataset, a map overlay/filter wired to those dates, and
+      an optional monthly-trend annotation. None of those are in this PR
+      because the underlying data (vacation dates) hasn't been collected
+      yet. This PR delivers the empty-shell artifacts (JSON + chip
+      component) so the data-collection follow-up has a target shape.
+      Map integration is a separate ticket once dates are available.
+    depends_on: []
+
+  # Wave 1 stubs — kimi_brief to be authored before dispatch
+  - id: A1
+    wave: 1
+    status: done   # PR #112 merged 2026-05-03
+    ticket_source: /tmp/uhm_issues/A1.md
+    kimi_brief: |
+      The Astro frontend currently shows a "Highest Volume Neighborhood" stat
+      card with the value "Roxbury", which is wrong: the underlying 311
+      neighborhood field is unreliable and the actual hotspot is in zip 02118
+      (South End). Remove the card and remove the matching phrase from the
+      intro paragraph. Do not attempt to derive a replacement label.
+
+      Edit ONLY `frontend/src/components/StatsOverview.astro`. Do exactly
+      these two things:
+
+      1. Replace the entire `<p class="stats-intro">...</p>` paragraph with
+         this exact text (preserving tabs at the start of each line):
+
+            <p class="stats-intro">
+                Between <strong>{yearRange}</strong>, Boston residents submitted
+                <strong>{formatNumber(total)}</strong> sharps collection requests through the city's
+                311 system, spanning <strong>{neighborhoodCount}</strong> neighborhoods. Peak activity
+                occurs on <strong>{peakDow}s</strong> around <strong>{formatHour(peakHour)}</strong>,
+                averaging <strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month
+                citywide.
+            </p>
+
+         (Note: the indentation in the actual file is TABS, one level inside
+         the `<section>`. Match the existing tab indentation exactly.)
+
+      2. Delete the entire `<div class="stat-card card">` block whose
+         `<div class="stat-label">` reads "Highest Volume Neighborhood".
+
+      Leave the `Props` interface and destructure unchanged. The `peakHood`
+      prop becomes unused but is still passed by callers — leaving it in the
+      interface is intentional. Don't refactor adjacent code.
+
+      Code style: tabs, no semicolons, TypeScript strict. The component must
+      compile under `pnpm build`.
+    acceptance:
+      - "frontend/src/components/StatsOverview.astro no longer contains the substring 'Highest Volume Neighborhood'"
+      - "frontend/src/components/StatsOverview.astro no longer contains the substring 'consistently reporting the highest volume'"
+      - "Five stat cards remain (Total, Peak Hour of Day, Busiest Day of Week, Average Monthly Requests, Neighborhoods Reporting)"
+      - "pnpm build completes without errors"
+      - "No edits to any file other than StatsOverview.astro"
+    allowed_files:
+      - frontend/src/components/StatsOverview.astro
+    scope_note: |
+      Code change in this PR is complete: the offending Roxbury card and
+      the misleading intro phrase are removed. The source ticket also
+      asks for a follow-up issue about why the 311 neighborhood field
+      disagrees with coordinates — that is a process item to be filed in
+      GitHub Issues, not in this PR.
+    depends_on: []
+
+  - id: A2
+    wave: 1
+    status: done   # PR #113 merged 2026-05-03
+    ticket_source: /tmp/uhm_issues/A2.md
+    kimi_brief: |
+      The "Requests by Hour of Day" chart and the "Peak Hour of Day" stat
+      card both surface a 12 AM peak that is suspected to be an artifact of
+      bulk-loaded ticket timestamps, not real submission times. Hide both
+      from the public site until the cause is diagnosed.
+
+      Make exactly two edits, no more.
+
+      1. In `frontend/src/pages/index.astro`:
+           - Remove the line `import HourlyChart from "../components/HourlyChart"`.
+           - Remove the entire `<HourlyChart …/>` JSX element. If removing
+             leaves a now-empty wrapper line of whitespace, drop that too.
+
+      2. In `frontend/src/components/StatsOverview.astro`:
+           - Delete the entire `<div class="stat-card card">` block whose
+             `<div class="stat-label">` reads "Peak Hour of Day".
+           - Leave all other cards untouched, including their order.
+
+      Code style: tabs, no semicolons, TypeScript strict. The site must
+      compile under `pnpm build`. The `peakHour` prop on `StatsOverview` is
+      still passed from index.astro — leave it in the `Props` interface, do
+      not refactor it away.
+    acceptance:
+      - "frontend/src/pages/index.astro no longer imports HourlyChart"
+      - "frontend/src/pages/index.astro no longer renders <HourlyChart>"
+      - "frontend/src/components/StatsOverview.astro no longer contains the label 'Peak Hour of Day'"
+      - "Five stat cards remain in StatsOverview.astro"
+      - "pnpm build completes without errors"
+      - "No other files modified"
+    allowed_files:
+      - frontend/src/pages/index.astro
+      - frontend/src/components/StatsOverview.astro
+    scope_note: |
+      Hides the suspect Hour-of-Day chart + Peak Hour stat card from the
+      public site. The original kimi_brief specified only "delete the
+      stat card + remove the JSX import"; in practice that left two
+      regressions that block the source ticket's intent:
+        - The intro paragraph in StatsOverview.astro still rendered
+          "Peak activity occurs on {peakDow}s around {formatHour(peakHour)}",
+          re-surfacing the suspect 12 AM time the source ticket wanted
+          hidden. This patch removes that clause (and the now-unused
+          formatHour import + peakHour destructure). peakHour stays in
+          the Props interface since callers still pass it.
+        - With <HourlyChart /> removed, the .charts-grid in index.astro
+          stayed at `grid-template-columns: 1fr 1fr`, leaving
+          MonthlyTrend stranded half-width with an empty column. This
+          patch collapses charts-grid to 1 column.
+      Both follow-on edits are inside files the brief already authorized
+      and are necessary to satisfy the source ticket's hide-the-suspect-
+      time intent. They are NOT silent scope drops; they are scope-
+      correct fixes the brief should have called out explicitly.
+
+      Two source-ticket items remain deferred to follow-up tickets:
+        1. The Data Quality page note about hour-of-day under
+           investigation. Deferred because data-quality.astro is 600+
+           lines, well past the full-file-regen safe size (caught Apr
+           2026: K2 turned `border-radius: 2px;` into `border-radius:
+           px;` on a similar-sized file). Will be added by hand.
+        2. The "diagnose the overnight spike" follow-up issue is a
+           process item to be filed in GitHub Issues, not in this PR.
+    depends_on: []
+
+  - id: B4
+    wave: 1
+    status: done   # PR #111 merged 2026-05-03 (scaffold-only; full integration deferred per ticket)
+    ticket_source: /tmp/uhm_issues/B4.md
+    kimi_brief: |
+      Scaffold a tiny heat-curve utility module so future heatmap rendering
+      work can pick from three named curve shapes without re-deriving the
+      math. This is scaffold-only — no UI changes, no HeatMap.tsx edits.
+
+      Create exactly one new file at `frontend/src/lib/heat-curves.ts`
+      containing:
+
+      1. A type alias `export type HeatCurve = "linear" | "logarithmic" | "exponential"`.
+
+      2. Three pure functions that map a normalized intensity in [0, 1] to a
+         normalized intensity in [0, 1]. Clamp inputs to the closed interval
+         before computing; return values must also lie in [0, 1].
+
+           export function linear(t: number): number
+           export function logarithmic(t: number): number
+           export function exponential(t: number): number
+
+         Use these formulas:
+           - linear(t)        => t
+           - logarithmic(t)   => Math.log10(1 + 9 * t)
+                                 (maps 0 -> 0, 1 -> 1; emphasizes low end)
+           - exponential(t)   => (Math.exp(t) - 1) / (Math.E - 1)
+                                 (maps 0 -> 0, 1 -> 1; emphasizes high end)
+
+      3. A const map for lookup:
+           export const HEAT_CURVES: Record<HeatCurve, (t: number) => number> = {
+               linear, logarithmic, exponential,
+           }
+
+      Code style: tabs, no semicolons, TypeScript strict. No imports. No
+      side effects. Module must compile under `pnpm build`.
+    acceptance:
+      - "frontend/src/lib/heat-curves.ts exists"
+      - "Module exports HeatCurve type, linear, logarithmic, exponential, HEAT_CURVES"
+      - "All three functions clamp t to [0, 1] before computing"
+      - "pnpm build completes without errors"
+      - "No edits to any existing file"
+    allowed_files:
+      - frontend/src/lib/heat-curves.ts
+    scope_note: |
+      Scaffold-only by design. The source ticket is a research spike
+      (prototype 3 curve variants on real data, capture screenshots,
+      pick a default with Brian + Andrew, expose others as a dev-mode
+      toggle). This PR ships the math primitives so the live integration
+      can be done in a follow-up that touches HeatMap.tsx — which is
+      1,100+ lines and unsafe for the orchestrator's full-file output
+      mode. The follow-up will be done by hand (or via a tightly-scoped
+      surgical edit) once the curves are wired in.
+    depends_on: []
+
+  - id: C1
+    wave: 1
+    status: done   # PR #114 merged 2026-05-03 (single-line edit; full UI audit deferred)
+    ticket_source: /tmp/uhm_issues/C1.md
+    kimi_brief: |
+      Disable map panning while keeping zoom enabled. Per the ticket
+      decision, panning adds no value for the public viewer — the data fits
+      the default frame and panning lets viewers get lost. Other UI cleanups
+      (hover-vs-click, control audit, methodology note) are out of scope for
+      this single edit; they will be tracked as follow-ups.
+
+      Make exactly one focused change to
+      `frontend/src/components/HeatMap.tsx`:
+
+      1. Locate the line that reads (around line 315):
+           const map = L.map(mapRef.current, { center: [42.332, -71.078], zoom: 13 })
+
+      2. Add a `dragging: false` option to the options object so it becomes:
+           const map = L.map(mapRef.current, {
+               center: [42.332, -71.078],
+               zoom: 13,
+               dragging: false,
+           })
+
+      3. Use tabs for indentation, no semicolons, TypeScript strict. The
+         multi-line object literal style is fine.
+
+      Do not modify any other line in the file. Do not touch other map
+      options, layers, event handlers, or styles. The only behavior change
+      should be that the user can no longer pan the map; zoom continues to
+      work.
+    acceptance:
+      - "frontend/src/components/HeatMap.tsx contains 'dragging: false' inside the L.map options object"
+      - "No other lines in HeatMap.tsx are modified"
+      - "pnpm build completes without errors"
+      - "No other files touched"
+    allowed_files:
+      - frontend/src/components/HeatMap.tsx
+    scope_note: |
+      Two-option edit in this PR (dragging: false + keyboardPanDelta: 0).
+      The original kimi_brief specified only `dragging: false`, but
+      Leaflet treats keyboard navigation as a separate handler — arrow
+      keys would still pan the map. We don't use `keyboard: false`
+      because that disables the entire keyboard handler including
+      `+`/`-` zoom keys, which violates the source ticket's "Keep zoom
+      enabled". Setting `keyboardPanDelta: 0` keeps the keyboard
+      handler active (zoom keys still work) but reduces arrow-key pan
+      distance to zero pixels. This is NOT a silent scope drop; it is
+      the minimal correct way to satisfy "disable map panning while
+      keeping zoom enabled".
+
+      The source ticket is a broader UX-cleanup pass; the following
+      items are explicitly deferred to follow-up tickets:
+        - Region-click to commit a district filter and reveal pins for
+          that region (requires net-new click handlers on the boundary
+          GeoJSON layer in HeatMap.tsx, plus filter-state plumbing).
+        - Hover-as-preview-only behavior (paired with the above).
+        - Full control audit + hide-non-public-controls pass.
+        - Methodology page note documenting what was removed.
+      The deferral is so we can ship the highest user-confusion-to-
+      effort change ahead of the public release and revisit the rest
+      after it stabilizes. Note: this PR was hand-applied because the
+      orchestrator's full-file output mode truncated 3x on HeatMap.tsx
+      (1,100+ lines, beyond the documented safe size of 500 lines).
+    depends_on: []
+
+  - id: B1
+    wave: 2
+    status: stub
+    ticket_source: /tmp/uhm_issues/B1.md
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B4]   # B1 touches HeatMap, sequence after B4 lands
+
+  - id: B2
+    wave: 2
+    status: done   # PR #127 merged 2026-05-03 (hand-applied — HeatMap.tsx 1485 lines, past orchestrator's safe size)
+    ticket_source: /tmp/uhm_issues/B2.md
+    kimi_brief: |
+      Three surgical edits to `frontend/src/components/HeatMap.tsx` only.
+      Do not regenerate the file in full; touch only the named lines.
+
+      1. Around line 172, change the initial state of `showPins` from
+         `useState(true)` to `useState(false)`. The "Show pins when
+         zoomed in" checkbox will now load unchecked. No other state or
+         control wiring changes.
+
+      2. Around line 324, in the `L.tileLayer(...)` options object
+         passed for the CARTO basemap, add `opacity: 0.7,` after the
+         existing `maxZoom: 19,` line. Keep the trailing comma. This
+         gives the basemap slightly more transparency so street labels
+         read through the heatmap, per Andrew's note that Tableau does
+         this with deliberate tuning.
+
+      3. Around line 806, change the filter-change marker rebuild guard
+         from `if (map.getZoom() >= 15)` to
+         `if (showPins && map.getZoom() >= 15)`. Without this gate, a
+         filter or data-layer toggle at zoom 15+ repopulates the markers
+         even though showPins is false — defeating "dots hidden at all
+         zoom levels".
+
+      Code style: tabs, no semicolons, TypeScript strict. The component
+      must compile under `pnpm build`. Do not touch ANY other line in
+      HeatMap.tsx.
+    acceptance:
+      - "frontend/src/components/HeatMap.tsx line ~172 reads `useState(false)` for showPins"
+      - "frontend/src/components/HeatMap.tsx CARTO tileLayer options include `opacity: 0.7`"
+      - "frontend/src/components/HeatMap.tsx filter-change marker rebuild is gated on `showPins`"
+      - "No other lines in HeatMap.tsx are modified"
+      - "pnpm build completes without errors"
+    allowed_files:
+      - frontend/src/components/HeatMap.tsx
+    scope_note: |
+      Three-edit surgical PR. The third edit (line ~806 filter-change
+      gate) was caught by Codex re-audit and is required for the
+      "dots hidden at all zoom levels" acceptance to actually hold —
+      without it, a filter toggle at zoom 15+ would repopulate
+      markers despite showPins being false. The original brief was
+      too narrow; this scope_note records the discovery and the
+      brief is updated to authorize all three edits explicitly.
+
+      The source ticket B2 also asks for a click/select interaction
+      that reveals individual ticket points for a selected region —
+      that requires net-new click handlers on the boundary GeoJSON
+      layer plus pin-management state, and is deferred to a follow-up
+      ticket (paired with the C1 region-click deferral and #98).
+
+      This PR ships the three small changes the call agreed on as
+      defaults (default-hidden pins + transparent basemap + filter-
+      stable hidden state) so the map's first-paint AND post-filter
+      visual matches the call decision, ahead of the bigger
+      interaction work.
+
+      Hand-applied rather than dispatched through the orchestrator
+      because HeatMap.tsx is 1,485 lines — well past the safe size
+      for full-file regen mode (lesson from the May 2026 calibration:
+      C1 truncated 3x on this same file). Surgical edits + Codex
+      audit is the documented pattern for big-file work.
+    depends_on: [B1]
+
+  - id: B3
+    wave: 2
+    status: held
+    ticket_source: /tmp/uhm_issues/B3.md
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B2]
+
+  - id: B0_defaults
+    wave: 2
+    status: stub
+    ticket_source: /tmp/uhm_issues/B0_defaults.md
+    # Tracking issue: GH #126. Sets B1/B2/B3 results as the public default
+    # on first paint. Trivial HeatMap.tsx initial-state edit, but easy to
+    # forget — file as a separate ticket so it doesn't slip.
+    kimi_brief: ""
+    acceptance: []
+    allowed_files: []
+    depends_on: [B1, B2, B3]

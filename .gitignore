@@ -1,5 +1,7 @@
 .playwright-mcp/
 .worktrees/
+scripts/orchestrator/logs/*
+!scripts/orchestrator/logs/.gitkeep
 
 # Python
 __pycache__/
