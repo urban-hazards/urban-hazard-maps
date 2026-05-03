@@ -326,11 +326,68 @@ tickets:
 
   - id: B2
     wave: 2
-    status: stub
+    status: pending  # hand-applied — HeatMap.tsx is 1485 lines, beyond orchestrator's safe full-file size
     ticket_source: /tmp/uhm_issues/B2.md
-    kimi_brief: ""
-    acceptance: []
-    allowed_files: []
+    kimi_brief: |
+      Three surgical edits to `frontend/src/components/HeatMap.tsx` only.
+      Do not regenerate the file in full; touch only the named lines.
+
+      1. Around line 172, change the initial state of `showPins` from
+         `useState(true)` to `useState(false)`. The "Show pins when
+         zoomed in" checkbox will now load unchecked. No other state or
+         control wiring changes.
+
+      2. Around line 324, in the `L.tileLayer(...)` options object
+         passed for the CARTO basemap, add `opacity: 0.7,` after the
+         existing `maxZoom: 19,` line. Keep the trailing comma. This
+         gives the basemap slightly more transparency so street labels
+         read through the heatmap, per Andrew's note that Tableau does
+         this with deliberate tuning.
+
+      3. Around line 806, change the filter-change marker rebuild guard
+         from `if (map.getZoom() >= 15)` to
+         `if (showPins && map.getZoom() >= 15)`. Without this gate, a
+         filter or data-layer toggle at zoom 15+ repopulates the markers
+         even though showPins is false — defeating "dots hidden at all
+         zoom levels".
+
+      Code style: tabs, no semicolons, TypeScript strict. The component
+      must compile under `pnpm build`. Do not touch ANY other line in
+      HeatMap.tsx.
+    acceptance:
+      - "frontend/src/components/HeatMap.tsx line ~172 reads `useState(false)` for showPins"
+      - "frontend/src/components/HeatMap.tsx CARTO tileLayer options include `opacity: 0.7`"
+      - "frontend/src/components/HeatMap.tsx filter-change marker rebuild is gated on `showPins`"
+      - "No other lines in HeatMap.tsx are modified"
+      - "pnpm build completes without errors"
+    allowed_files:
+      - frontend/src/components/HeatMap.tsx
+    scope_note: |
+      Three-edit surgical PR. The third edit (line ~806 filter-change
+      gate) was caught by Codex re-audit and is required for the
+      "dots hidden at all zoom levels" acceptance to actually hold —
+      without it, a filter toggle at zoom 15+ would repopulate
+      markers despite showPins being false. The original brief was
+      too narrow; this scope_note records the discovery and the
+      brief is updated to authorize all three edits explicitly.
+
+      The source ticket B2 also asks for a click/select interaction
+      that reveals individual ticket points for a selected region —
+      that requires net-new click handlers on the boundary GeoJSON
+      layer plus pin-management state, and is deferred to a follow-up
+      ticket (paired with the C1 region-click deferral and #98).
+
+      This PR ships the three small changes the call agreed on as
+      defaults (default-hidden pins + transparent basemap + filter-
+      stable hidden state) so the map's first-paint AND post-filter
+      visual matches the call decision, ahead of the bigger
+      interaction work.
+
+      Hand-applied rather than dispatched through the orchestrator
+      because HeatMap.tsx is 1,485 lines — well past the safe size
+      for full-file regen mode (lesson from the May 2026 calibration:
+      C1 truncated 3x on this same file). Surgical edits + Codex
+      audit is the documented pattern for big-file work.
     depends_on: [B1]
 
   - id: B3
