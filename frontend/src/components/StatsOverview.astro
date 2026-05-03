@@ -23,18 +23,13 @@ const yearRange = years.length > 0 ? `${years[0]}\u2013${years[years.length - 1]
 		<strong>{formatNumber(total)}</strong> sharps collection requests through the city's
 		311 system, spanning <strong>{neighborhoodCount}</strong> neighborhoods. Peak activity
 		occurs on <strong>{peakDow}s</strong> around <strong>{formatHour(peakHour)}</strong>,
-		with <strong>{peakHood}</strong> consistently reporting the highest volume at an
-		average of <strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month
+		averaging <strong>{formatNumber(Math.round(avgMonthly))}</strong> requests per month
 		citywide.
 	</p>
 	<div class="stats-grid">
 		<div class="stat-card card primary">
 			<div class="stat-value">{formatNumber(total)}</div>
 			<div class="stat-label">Total Requests ({yearRange})</div>
-		</div>
-		<div class="stat-card card">
-			<div class="stat-value">{peakHood}</div>
-			<div class="stat-label">Highest Volume Neighborhood</div>
 		</div>
 		<div class="stat-card card">
 			<div class="stat-value">{formatHour(peakHour)}</div>
