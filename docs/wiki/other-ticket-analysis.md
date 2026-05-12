@@ -1,7 +1,7 @@
 # The "Other" Ticket Black Hole
 
 > 142,946 General Request tickets exist only in the Open311 API, invisible in CKAN.
-> Last updated: 2026-04-11
+> Last updated: 2026-04-25
 
 ## Discovery
 
@@ -51,10 +51,33 @@ step dropped it into the generic bucket.
 - **Geographic analysis** of "Other" tickets could reveal neighborhood-level
   reporting gaps
 
+## Reclassification Behavior (verified 2026-04-25)
+
+When staff reclassify an "Other" ticket to a specific type (e.g., Human Waste),
+the ticket **stays in the Other corpus** with `service_name: "Other"` unchanged.
+The reclassification is visible only in the `description` field as staff-appended
+text like `| Case (SR) Type: [Human Waste]  Referred To: [HUMAN WASTE]`.
+
+Key findings from checking 10 known reclassified waste IDs (issue #57 §4b):
+
+1. **`service_name` / `service_code` never change** — they remain "Other" / "General Request"
+2. **Records don't drop out** — each appears in exactly 1 day-file (the day filed)
+3. **Reclassified tickets never appear in CKAN** — checked 5 IDs via direct CKAN
+   API query, zero results. They are permanently invisible to the bulk export.
+4. **ID namespace matches** — Open311 `service_request_id` uses the same 12-digit
+   `10100x` format as CKAN `case_enquiry_id`. Dedupe by ID is safe.
+
+This means for pipeline ingestion:
+- The Other corpus is the **only source** for these tickets
+- CKAN-based dedupe is a safety net, not functionally necessary
+- The `[Human Waste]` tag in descriptions provides an additional classification
+  signal beyond the NLP classifier
+
 ## Future Work
 
-- Run NLP classifier on "Other" descriptions to estimate true category breakdown
+- ~~Run NLP classifier on "Other" descriptions to estimate true category breakdown~~ **Done for waste** (issue #57, 2,433 waste reports recovered)
 - Compare "Other" volume by neighborhood — are some areas worse at routing?
 - Check if `?extensions=true` returns structured form fields for the ~700 rodent
   tickets (would definitively prove app routing failure)
 - Track "Other" volume over time — is the routing improving or degrading?
+- Ingest encampment reclassifications from Other (6,533 tickets — issue #84 subtask 3)

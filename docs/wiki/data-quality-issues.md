@@ -2,7 +2,7 @@
 
 > 14 systemic problems with Boston's 311 open data feed on data.boston.gov.
 > Audited against 2024-2025 data (267K records in 2025).
-> Last updated: 2026-04-11
+> Last updated: 2026-04-25
 
 ## 1. Description Field Stripped
 
@@ -69,6 +69,15 @@ Duplicate/overlapping names make geographic analysis unreliable:
 - "South Boston" vs "South Boston / South Boston Waterfront"
 - "Mattapan" vs "Greater Mattapan"
 - A blank space `' '` is a distinct neighborhood value
+
+**Mass Ave corridor boundary problem:** The South End / Roxbury boundary runs
+along Massachusetts Avenue. Both sides share the same zip code, but the 311
+system labels the southwestern half as "Roxbury." This inflates Roxbury's needle
+count and deflates South End's. A lat/lng heatmap correctly shows the South End
+side of Mass Ave as a hotspot, but text-based neighborhood aggregation credits
+those reports to Roxbury. The `neighborhood` field comes from the CKAN record
+as-is — no geocoding or shapefile-based assignment is performed by our pipeline.
+Confirmed by independent mapping analysis (Andy Milne, April 2026).
 
 ## 9. Duplicate Tickets
 

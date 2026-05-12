@@ -1,6 +1,7 @@
 """Pipeline configuration and constants."""
 
 import os
+from datetime import date
 
 from dotenv import load_dotenv
 
@@ -154,6 +155,17 @@ OPEN311_SCRAPER_PREFIX = "open311"
 SCRAPER_SLUGS_FOR_WASTE = ["street-cleaning"]
 SCRAPER_SLUGS_FOR_ENCAMPMENTS = ["encampments"]
 SCRAPER_SLUGS_FOR_NEEDLES = ["needles"]
+
+# Slugs whose scraped Open311 records are ingested as waste *candidates*
+# (in addition to CKAN "Requests for Street Cleaning").
+# "other" = BOS:311 app's free-text "General Request" button. Staff reclassify
+# these after submission, but CKAN never surfaces them — they only exist in
+# the Open311 API. See issue #57 §4b-1 for verification.
+SCRAPER_SLUGS_FOR_WASTE_INPUT: list[str] = ["other"]
+
+# Earliest date of Open311 scraper coverage for waste ingest.
+# The 2023 data is net-new — CKAN waste starts 2024.
+OPEN311_WASTE_START_DATE: date = date(2023, 1, 1)
 
 # --- S3 / Railway bucket storage ---
 
