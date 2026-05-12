@@ -17,9 +17,11 @@
     "@astrojs/node": "^10.0.4",
     "@astrojs/react": "^5.0.2",
     "@aws-sdk/client-s3": "^3.1024.0",
+    "@nanostores/react": "^1.1.0",
     "astro": "^6.1.3",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
+    "nanostores": "^1.3.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "typescript": "~5.8.3"
