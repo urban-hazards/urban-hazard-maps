@@ -27,6 +27,7 @@ from pipeline.dedupe import match_cross_system
 from pipeline.districts import DistrictLookup
 from pipeline.enricher import enrich_records
 from pipeline.fetcher import fetch_encampment_year, fetch_year
+from pipeline.health import compute_source_health, write_source_health
 from pipeline.models import CleanedRecord
 from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
 
@@ -491,6 +492,11 @@ def run_pipeline(
             counts[dataset] = _process_waste(raw, force)
         else:
             counts[dataset] = _process_dataset(dataset, raw)
+
+    try:
+        write_source_health(compute_source_health())
+    except Exception:  # the monitor must never break the data run
+        logger.exception("source health failed")
 
     # Write metadata
     metadata = {
