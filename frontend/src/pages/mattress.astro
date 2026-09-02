@@ -1,0 +1,478 @@
+---
+import Footer from "../components/Footer.astro"
+import Header from "../components/Header.astro"
+import MattressCharts from "../components/MattressCharts.tsx"
+import mattress from "../data/mattress.json"
+import BaseLayout from "../layouts/BaseLayout.astro"
+import { fetchPageStats } from "../lib/bucket"
+import "../styles/global.css"
+
+// The month 311 began taking mattress-pickup requests (Mattress_Pickup case
+// type appears) and the month it stopped — the self-service scheduler at
+// boston.gov/mattress went live June 4, 2024 (Dorchester Reporter, 2024-06-06).
+// Change here if the city gives us different dates.
+const BUTTON_MONTH = mattress.mattress_pickup.first_month ?? "2023-01"
+const CUTOFF_MONTH = mattress.mattress_pickup.last_month ?? "2024-05"
+
+const stats = await fetchPageStats("needles")
+
+const mp = mattress.mattress_pickup
+const automationPct = ((mp.automation_closures / mp.total) * 100).toFixed(0)
+const constituentPct = (((mp.by_source["Constituent Call"] ?? 0) / mp.total) * 100).toFixed(0)
+
+const yearOf = (m: Record<string, number>) => {
+	const out: Record<string, number> = {}
+	for (const [ym, c] of Object.entries(m)) out[ym.slice(0, 4)] = (out[ym.slice(0, 4)] ?? 0) + c
+	return out
+}
+const years = ["2021", "2022", "2023", "2024", "2025", "2026"]
+const ckanRows = Object.entries(mattress.ckan_types_monthly)
+	.filter(([t]) => t !== "Mattress_Pickup")
+	.map(([t, m]) => ({ type: t, yearly: yearOf(m) }))
+	.sort((a, b) => (b.yearly["2025"] ?? 0) - (a.yearly["2025"] ?? 0))
+const mentionYear = (slug: string) =>
+	yearOf(mattress.open311[slug as keyof typeof mattress.open311].mattress)
+const totalMentions = (y: string) =>
+	["illegal-trash", "street-cleaning", "other"].reduce((a, s) => a + (mentionYear(s)[y] ?? 0), 0)
+const closureYear = yearOf(mattress.closure_mentions_monthly)
+const queues = ["illegal-trash", "street-cleaning", "other"] as const
+const lastFullMonth = mattress.open311_last_full_month
+const queueTotalYear = (y: string) =>
+	queues.reduce((a, s) => a + (yearOf(mattress.open311[s].total)[y] ?? 0), 0)
+const sharePct = (y: string) =>
+	((totalMentions(y) / Math.max(queueTotalYear(y), 1)) * 100).toFixed(1)
+// Intake channel by case type and year (CKAN `source`).
+const SOURCE_ORDER = [
+	"Citizens Connect App",
+	"Constituent Call",
+	"Self Service",
+	"Employee Generated",
+	"City Worker App",
+]
+const sourceYears = ["2023", "2024", "2025", "2026"]
+const sourceRows = (type: string) => {
+	const byYear =
+		(mattress.ckan_source_yearly as Record<string, Record<string, Record<string, number>>>)[type] ??
+		{}
+	const labels = new Set<string>()
+	for (const y of sourceYears) for (const k of Object.keys(byYear[y] ?? {})) labels.add(k)
+	const ordered = [
+		...SOURCE_ORDER.filter((l) => labels.has(l)),
+		...[...labels].filter((l) => !SOURCE_ORDER.includes(l)).sort(),
+	]
+	return ordered.map((label) => ({
+		label,
+		values: sourceYears.map((y) => {
+			const yr = byYear[y] ?? {}
+			const tot = Object.values(yr).reduce((a, b) => a + b, 0)
+			const v = yr[label] ?? 0
+			return { n: v, pct: tot ? (v / tot) * 100 : 0 }
+		}),
+	}))
+}
+const INTAKE_TYPES = [
+	"Mattress_Pickup",
+	"Improper Storage of Trash (Barrels)",
+	"Requests for Street Cleaning",
+	"Illegal Dumping",
+]
+const samples = [
+	...mattress.open311["illegal-trash"].samples.slice(0, 2),
+	...mattress.open311["street-cleaning"].samples.slice(0, 2),
+	...mattress.open311.other.samples.slice(0, 2),
+]
+---
+
+<BaseLayout
+	title="What Happened to Boston's Mattress Data — Boston Urban Hazard Maps"
+	description="Boston 311 logged 36,000 mattress pickups by phone in 16 months, then self-service scheduling took them out of 311 entirely. What happened to the complaints, month by month."
+	canonical="https://www.urbanhazardmaps.com/mattress"
+	jsonLd={{
+		"@context": "https://schema.org",
+		"@type": "Article",
+		headline: "What Happened to Boston's Mattress Data",
+		description:
+			"Month-by-month analysis of mattress pickup cases and mattress complaints in Boston's 311 system, 2021–2026.",
+		url: "https://www.urbanhazardmaps.com/mattress",
+		author: { "@type": "Organization", name: "Urban Hazards" },
+		publisher: { "@type": "Organization", name: "Urban Hazards" },
+	}}
+>
+	<Header generated={stats.generated} />
+
+	<main class="container" style="padding-top: 32px; padding-bottom: 48px;">
+		<nav class="breadcrumb" aria-label="Breadcrumb">
+			<a href="/">Home</a> <span aria-hidden="true">/</span> <span>Mattresses</span>
+		</nav>
+
+		<h1 class="page-title">What Happened to Boston's Mattress Data</h1>
+		<p class="page-subtitle">
+			Massachusetts banned mattresses from the trash on November 1, 2022. Boston responded with
+			free curbside pickup: for seventeen months you called 311 to book it, and each booking became a case. On
+			June 4, 2024 the city launched self-service scheduling at boston.gov/mattress, and
+			mattresses vanished from 311 data. Here is what the city's own records show about
+			mattresses before and after that switch — including whether the complaints went down.
+		</p>
+
+		<section class="section">
+			<h2 class="section-title">1. Mattresses were a phone call, then they left 311</h2>
+			<div class="card prose">
+				<p>
+					A case type called <code>Mattress_Pickup</code> appears in Boston's 311 export in
+					{BUTTON_MONTH} and logs <strong>{mp.total.toLocaleString()}</strong> cases (one stray in
+					October 2022) before it stops in {CUTOFF_MONTH}. There was no app button for it. Residents called:
+				</p>
+				<div class="stats-grid">
+					<div class="stat-item">
+						<span class="stat-number">{constituentPct}%</span>
+						<span class="stat-desc">tagged "Constituent Call" — phoned in to 311; zero from the app</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-number">{automationPct}%</span>
+						<span class="stat-desc">closed by "Mattress Pickup Automation" once the appointment was booked</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-number">0</span>
+						<span class="stat-desc">Mattress_Pickup cases since June 2024</span>
+					</div>
+				</div>
+				<p>
+					Roughly 2,000 phone calls a month, each one a 311 case with an address and a date.
+					On June 4, 2024 Public Works launched self-service scheduling at boston.gov/mattress;
+					the 311 intake had already been switched off in mid-May. The pickups continue, but
+					they no longer create 311 cases, so the public 311 export has recorded zero mattress
+					pickups for over two years. Anyone measuring mattress demand from 311 today
+					sees nothing.
+				</p>
+				<MattressCharts
+					client:load
+					data={mattress}
+					buttonMonth={BUTTON_MONTH}
+					cutoffMonth={CUTOFF_MONTH}
+				/>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2 class="section-title">2. Did mattress complaints go down after self-service scheduling?</h2>
+			<div class="card prose">
+				<p>
+					A resident who sees a mattress on the sidewalk has no mattress category to pick.
+					They file under whatever is closest. The public bulk export strips what they
+					wrote, but the Open311 API keeps it, so we counted every report whose description
+					mentions a mattress in the three queues these reports land in:
+				</p>
+				<div class="table-wrap">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Queue</th>
+								<th>2023</th>
+								<th>2024</th>
+								<th>2025</th>
+								<th>2026 (thru {lastFullMonth.slice(5)})</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Improper Storage of Trash (Barrels)</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("illegal-trash")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+							<tr>
+								<td>Requests for Street Cleaning</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("street-cleaning")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+							<tr>
+								<td>General Request ("Other")</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("other")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+							<tr class="total-row">
+								<td>Total</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{totalMentions(y).toLocaleString()}</td>)}
+							</tr>
+							<tr>
+								<td>Share of all reports in these three queues</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{sharePct(y)}%</td>)}
+							</tr>
+							<tr>
+								<td>Closure notes mentioning a mattress (all other case types)†</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(closureYear[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<p class="example-note">
+					† Closure notes are written by city staff, not residents. The jump from 265 in 2022
+					to 3,177 in 2023 is staff templates telling residents about the new pickup program;
+					it measures the city's response, not resident behavior.
+				</p>
+				<p>
+					Not much. Pickup requests ran at roughly 2,000 a month while 311 could see them.
+					Complaints about dumped mattresses ran at roughly 350 a month the whole time, drifting
+					down about 8% a year, with the same late-August/September move-out spike every year —
+					the first peak after the scheduler launched was the biggest yet. Easier scheduling did not make
+					the sidewalk mattresses go away, because they are two different populations: people
+					who own a mattress and want it gone, and people who found someone else's.
+				</p>
+				<div class="example-box">
+					<div class="example-title">What residents actually write</div>
+					<div class="example-content">
+						{samples.map((s) => <div class="example-field">“{s}”</div>)}
+					</div>
+					<p class="example-note">
+						None of these carried a mattress tag. Each is counted in a general trash or
+						street-cleaning queue and would be invisible to a search for "mattress" in the
+						public export.
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2 class="section-title">3. How these reports come in</h2>
+			<div class="card prose">
+				<p>
+					Intake channel for each case, from the <code>source</code> field in the 311 export.
+					Mattress pickups were almost entirely phone calls. For the queues where a dumped
+					mattress lands, "Employee Generated" means a city worker (usually a code-enforcement
+					inspector) opened the case, not a resident; residents mostly use the app, and almost
+					nobody uses the web form.
+				</p>
+				{INTAKE_TYPES.map((t) => (
+					<div class="table-wrap">
+						<table class="data-table intake-table">
+							<thead>
+								<tr>
+									<th>{t}</th>
+									{sourceYears.map((y) => <th>{y}{y === "2026" ? "*" : ""}</th>)}
+								</tr>
+							</thead>
+							<tbody>
+								{sourceRows(t).map((r) => (
+									<tr>
+										<td>{r.label}</td>
+										{r.values.map((v) => (
+											<td>{v.n ? `${v.n.toLocaleString()} (${v.pct.toFixed(0)}%)` : "—"}</td>
+										))}
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				))}
+				<p class="example-note">* 2026 through {mattress.ckan_through}.</p>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2 class="section-title">4. The queues a mattress complaint lands in</h2>
+			<div class="card prose">
+				<p>
+					For context, the case types above and their neighbors, by year. There is no obvious
+					break when 311 started or stopped taking mattress calls; this is context, not proof. Bulk-item scheduling left 311 the
+					same way: <code>Schedule a Bulk Item Pickup</code> logs its last case in December 2024.
+				</p>
+				<div class="table-wrap">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Case type</th>
+								{years.map((y) => <th>{y}{y === "2026" ? "*" : ""}</th>)}
+							</tr>
+						</thead>
+						<tbody>
+							{ckanRows.map((r) => (
+								<tr>
+									<td>{r.type}</td>
+									{years.map((y) => <td>{r.yearly[y] ? r.yearly[y].toLocaleString() : "—"}</td>)}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+				<p class="example-note">* 2026 through {mattress.ckan_through}.</p>
+				<div class="fix-box">
+					<strong>What should change:</strong> Feed the boston.gov/mattress appointments back
+					into 311, or publish them alongside it. A program that moved 25,000 mattresses a year
+					should not be invisible in the city's own service data. And give residents a
+					"dumped mattress" category: today ~4,000 reports a year describe one in free text
+					that the public export throws away.
+				</div>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2 class="section-title">Method</h2>
+			<div class="card prose">
+				<ul>
+					<li>
+						Case counts: 311 Service Requests bulk export on data.boston.gov, all years,
+						through {mattress.ckan_through}. Queried by <code>type</code>.
+					</li>
+					<li>
+						Mattress mentions: Boston Open311 API, <code>description</code> field, matched on
+						<em>mattress</em>, <em>matress</em>, or <em>box spring</em>, case-insensitive. Complete through
+						{lastFullMonth}. The API only exposes 2023 onward.
+					</li>
+					<li>
+						Closure-note mentions: <code>closure_reason</code> containing "mattress" in the bulk
+						export, excluding the Mattress_Pickup type itself.
+					</li>
+					<li>
+						Reproducible: <code>scripts/mattress_analysis.py</code> in the
+						<a href="https://github.com/urban-hazards/urban-hazard-maps">repository</a> regenerates
+						every number on this page. Generated {mattress.generated.slice(0, 10)}.
+					</li>
+				</ul>
+			</div>
+		</section>
+	</main>
+
+	<Footer />
+</BaseLayout>
+
+<style>
+	.breadcrumb {
+		font-size: 0.875rem;
+		color: var(--text-muted, #6b6b66);
+		margin-bottom: 16px;
+	}
+	.breadcrumb a {
+		color: inherit;
+	}
+	.page-title {
+		font-size: 2rem;
+		line-height: 1.15;
+		margin: 0 0 12px;
+	}
+	.page-subtitle {
+		font-size: 1.1rem;
+		line-height: 1.5;
+		max-width: 60ch;
+		margin: 0 0 32px;
+		color: var(--text-secondary, #4a4a46);
+	}
+	.prose p,
+	.prose li {
+		line-height: 1.6;
+	}
+	.prose code {
+		font-size: 0.9em;
+		background: #f1f1ee;
+		padding: 1px 5px;
+		border-radius: 3px;
+	}
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 12px;
+		margin: 16px 0;
+	}
+	.stat-item,
+	:global(.before-after .stat-item) {
+		background: #f7f7f4;
+		border-radius: 6px;
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.stat-number,
+	:global(.before-after .stat-number) {
+		font-size: 1.6rem;
+		font-weight: 700;
+	}
+	.stat-desc,
+	:global(.before-after .stat-desc) {
+		font-size: 0.85rem;
+		color: var(--text-secondary, #4a4a46);
+	}
+	:global(.before-after) {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 12px;
+		margin: 16px 0;
+	}
+	:global(.chart-figure) {
+		margin: 20px 0 8px;
+	}
+	:global(.chart-figure figcaption) {
+		font-size: 0.9rem;
+		color: var(--text-secondary, #4a4a46);
+		margin-bottom: 8px;
+		line-height: 1.5;
+	}
+	:global(.chart-box) {
+		position: relative;
+		width: 100%;
+	}
+	:global(.table-toggle) {
+		font: inherit;
+		font-size: 0.85rem;
+		background: none;
+		border: 1px solid #c9c9c4;
+		border-radius: 4px;
+		padding: 4px 10px;
+		cursor: pointer;
+		margin: 4px 0 8px;
+	}
+	.table-wrap,
+	:global(.table-wrap) {
+		overflow-x: auto;
+		margin: 12px 0;
+	}
+	.data-table,
+	:global(.data-table) {
+		border-collapse: collapse;
+		width: 100%;
+		font-size: 0.9rem;
+	}
+	.data-table th,
+	.data-table td,
+	:global(.data-table th),
+	:global(.data-table td) {
+		text-align: right;
+		padding: 6px 10px;
+		border-bottom: 1px solid #e6e6e2;
+		white-space: nowrap;
+	}
+	.data-table th:first-child,
+	.data-table td:first-child,
+	:global(.data-table th:first-child),
+	:global(.data-table td:first-child) {
+		text-align: left;
+		white-space: normal;
+	}
+	.total-row td {
+		font-weight: 700;
+	}
+	.example-box {
+		background: #f7f7f4;
+		border-left: 3px solid #c9c9c4;
+		padding: 12px 16px;
+		margin: 16px 0;
+		border-radius: 0 6px 6px 0;
+	}
+	.example-title {
+		font-weight: 700;
+		margin-bottom: 8px;
+	}
+	.example-field {
+		font-size: 0.95rem;
+		line-height: 1.5;
+		padding: 3px 0;
+	}
+	.example-note {
+		font-size: 0.85rem;
+		color: var(--text-secondary, #4a4a46);
+		margin: 8px 0 0;
+	}
+	.fix-box {
+		background: #eef5fc;
+		border-left: 3px solid #2a78d6;
+		padding: 12px 16px;
+		margin: 16px 0 0;
+		border-radius: 0 6px 6px 0;
+		line-height: 1.55;
+	}
+</style>
