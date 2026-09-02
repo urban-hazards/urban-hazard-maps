@@ -17,6 +17,7 @@
 - [Reporting Patterns](reporting-patterns.md) — peak hour analysis; citizen vs sweep theory (disproved); reporting time vs activity time
 - [Other Ticket Black Hole](other-ticket-analysis.md) — 142k invisible "General Request" tickets; misrouted rodent/waste reports
 - [Mattress Data](mattress-data.md) — 36k phone-scheduled pickups 2023–May 2024, then self-service scheduler removed them from 311; where dumped-mattress complaints live now
+- [Creatio migration plan (2026-09-02)](../plans/2026-09-02-creatio-migration-plan.md) — legacy cutoffs, Open311 UUID codes, mapping table, order of work; codes in [creatio-open311-codes.json](creatio-open311-codes.json)
 
 ## Open Questions
 

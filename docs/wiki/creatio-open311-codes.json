@@ -1,0 +1,227 @@
+{
+ "9aaa7721-e212-4d16-a77e-d8f8d2f4ba28": {
+  "service_name": "Pothole",
+  "seen": 83,
+  "with_description": 63
+ },
+ "11d12a6d-6ca7-426a-8905-0e1929527419": {
+  "service_name": "Street Light Other",
+  "seen": 13,
+  "with_description": 4
+ },
+ "75c7d377-d6f2-4870-b3ad-236ff17259be": {
+  "service_name": "Pruning Request",
+  "seen": 79,
+  "with_description": 42
+ },
+ "76403f83-3f4b-42cd-9f4d-a71c7ecbc4fd": {
+  "service_name": "Broken Park Equipment",
+  "seen": 55,
+  "with_description": 47
+ },
+ "d60952e6-4ac3-4d69-96f2-1953bc410beb": {
+  "service_name": "Street Light Outage",
+  "seen": 79,
+  "with_description": 60
+ },
+ "0b156710-caa0-4f5d-a4e0-23f2fc5cdc1e": {
+  "service_name": "Fallen Tree or Branches",
+  "seen": 16,
+  "with_description": 11
+ },
+ "4d983107-9e9c-4c15-83a4-9ae551f9843c": {
+  "service_name": "Park Groundskeeping",
+  "seen": 44,
+  "with_description": 40
+ },
+ "88fcba49-a6cc-4dc0-b0d8-f01a65a1aac9": {
+  "service_name": "Tree or Stump Removal",
+  "seen": 40,
+  "with_description": 29
+ },
+ "4278d986-8b62-4a2b-a43d-575e031b8f50": {
+  "service_name": "Park Litter & Debris",
+  "seen": 6,
+  "with_description": 5
+ },
+ "e2b57b17-1274-4440-a909-6632d65b2540": {
+  "service_name": "Sidewalk Repair",
+  "seen": 86,
+  "with_description": 69
+ },
+ "1ce508cc-d067-4ff5-a96e-d9c2a35326c0": {
+  "service_name": "Park Overflowing Trash Can",
+  "seen": 1,
+  "with_description": 1
+ },
+ "68a7cd23-a0ce-49c3-870b-050034042612": {
+  "service_name": "Utility Contractor Complaints",
+  "seen": 53,
+  "with_description": 29
+ },
+ "994a8200-95d6-4720-826c-19bd142847b5": {
+  "service_name": "Missed Waste Pick-up",
+  "seen": 87,
+  "with_description": 10
+ },
+ "cd9b105a-f12a-44d6-bb66-03149f30f62d": {
+  "service_name": "Wild Animal Issue",
+  "seen": 34,
+  "with_description": 18
+ },
+ "155a5e9b-8c3a-4279-bbab-f6bba6ddb0d0": {
+  "service_name": "Litter & Debris",
+  "seen": 392,
+  "with_description": 360
+ },
+ "7557162e-ad78-428a-beef-f70b6758ed81": {
+  "service_name": "Sticker Request",
+  "seen": 13,
+  "with_description": 5
+ },
+ "cb65b3ee-ab13-4c3c-8f3b-ffc743f99c94": {
+  "service_name": "Code Enforcement Collection",
+  "seen": 9,
+  "with_description": 7
+ },
+ "736e43ac-c5d2-4d4e-829d-87e05e3bd77a": {
+  "service_name": "Domestic Animal Issue",
+  "seen": 28,
+  "with_description": 8
+ },
+ "aeab655f-9331-4a20-9466-d2713b7ac429": {
+  "service_name": "Illegal Graffiti",
+  "seen": 46,
+  "with_description": 46
+ },
+ "c8e719d6-06ce-4375-813d-dccb3ca66402": {
+  "service_name": "Overflowing Trash",
+  "seen": 56,
+  "with_description": 52
+ },
+ "ecac6c56-7351-451c-b95c-772e7cc55fde": {
+  "service_name": "Planting Request",
+  "seen": 10,
+  "with_description": 3
+ },
+ "8b84bb1d-817a-4a46-a5a2-f4f619666b76": {
+  "service_name": "Overgrown Weeds",
+  "seen": 28,
+  "with_description": 14
+ },
+ "24d51370-05a6-4c36-b5f4-97dceecae5be": {
+  "service_name": "Parks General Request",
+  "seen": 15,
+  "with_description": 4
+ },
+ "8f2cc595-aa65-4aa2-8bdc-5af4258f7167": {
+  "service_name": "Dead Animal General",
+  "seen": 78,
+  "with_description": 47
+ },
+ "8a0698b8-9f00-4977-b907-aae2553aa2d3": {
+  "service_name": "Trash Placed Out Early",
+  "seen": 112,
+  "with_description": 99
+ },
+ "d2847671-2ad1-47be-a78a-8971ba394611": {
+  "service_name": "Park Light Outage",
+  "seen": 3,
+  "with_description": 2
+ },
+ "8b017d26-1012-4ec6-81c5-f585eda505b8": {
+  "service_name": "Street Light Knockdown",
+  "seen": 5,
+  "with_description": 5
+ },
+ "60b145be-aef5-4a3c-8754-51472cf44088": {
+  "service_name": "Illegal Dumping or Disposal",
+  "seen": 111,
+  "with_description": 50
+ },
+ "0f73b2f6-9c78-4848-b13e-c6eb9a6eb41b": {
+  "service_name": "Request New Public Waste Receptacle",
+  "seen": 3,
+  "with_description": 1
+ },
+ "8bb9966d-957c-4f41-810d-652f64878951": {
+  "service_name": "Illegally Blocked Sidewalk",
+  "seen": 63,
+  "with_description": 61
+ },
+ "acb41f11-e581-42bc-a0a5-877cb3a07747": {
+  "service_name": "Improper Trash Storage",
+  "seen": 100,
+  "with_description": 72
+ },
+ "715f7134-aac4-43f4-9e8b-b6fff5f47ad3": {
+  "service_name": "Student Move-In (Trash Collection)",
+  "seen": 32,
+  "with_description": 23
+ },
+ "13537b68-c9db-46b9-bcf5-74b4604d669e": {
+  "service_name": "Unauthorized Signage",
+  "seen": 12,
+  "with_description": 10
+ },
+ "16f6c776-2e52-4e59-87b0-6307cecf8a62": {
+  "service_name": "Broken Public Waste Receptacle",
+  "seen": 3,
+  "with_description": 3
+ },
+ "c9057bc0-b5e6-4393-a5f6-61b49f3a1f48": {
+  "service_name": "External referral",
+  "seen": 29,
+  "with_description": 29
+ },
+ "22a63372-521a-4d3b-94aa-827936fecfda": {
+  "service_name": "Unauthorized Vending",
+  "seen": 10,
+  "with_description": 5
+ },
+ "f8eafda9-108a-4611-9c8f-d2f1c3445075": {
+  "service_name": "Construction Debris",
+  "seen": 12,
+  "with_description": 9
+ },
+ "fdd312ca-bb42-4ce7-9409-8bf86c9c010b": {
+  "service_name": "Other",
+  "seen": 26,
+  "with_description": 25
+ },
+ "cce8fc6b-64e2-4df3-91b8-e788422d31d4": {
+  "service_name": "Missing Manhole Cover",
+  "seen": 2,
+  "with_description": 1
+ },
+ "adfc5ea8-1316-4418-8c87-0094a4ff8dfe": {
+  "service_name": "Utility Casting Repair",
+  "seen": 4,
+  "with_description": 1
+ },
+ "3e09c18c-7d27-45e8-a054-ad56cf185a44": {
+  "service_name": "Park Suggestions",
+  "seen": 1,
+  "with_description": 0
+ },
+ "8c252c31-702a-4a78-b987-7c8ae850c053": {
+  "service_name": "Municipal Lots",
+  "seen": 1,
+  "with_description": 0
+ },
+ "d62e216c-c034-45a3-a942-278e3856fd23": {
+  "service_name": "Dropped Personal Item",
+  "seen": 2,
+  "with_description": 0
+ },
+ "dd4af8ec-5697-4707-80e1-fe7ae8744ade": {
+  "service_name": "Ballfield Issue",
+  "seen": 3,
+  "with_description": 1
+ },
+ "33b24520-c9bd-4c1d-b9ee-f4d72c3f1c14": {
+  "service_name": "Fences/Guardrails/Bollards",
+  "seen": 2,
+  "with_description": 0
+ }
+}
