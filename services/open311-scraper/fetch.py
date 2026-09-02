@@ -29,7 +29,6 @@ Usage:
 import argparse
 import json
 import logging
-import math
 import os
 import random
 import sys
@@ -154,13 +153,21 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
 # and bails after 90 empty days, so without a clamp every run would burn ~90
 # requests per slug re-discovering the pre-migration gap (and --verify would
 # walk back to 2023). Clamp the scan window per slug instead.
+# Per-slug earliest case date in the new system (from the Creatio CKAN export,
+# checked 2026-09-02): Parks moved in March 2026, the PWD waste types on
+# June 23–24, Student Move-In on Aug 24. Exact first-case dates: empty days
+# before them are never worth a request.
 CREATIO_START = date(2026, 6, 1)
 SLUG_START: dict[str, date] = {
-    slug: CREATIO_START
-    for slug in (
-        "litter-debris", "park-litter-debris", "improper-trash-storage", "illegal-dumping",
-        "trash-out-early", "overflowing-trash", "missed-waste", "ce-collection", "student-move-in",
-    )
+    "park-litter-debris": date(2026, 3, 11),
+    "litter-debris": date(2026, 6, 23),
+    "overflowing-trash": date(2026, 6, 23),
+    "missed-waste": date(2026, 6, 23),
+    "improper-trash-storage": date(2026, 6, 24),
+    "illegal-dumping": date(2026, 6, 24),
+    "trash-out-early": date(2026, 6, 24),
+    "ce-collection": date(2026, 6, 24),
+    "student-move-in": date(2026, 8, 24),
 }
 
 
@@ -265,8 +272,12 @@ def _do_request(url: str) -> tuple[list[dict] | None, int | None]:
         raise
 
 
-def fetch_day(day: date, service_code: str, delay: float) -> tuple[list[dict], float]:
-    """Fetch all tickets for a single day and service type with pagination."""
+def fetch_day(day: date, service_code: str, delay: float) -> tuple[list[dict] | None, float]:
+    """Fetch all tickets for a single day and service type with pagination.
+
+    Returns (records, delay). records is [] for a successful empty day and None
+    when the request failed (the day should be retried next run, not recorded).
+    """
     all_records = []
     page = 1
 
@@ -287,7 +298,7 @@ def fetch_day(day: date, service_code: str, delay: float) -> tuple[list[dict], f
             except Exception as e:
                 log.error("  ERROR %s page %d: %s (discarding %d partial records)",
                           day, page, e, len(all_records))
-                return [], delay
+                return None, delay
 
             if data is not None:
                 break
@@ -298,7 +309,7 @@ def fetch_day(day: date, service_code: str, delay: float) -> tuple[list[dict], f
             time.sleep(wait)
         else:
             log.warning("  GIVING UP on %s after %d retries (will retry next run)", day, MAX_RETRIES)
-            return [], delay
+            return None, delay
 
         if not data:
             break
@@ -345,13 +356,18 @@ def fetch_type(
 
     total_records = 0
     skipped = 0
+    empty_saved = 0
     consecutive_empty = 0
     EMPTY_BAILOUT = 90  # skip type after 90 consecutive empty days (~3 months)
 
     for i, day in enumerate(days_needed):
         records, delay = fetch_day(day, service_code, delay)
 
-        if records:
+        if records is None:
+            # Request failed: leave the day unsaved so the next run retries it.
+            # Not an empty day, so it does not count toward the bailout.
+            skipped += 1
+        elif records:
             save_day(s3, prefix, day, records)
             if not verify_day(s3, prefix, day, len(records)):
                 s3.delete_object(Bucket=BUCKET, Key=f"{prefix}{day}.json")
@@ -359,11 +375,12 @@ def fetch_type(
             else:
                 total_records += len(records)
                 consecutive_empty = 0
-                if len(records) > 0:
-                    log.info("  [%s] %s: %d tickets (total: %d, %d/%d)",
-                             slug, day, len(records), total_records, i + 1, len(days_needed))
+                log.info("  [%s] %s: %d tickets (total: %d, %d/%d)",
+                         slug, day, len(records), total_records, i + 1, len(days_needed))
         else:
-            skipped += 1
+            # Successful empty day: persist [] so it is never re-requested.
+            save_day(s3, prefix, day, [])
+            empty_saved += 1
             consecutive_empty += 1
 
         if consecutive_empty >= EMPTY_BAILOUT:
@@ -393,6 +410,7 @@ def fetch_type(
         "fetched": total_records,
         "days_attempted": len(days_needed),
         "skipped": skipped,
+        "empty_saved": empty_saved,
         "existing": len(existing),
     }
 
@@ -401,9 +419,11 @@ def _fetch_api_count(day: date, service_code: str, delay: float) -> tuple[int, f
     """Fetch the actual record count for a day from the API.
 
     Fetches all records and counts them (no shortcut for count-only).
-    Returns (count, updated_delay).
+    Returns (count, updated_delay); count is None when the request failed.
     """
     records, delay = fetch_day(day, service_code, delay)
+    if records is None:
+        return None, delay
     return len(records), delay
 
 
@@ -456,6 +476,8 @@ def _verify_type(
 
     for day in missing_days:
         records, delay = fetch_day(day, service_code, delay)
+        if records is None:
+            continue
         if records:
             save_day(s3, prefix, day, records)
             stats["gaps_filled"] += 1
@@ -497,8 +519,8 @@ def _verify_type(
         api_count, delay = _fetch_api_count(day, service_code, delay)
         time.sleep(delay)
 
-        if api_count == 0:
-            # API returned nothing — can't verify, skip
+        if api_count is None or api_count == 0:
+            # Request failed or API returned nothing — can't verify, skip
             continue
 
         if stored_count < api_count:

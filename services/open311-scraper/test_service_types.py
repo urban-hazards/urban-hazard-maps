@@ -26,9 +26,11 @@ def test_creatio_slugs_present_with_uuid_codes():
         assert UUID.match(code)
 
 
-def test_slug_start_table():
-    for slug in NEW:
-        assert fetch.slug_start(slug) == date(2026, 6, 1)
+def test_slug_start_table_matches_observed_first_cases():
+    assert fetch.slug_start("park-litter-debris") == date(2026, 3, 11)
+    assert fetch.slug_start("litter-debris") == date(2026, 6, 23)
+    assert fetch.slug_start("improper-trash-storage") == date(2026, 6, 24)
+    assert fetch.slug_start("student-move-in") == date(2026, 8, 24)
     assert fetch.slug_start("needles") == date.fromisoformat(fetch.START_DATE)
 
 
@@ -36,8 +38,25 @@ def test_fetch_type_clamps_start_to_slug_start():
     s3 = MagicMock()
     with patch("fetch.list_existing_days", return_value=set()) as listing:
         result = fetch.fetch_type(
-            s3, "litter-debris", NEW["litter-debris"], "Litter & Debris", date(2023, 1, 1), date(2026, 6, 3), 0.0, True
+            s3, "litter-debris", NEW["litter-debris"], "Litter & Debris", date(2023, 1, 1), date(2026, 6, 25), 0.0, True
         )
     assert listing.called
     assert result["slug"] == "litter-debris"
-    assert result["days_needed"] == 3  # 2026-06-01..03 only; 2023-05 gap not scanned
+    assert result["days_needed"] == 3  # only 2026-06-23..25 are in scope
+
+
+def test_fetch_type_persists_empty_days_but_not_failures():
+    s3 = MagicMock()
+    # day 1: 2 records; day 2: successful empty; day 3: request failed (None)
+    outcomes = {date(2026, 6, 25): [{"a": 1}, {"b": 2}], date(2026, 6, 24): [], date(2026, 6, 23): None}
+    saved: list[tuple[date, int]] = []
+    with (
+        patch("fetch.list_existing_days", return_value=set()),
+        patch("fetch.fetch_day", side_effect=lambda day, code, delay: (outcomes[day], delay)),
+        patch("fetch.save_day", side_effect=lambda s3, prefix, day, recs: saved.append((day, len(recs)))),
+        patch("fetch.verify_day", return_value=True),
+    ):
+        result = fetch.fetch_type(s3, "litter-debris", NEW["litter-debris"], "Litter & Debris",
+                                  date(2026, 6, 23), date(2026, 6, 25), 0.0, False)
+    assert sorted(saved) == [(date(2026, 6, 24), 0), (date(2026, 6, 25), 2)]
+    assert result["fetched"] == 2 and result["empty_saved"] == 1 and result["skipped"] == 1

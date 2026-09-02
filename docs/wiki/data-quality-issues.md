@@ -128,3 +128,12 @@ All audit scripts live in `research/` in the repo:
 - `data_quality_audit.py` — full audit
 - `data_quality_patch.py` — supplemental queries
 - `human_waste_explore.py`, `human_waste_extract.py`, `human_waste_deep_dive.py`
+
+**Cutover handoff, verified day by day (2026-09-02):** legacy `Requests for Street Cleaning` runs at
+50–100 cases/day through June 23 (79) and June 24 (38), then zero; new-system `Litter & Debris` starts
+June 23 (1) and June 24 (62), then 60–100/day. The Open311 feed mirrors it exactly (legacy code last
+day 2026-06-24, UUID code first day 2026-06-23). Daily totals are continuous across the switch, so
+"empty" days for the new-system codes before June 23 are days when those cases were still logged as
+Street Cleaning in the old system — already held under the legacy code. Parks moved earlier:
+`Park Litter & Debris` from 2026-03-11. Monthly, legacy+new: Apr 1,733+0 · May 1,953+0 ·
+Jun 1,796+521 · Jul 0+2,418 · Aug 0+3,061.
