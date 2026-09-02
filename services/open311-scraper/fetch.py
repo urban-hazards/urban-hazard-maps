@@ -365,8 +365,8 @@ def fetch_type(
 
         if records is None:
             # Request failed: leave the day unsaved so the next run retries it.
+            # Not an empty day, so it does not count toward the bailout.
             skipped += 1
-            consecutive_empty += 1
         elif records:
             save_day(s3, prefix, day, records)
             if not verify_day(s3, prefix, day, len(records)):
@@ -419,10 +419,12 @@ def _fetch_api_count(day: date, service_code: str, delay: float) -> tuple[int, f
     """Fetch the actual record count for a day from the API.
 
     Fetches all records and counts them (no shortcut for count-only).
-    Returns (count, updated_delay).
+    Returns (count, updated_delay); count is None when the request failed.
     """
     records, delay = fetch_day(day, service_code, delay)
-    return len(records or []), delay
+    if records is None:
+        return None, delay
+    return len(records), delay
 
 
 def _verify_type(
@@ -517,8 +519,8 @@ def _verify_type(
         api_count, delay = _fetch_api_count(day, service_code, delay)
         time.sleep(delay)
 
-        if api_count == 0:
-            # API returned nothing — can't verify, skip
+        if api_count is None or api_count == 0:
+            # Request failed or API returned nothing — can't verify, skip
             continue
 
         if stored_count < api_count:
