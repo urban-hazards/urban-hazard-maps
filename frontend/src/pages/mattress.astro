@@ -44,17 +44,17 @@ const MENTION_SLUGS = [
 	"improper-trash-storage",
 	"illegal-dumping",
 ]
-const mentionYear = (slug: string) =>
-	yearOf(
-		(mattress.open311 as Record<string, { mattress?: Record<string, number> }>)[slug]?.mattress ??
-			{},
-	)
+type SlugData = { mattress?: Record<string, number>; total?: Record<string, number> }
+const open311 = mattress.open311 as Record<string, SlugData>
+const lastFullMonth = mattress.open311_last_full_month
+// Only complete months count: drop anything after open311_last_full_month.
+const completeOnly = (m: Record<string, number>) =>
+	Object.fromEntries(Object.entries(m).filter(([ym]) => ym <= lastFullMonth))
+const mentionYear = (slug: string) => yearOf(completeOnly(open311[slug]?.mattress ?? {}))
 const totalMentions = (y: string) => MENTION_SLUGS.reduce((a, s) => a + (mentionYear(s)[y] ?? 0), 0)
 const closureYear = yearOf(mattress.closure_mentions_monthly)
-const queues = ["illegal-trash", "street-cleaning", "other"] as const
-const lastFullMonth = mattress.open311_last_full_month
 const queueTotalYear = (y: string) =>
-	queues.reduce((a, s) => a + (yearOf(mattress.open311[s].total)[y] ?? 0), 0)
+	MENTION_SLUGS.reduce((a, s) => a + (yearOf(completeOnly(open311[s]?.total ?? {}))[y] ?? 0), 0)
 const sharePct = (y: string) =>
 	((totalMentions(y) / Math.max(queueTotalYear(y), 1)) * 100).toFixed(1)
 // Intake channel by case type and year (CKAN `source`).
@@ -219,7 +219,7 @@ const samples = [
 								{["2023", "2024", "2025", "2026"].map((y) => <td>{totalMentions(y).toLocaleString()}</td>)}
 							</tr>
 							<tr>
-								<td>Share of all reports in these three queues</td>
+								<td>Share of all reports in these queues</td>
 								{["2023", "2024", "2025", "2026"].map((y) => <td>{sharePct(y)}%</td>)}
 							</tr>
 							<tr>
