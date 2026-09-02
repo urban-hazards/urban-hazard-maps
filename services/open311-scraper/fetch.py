@@ -136,7 +136,38 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
         "Public Works Department:Street Cleaning:Requests for Street Cleaning",
         "Requests for Street Cleaning",
     ),
+    # --- Creatio (new 311 system). The Open311 endpoint accepts these UUIDs
+    # as service_code but does not list them in /services.json. Discovered by
+    # sweeping requests.json — see docs/wiki/creatio-open311-codes.json.
+    "litter-debris": ("155a5e9b-8c3a-4279-bbab-f6bba6ddb0d0", "Litter & Debris"),
+    "park-litter-debris": ("4278d986-8b62-4a2b-a43d-575e031b8f50", "Park Litter & Debris"),
+    "improper-trash-storage": ("acb41f11-e581-42bc-a0a5-877cb3a07747", "Improper Trash Storage"),
+    "illegal-dumping": ("60b145be-aef5-4a3c-8754-51472cf44088", "Illegal Dumping or Disposal"),
+    "trash-out-early": ("8a0698b8-9f00-4977-b907-aae2553aa2d3", "Trash Placed Out Early"),
+    "overflowing-trash": ("c8e719d6-06ce-4375-813d-dccb3ca66402", "Overflowing Trash"),
+    "missed-waste": ("994a8200-95d6-4720-826c-19bd142847b5", "Missed Waste Pick-up"),
+    "ce-collection": ("cb65b3ee-ab13-4c3c-8f3b-ffc743f99c94", "Code Enforcement Collection"),
+    "student-move-in": ("715f7134-aac4-43f4-9e8b-b6fff5f47ad3", "Student Move-In (Trash Collection)"),
 }
+
+# Creatio codes have no cases before June 2026. The scanner walks newest→oldest
+# and bails after 90 empty days, so without a clamp every run would burn ~90
+# requests per slug re-discovering the pre-migration gap (and --verify would
+# walk back to 2023). Clamp the scan window per slug instead.
+CREATIO_START = date(2026, 6, 1)
+SLUG_START: dict[str, date] = {
+    slug: CREATIO_START
+    for slug in (
+        "litter-debris", "park-litter-debris", "improper-trash-storage", "illegal-dumping",
+        "trash-out-early", "overflowing-trash", "missed-waste", "ce-collection", "student-move-in",
+    )
+}
+
+
+def slug_start(slug: str) -> date:
+    """Earliest date worth scanning for a slug (default: global START_DATE)."""
+    return SLUG_START.get(slug, date.fromisoformat(START_DATE))
+
 
 # --- Rate limiting (API allows 10 req/min = 1 every 6s) ---
 
@@ -288,6 +319,7 @@ def fetch_type(
     start: date, end: date, delay: float, dry_run: bool,
 ) -> dict:
     """Fetch all days for a single service type. Returns run stats."""
+    start = max(start, slug_start(slug))
     prefix = f"open311/{slug}/"
 
     existing = list_existing_days(s3, prefix)
@@ -306,7 +338,10 @@ def fetch_type(
              slug, name, len(days_needed), total_days, est_minutes)
 
     if dry_run or not days_needed:
-        return {"slug": slug, "name": name, "fetched": 0, "skipped": 0, "existing": len(existing)}
+        return {
+            "slug": slug, "name": name, "fetched": 0, "skipped": 0,
+            "existing": len(existing), "days_needed": len(days_needed),
+        }
 
     total_records = 0
     skipped = 0
@@ -389,6 +424,7 @@ def _verify_type(
       2. Record count verification — compare stored vs API counts
       3. Cross-day consistency — flag days far below neighbors' average
     """
+    start = max(start, slug_start(slug))
     prefix = f"open311/{slug}/"
     existing = list_existing_days(s3, prefix)
 
