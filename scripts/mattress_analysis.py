@@ -30,7 +30,8 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "pipeline" / "src"))
-from pipeline.config import RESOURCE_IDS  # noqa: E402
+from pipeline.config import CREATIO_SERVICE_MAP, CREATIO_START_DATE, RESOURCE_IDS  # noqa: E402
+from pipeline.creatio import fetch_creatio_records, monthly_counts, normalize_creatio_record  # noqa: E402
 
 OUT = ROOT / "frontend" / "src" / "data" / "mattress.json"
 YEARS = range(2019, datetime.now(tz=UTC).year + 1)
@@ -45,7 +46,14 @@ CKAN_TYPES = [
     "CE Collection",
     "Poor Conditions of Property",
 ]
-OPEN311_SLUGS = ["illegal-trash", "street-cleaning", "other"]
+OPEN311_SLUGS = [
+    "illegal-trash",
+    "street-cleaning",
+    "other",
+    "litter-debris",
+    "improper-trash-storage",
+    "illegal-dumping",
+]
 MATTRESS_RE = re.compile(r"mattress|matress|box ?spring", re.I)
 BOSTON = ZoneInfo("America/New_York")
 
@@ -135,6 +143,12 @@ def mattress_pickup_facts() -> dict:
     return facts
 
 
+def creatio_monthly_by_type() -> dict[str, dict[str, int]]:
+    """Creatio (new system) monthly counts by legacy-mapped type, Boston-local months, via paged reads."""
+    rows = [normalize_creatio_record(r) for r in fetch_creatio_records(set(CREATIO_SERVICE_MAP), CREATIO_START_DATE)]
+    return monthly_counts(rows)
+
+
 def open311_mentions() -> tuple[dict, str]:
     load_dotenv(ROOT / "pipeline" / ".env")
     s3 = boto3.client(
@@ -161,7 +175,11 @@ def open311_mentions() -> tuple[dict, str]:
     latest = ""
     for slug in OPEN311_SLUGS:
         keys = [o["Key"] for p in pag.paginate(Bucket=bucket, Prefix=f"open311/{slug}/") for o in p.get("Contents", [])]
-        latest = max(latest, keys[-1].rsplit("/", 1)[-1][:10]) if keys else latest
+        if not keys:
+            print(f"open311 {slug}: no files in S3 yet (scraper slug not backfilled)", file=sys.stderr)
+            result[slug] = {"total": {}, "mattress": {}, "samples": []}
+            continue
+        latest = max(latest, keys[-1].rsplit("/", 1)[-1][:10])
         total: dict[str, int] = collections.Counter()
         hits: dict[str, int] = collections.Counter()
         samples: list[str] = []
@@ -211,6 +229,7 @@ def main() -> None:
             **facts,
         },
         "ckan_types_monthly": ckan_types,
+        "creatio_types_monthly": creatio_monthly_by_type(),
         "ckan_source_yearly": sources,
         "closure_mentions_monthly": closure,
         "open311": open311,

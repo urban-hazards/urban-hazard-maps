@@ -26,19 +26,35 @@ const yearOf = (m: Record<string, number>) => {
 	return out
 }
 const years = ["2021", "2022", "2023", "2024", "2025", "2026"]
+const creatioRows = Object.entries(
+	(mattress as { creatio_types_monthly?: Record<string, Record<string, number>> })
+		.creatio_types_monthly ?? {},
+)
+	.map(([t, m]) => ({ type: t, yearly: yearOf(m) }))
+	.sort((a, b) => (b.yearly["2026"] ?? 0) - (a.yearly["2026"] ?? 0))
 const ckanRows = Object.entries(mattress.ckan_types_monthly)
 	.filter(([t]) => t !== "Mattress_Pickup")
 	.map(([t, m]) => ({ type: t, yearly: yearOf(m) }))
 	.sort((a, b) => (b.yearly["2025"] ?? 0) - (a.yearly["2025"] ?? 0))
-const mentionYear = (slug: string) =>
-	yearOf(mattress.open311[slug as keyof typeof mattress.open311].mattress)
-const totalMentions = (y: string) =>
-	["illegal-trash", "street-cleaning", "other"].reduce((a, s) => a + (mentionYear(s)[y] ?? 0), 0)
-const closureYear = yearOf(mattress.closure_mentions_monthly)
-const queues = ["illegal-trash", "street-cleaning", "other"] as const
+const MENTION_SLUGS = [
+	"illegal-trash",
+	"street-cleaning",
+	"other",
+	"litter-debris",
+	"improper-trash-storage",
+	"illegal-dumping",
+]
+type SlugData = { mattress?: Record<string, number>; total?: Record<string, number> }
+const open311 = mattress.open311 as Record<string, SlugData>
 const lastFullMonth = mattress.open311_last_full_month
+// Only complete months count: drop anything after open311_last_full_month.
+const completeOnly = (m: Record<string, number>) =>
+	Object.fromEntries(Object.entries(m).filter(([ym]) => ym <= lastFullMonth))
+const mentionYear = (slug: string) => yearOf(completeOnly(open311[slug]?.mattress ?? {}))
+const totalMentions = (y: string) => MENTION_SLUGS.reduce((a, s) => a + (mentionYear(s)[y] ?? 0), 0)
+const closureYear = yearOf(mattress.closure_mentions_monthly)
 const queueTotalYear = (y: string) =>
-	queues.reduce((a, s) => a + (yearOf(mattress.open311[s].total)[y] ?? 0), 0)
+	MENTION_SLUGS.reduce((a, s) => a + (yearOf(completeOnly(open311[s]?.total ?? {}))[y] ?? 0), 0)
 const sharePct = (y: string) =>
 	((totalMentions(y) / Math.max(queueTotalYear(y), 1)) * 100).toFixed(1)
 // Intake channel by case type and year (CKAN `source`).
@@ -186,12 +202,24 @@ const samples = [
 								<td>General Request ("Other")</td>
 								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("other")[y] ?? 0).toLocaleString()}</td>)}
 							</tr>
+							<tr>
+								<td>Litter &amp; Debris (new system)</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("litter-debris")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+							<tr>
+								<td>Improper Trash Storage (new system)</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("improper-trash-storage")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
+							<tr>
+								<td>Illegal Dumping or Disposal (new system)</td>
+								{["2023", "2024", "2025", "2026"].map((y) => <td>{(mentionYear("illegal-dumping")[y] ?? 0).toLocaleString()}</td>)}
+							</tr>
 							<tr class="total-row">
 								<td>Total</td>
 								{["2023", "2024", "2025", "2026"].map((y) => <td>{totalMentions(y).toLocaleString()}</td>)}
 							</tr>
 							<tr>
-								<td>Share of all reports in these three queues</td>
+								<td>Share of all reports in these queues</td>
 								{["2023", "2024", "2025", "2026"].map((y) => <td>{sharePct(y)}%</td>)}
 							</tr>
 							<tr>
@@ -287,10 +315,19 @@ const samples = [
 									{years.map((y) => <td>{r.yearly[y] ? r.yearly[y].toLocaleString() : "—"}</td>)}
 								</tr>
 							))}
+							{creatioRows.map((r) => (
+								<tr>
+									<td>{r.type} (new system)†</td>
+									{years.map((y) => <td>{r.yearly[y] ? r.yearly[y].toLocaleString() : "—"}</td>)}
+								</tr>
+							))}
 						</tbody>
 					</table>
 				</div>
-				<p class="example-note">* 2026 through {mattress.ckan_through}.</p>
+				<p class="example-note">
+					* Legacy rows: 2026 through {mattress.ckan_through}. † New 311 system (Creatio), also through
+					{mattress.ckan_through}, 2026 only; shown separately from the legacy rows, not summed.
+				</p>
 				<div class="fix-box">
 					<strong>What should change:</strong> Feed the boston.gov/mattress appointments back
 					into 311, or publish them alongside it. A program that moved 25,000 mattresses a year

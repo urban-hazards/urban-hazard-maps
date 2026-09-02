@@ -949,7 +949,42 @@
 		"2026-06": 90,
 		"2026-08": 4
 	},
-	"generated": "2026-09-02T18:02:53+00:00",
+	"creatio_types_monthly": {
+		"CE Collection": {
+			"2026-06": 8,
+			"2026-07": 27,
+			"2026-08": 50,
+			"2026-09": 4
+		},
+		"Illegal Dumping": {
+			"2026-06": 161,
+			"2026-07": 666,
+			"2026-08": 884,
+			"2026-09": 87
+		},
+		"Improper Storage of Trash (Barrels)": {
+			"2026-06": 473,
+			"2026-07": 1784,
+			"2026-08": 2328,
+			"2026-09": 200
+		},
+		"Missed Trash/Recycling/Yard Waste/Bulk Item": {
+			"2026-06": 224,
+			"2026-07": 975,
+			"2026-08": 1108,
+			"2026-09": 45
+		},
+		"Requests for Street Cleaning": {
+			"2026-03": 40,
+			"2026-04": 87,
+			"2026-05": 104,
+			"2026-06": 636,
+			"2026-07": 2421,
+			"2026-08": 3069,
+			"2026-09": 177
+		}
+	},
+	"generated": "2026-09-02T20:51:19+00:00",
 	"mattress_pickup": {
 		"automation_closures": 31764,
 		"by_source": {
@@ -981,6 +1016,34 @@
 		"total": 36548
 	},
 	"open311": {
+		"illegal-dumping": {
+			"mattress": {
+				"2026-06": 30,
+				"2026-07": 90,
+				"2026-08": 142,
+				"2026-09": 9
+			},
+			"samples": [
+				"Someone put a mattress on walkway of my building",
+				"Illegal dumping. Tenants are dumping household trash and mattresses for trash day on the curb almost weekly as they are emptying the house to be demolished.",
+				"Mattress dumped in front of 460 Saratoga st East Boston by unknown, its been there for 10 days or more",
+				"Mattress disposed of, on street for days",
+				"Mattress has been left in street for over 2 weeks.",
+				"Mattress left out on sidewalk",
+				"Mold and dirt growing on mattress that has been on a neighboring property for months now. Health concerns, attracting rodents.",
+				"Mattress dumped on sidewalk",
+				"Twin Mattress dumped on Huron lane between Van winkle and Huron circle",
+				"Have reported this multiple times. This Cannot be legit way to dispose of a mattress!",
+				"Mattress thrown over the wall into Franklin Park along Sigourney Street, between the top of Robson and Peter Parley",
+				"Mattress removal request - someone left this leaning against my fence. And I really don\u2019t want to be ticketed. Thanks in advance"
+			],
+			"total": {
+				"2026-06": 167,
+				"2026-07": 679,
+				"2026-08": 897,
+				"2026-09": 77
+			}
+		},
 		"illegal-trash": {
 			"mattress": {
 				"2023-01": 126,
@@ -1083,6 +1146,62 @@
 				"2026-04": 1655,
 				"2026-05": 1930,
 				"2026-06": 1431
+			}
+		},
+		"improper-trash-storage": {
+			"mattress": {
+				"2026-06": 4,
+				"2026-07": 40,
+				"2026-08": 45,
+				"2026-09": 3
+			},
+			"samples": [
+				"Mattress left on sidewalk",
+				"Mattresses with bed bugs dumped on side walk by residents of fordham court",
+				"mattress on sidewalk blocking sidewalk handicap",
+				"Old mattresses left on side of building for weeks",
+				"Filthy mattresses and box springs left on Catbird Court for months. Unsanitary",
+				"Mattress on sidewalk",
+				"improper mattress disposal, metal bedframe, and bookshelf by residents at 89 wachusett st. left on sidewalk",
+				"Mattresses left out for over a week 10 Prescott St.",
+				"Mattresses left on sidewalk for over a week at 256 Lexington street east Boston 02128.",
+				"Over a week now mattresses on sidewalk - blocking the entire sidewalk! Seriously can the city pick it up please???????",
+				"Improper mattress disposal",
+				"2 mattresses left on sidewalk for 12 days. It is very hard to get stroller around them."
+			],
+			"total": {
+				"2026-06": 165,
+				"2026-07": 727,
+				"2026-08": 995,
+				"2026-09": 80
+			}
+		},
+		"litter-debris": {
+			"mattress": {
+				"2026-06": 33,
+				"2026-07": 115,
+				"2026-08": 263,
+				"2026-09": 26
+			},
+			"samples": [
+				"Someone left this mattress on the sidewalk right after trash removal, completely blocking access to the sidewalk. Could someone please support with this?",
+				"Mattresses dumped. Electric ave. Brighton",
+				"Abandoned Mattress in Public Alley 403",
+				"Mattress on sidewalk all weed",
+				"Mattress dumped on sidewalk days before trash pickup.",
+				"Mattress dumped on sidewalk",
+				"This mattress was down the street all week. Some drunk guy moved it here last night. Cop removed drunk guy but mattress still here",
+				"Mattress outside for 3 days",
+				"Mattress on sidewalk",
+				"Mattress leaning on tree on sidewalk",
+				"Mattress left on sidewalk",
+				"Mattress and furniture laying in yard."
+			],
+			"total": {
+				"2026-06": 548,
+				"2026-07": 2570,
+				"2026-08": 3216,
+				"2026-09": 149
 			}
 		},
 		"other": {
@@ -1188,7 +1307,9 @@
 				"2026-04": 2763,
 				"2026-05": 3316,
 				"2026-06": 2767,
-				"2026-07": 24
+				"2026-07": 26,
+				"2026-08": 10,
+				"2026-09": 2
 			}
 		},
 		"street-cleaning": {
@@ -1296,6 +1417,6 @@
 			}
 		}
 	},
-	"open311_last_full_month": "2026-06",
-	"open311_through": "2026-07-25"
+	"open311_last_full_month": "2026-08",
+	"open311_through": "2026-09-01"
 }
