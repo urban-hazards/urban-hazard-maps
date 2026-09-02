@@ -28,7 +28,9 @@ def test_creatio_slugs_present_with_uuid_codes():
 
 def test_slug_start_table():
     for slug in NEW:
-        assert fetch.slug_start(slug) == date(2026, 6, 1)
+        assert fetch.slug_start(slug) <= date(2026, 6, 1) or slug == "student-move-in"
+    assert fetch.slug_start("park-litter-debris") == date(2026, 3, 1)  # Parks migrated in March 2026
+    assert fetch.slug_start("student-move-in") == date(2026, 8, 1)
     assert fetch.slug_start("needles") == date.fromisoformat(fetch.START_DATE)
 
 

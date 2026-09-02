@@ -154,13 +154,20 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
 # and bails after 90 empty days, so without a clamp every run would burn ~90
 # requests per slug re-discovering the pre-migration gap (and --verify would
 # walk back to 2023). Clamp the scan window per slug instead.
+# Per-slug earliest case date in the new system (from the Creatio CKAN export,
+# checked 2026-09-02): Parks moved in March 2026, the PWD waste types on
+# June 23–24, Student Move-In on Aug 24. Keep a little margin before each.
 CREATIO_START = date(2026, 6, 1)
 SLUG_START: dict[str, date] = {
-    slug: CREATIO_START
-    for slug in (
-        "litter-debris", "park-litter-debris", "improper-trash-storage", "illegal-dumping",
-        "trash-out-early", "overflowing-trash", "missed-waste", "ce-collection", "student-move-in",
-    )
+    "park-litter-debris": date(2026, 3, 1),
+    "litter-debris": CREATIO_START,
+    "improper-trash-storage": CREATIO_START,
+    "illegal-dumping": CREATIO_START,
+    "trash-out-early": CREATIO_START,
+    "overflowing-trash": CREATIO_START,
+    "missed-waste": CREATIO_START,
+    "ce-collection": CREATIO_START,
+    "student-move-in": date(2026, 8, 1),
 }
 
 
