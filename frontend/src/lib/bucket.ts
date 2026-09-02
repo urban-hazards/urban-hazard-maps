@@ -1,5 +1,5 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3"
-import type { MarkerData, PageStats } from "./types"
+import type { MarkerData, PageStats, SourceHealth } from "./types"
 
 // Astro dev loads .env into import.meta.env but not process.env. Railway
 // injects env vars as OS-level process.env. Check both so dev + prod both work.
@@ -126,4 +126,14 @@ export async function fetchMarkers(dataset = "needles"): Promise<MarkerData[]> {
 	const full = await fetchFullStats(dataset)
 	if (!full) return []
 	return full.markers
+}
+
+export async function fetchSourceHealth(): Promise<SourceHealth | null> {
+	if (!USE_S3) return null
+	try {
+		const h = await readJson<SourceHealth>("metadata/source_health.json")
+		return h && typeof h === "object" && h.layers ? h : null
+	} catch {
+		return null
+	}
 }

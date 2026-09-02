@@ -1,0 +1,114 @@
+---
+import type { SourceHealth } from "../lib/types"
+
+interface Props {
+	health: SourceHealth | null
+	/** Static per-layer freeze dates shown even when no health file exists. */
+	frozen?: Record<string, string>
+}
+const { health, frozen = {} } = Astro.props
+
+const LABELS: Record<string, string> = {
+	needles: "Sharps",
+	encampments: "Encampments",
+	waste: "Human Waste",
+}
+const fmt = (d: string) =>
+	d
+		? new Date(`${d}T12:00:00`).toLocaleDateString("en-US", {
+				month: "short",
+				day: "numeric",
+				year: "numeric",
+			})
+		: "unknown"
+
+type Chip = {
+	key: string
+	label: string
+	through: string
+	status: "ok" | "degraded" | "stale"
+	sources: string[]
+}
+const layers = Object.entries(health?.layers ?? {})
+const chips: Chip[] = layers.length
+	? layers.map(([k, l]) => ({
+			key: k,
+			label: LABELS[k] ?? k,
+			through: l.through ?? "",
+			status: l.status ?? "stale",
+			sources: l.sources ?? [],
+		}))
+	: Object.entries(frozen).map(([k, d]) => ({
+			key: k,
+			label: LABELS[k] ?? k,
+			through: d,
+			status: "stale",
+			sources: [],
+		}))
+const troubled = chips.filter((c) => c.status !== "ok")
+---
+
+{chips.length > 0 && (
+	<section class="freshness" aria-label="Data freshness">
+		<div class="container freshness-inner">
+			<div class="chips">
+				{chips.map((c) => (
+					<span class={`chip chip-${c.status}`} title={c.sources.join(", ")}>
+						{c.label}: data through {fmt(c.through)}
+					</span>
+				))}
+			</div>
+			{troubled.length > 0 && (
+				<p class="notice">
+					Boston moved its 311 system to a new platform in 2026. Some categories stopped appearing in the
+					city's data during the switch ({troubled.map((c) => c.label).join(", ")}). We show those layers
+					through their last complete date rather than guess.
+					<a href="/data-quality#migration">What changed</a>
+				</p>
+			)}
+		</div>
+	</section>
+)}
+
+<style>
+	.freshness {
+		background: #fbf7ea;
+		border-bottom: 1px solid #ecdfb5;
+		font-size: 0.85rem;
+	}
+	.freshness-inner {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 16px;
+		align-items: center;
+		padding: 8px 0;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.chip {
+		border-radius: 999px;
+		padding: 2px 10px;
+		background: #e8f1e5;
+		color: #244d1f;
+	}
+	.chip-degraded {
+		background: #fde9cc;
+		color: #6b3f00;
+	}
+	.chip-stale {
+		background: #f8d9d6;
+		color: #7a1f16;
+	}
+	.notice {
+		margin: 0;
+		color: #4a4a46;
+		line-height: 1.4;
+	}
+	.notice a {
+		color: inherit;
+		margin-left: 4px;
+	}
+</style>

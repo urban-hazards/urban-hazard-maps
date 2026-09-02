@@ -65,6 +65,7 @@ export interface PageStats {
 	avg_monthly: number
 	initial_heat: number[][]
 	routing_stats?: RoutingStats
+	schema_version?: number
 }
 
 export interface DashboardStats {
@@ -103,4 +104,30 @@ export interface SummaryStats {
 	avg_monthly: number
 	generated: string
 	neighborhood_count: number
+}
+
+export type SourceStatus = "ok" | "degraded" | "stale"
+
+export interface SourceHealthEntry {
+	through: string
+	last_30d: number
+	prior_year_30d: number
+	ratio: number | null
+	status: SourceStatus
+}
+
+export interface LayerHealth {
+	status: SourceStatus
+	through: string
+	sources: string[]
+}
+
+export interface SourceHealth {
+	generated: string
+	schema_version?: number
+	sources?: Record<string, SourceHealthEntry>
+	layers: Record<string, LayerHealth>
+	creatio_service_names?: string[]
+	new_service_names?: string[]
+	notes?: string[]
 }
