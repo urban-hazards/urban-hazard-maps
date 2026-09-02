@@ -353,6 +353,25 @@ const rs = (wasteStats as unknown as Record<string, unknown>)?.routing_stats as
 			<a href="/methodology" class="nav-link">How the classifier works &rarr;</a>
 			<a href="/" class="nav-link">&larr; Back to the map</a>
 		</div>
+
+		<section id="migration" class="section">
+			<h2 class="section-title">What changed in 2026: a new 311 system</h2>
+			<div class="card prose">
+				<p>
+					Boston is moving 311 from its old platform (Lagan) to a new one (Creatio), one department at a
+					time. The public export now comes in two datasets with different category names and different
+					ID formats. In the old dataset, Requests for Street Cleaning, Illegal Dumping and Encampments
+					stop after June 2026; the encampment intake ends on May 27, 2026 and has no equivalent in the
+					new system at all.
+				</p>
+				<p>
+					What we do about it: each layer shows the last date its source was complete, and a layer is
+					frozen at that date rather than shown as a false decline. Resident descriptions for litter and
+					debris now come from the new system's feed and drive the human-waste classifier going forward.
+					Details and the code-level mapping live in the project wiki.
+				</p>
+			</div>
+		</section>
 	</main>
 
 	<Footer />
