@@ -46,3 +46,16 @@ If you ever want a real local-only setup, bring up MinIO via `docker compose up 
 ## Ports
 
 `pnpm dev` tries 4321, then 4322, then 4323… if a prior dev server is still running. If you see Astro announce port 4322+, either kill the old process (`pkill -9 -f astro`) or be aware of which port your browser is pointed at.
+
+
+## The pnpm-10 build-script trap (Railway frontend, fixed 2026-09-02)
+
+**Symptom:** every Railway frontend deploy fails (or is skipped) at `pnpm install --frozen-lockfile` with
+`ERR_PNPM_IGNORED_BUILDS: esbuild, sharp`. The site silently kept serving a months-old image (May 3 → Sept 2).
+
+**Root cause:** the Dockerfile ran `corepack prepare pnpm@latest`; pnpm 10 made unapproved dependency
+build scripts a hard error.
+
+**Fix (PR #131):** `packageManager: pnpm@10.33.0` and `pnpm.onlyBuiltDependencies: [esbuild, sharp]` in
+`frontend/package.json`; Dockerfile pins the same version. Reproduce any future variant with a local
+`docker build frontend/` before touching Railway.

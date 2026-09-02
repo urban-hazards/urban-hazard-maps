@@ -949,7 +949,42 @@
 		"2026-06": 90,
 		"2026-08": 4
 	},
-	"generated": "2026-09-02T18:02:53+00:00",
+	"creatio_types_monthly": {
+		"CE Collection": {
+			"2026-06": 8,
+			"2026-07": 27,
+			"2026-08": 50,
+			"2026-09": 4
+		},
+		"Illegal Dumping": {
+			"2026-06": 161,
+			"2026-07": 666,
+			"2026-08": 884,
+			"2026-09": 87
+		},
+		"Improper Storage of Trash (Barrels)": {
+			"2026-06": 473,
+			"2026-07": 1784,
+			"2026-08": 2328,
+			"2026-09": 200
+		},
+		"Missed Trash/Recycling/Yard Waste/Bulk Item": {
+			"2026-06": 224,
+			"2026-07": 975,
+			"2026-08": 1108,
+			"2026-09": 45
+		},
+		"Requests for Street Cleaning": {
+			"2026-03": 40,
+			"2026-04": 87,
+			"2026-05": 104,
+			"2026-06": 636,
+			"2026-07": 2421,
+			"2026-08": 3069,
+			"2026-09": 177
+		}
+	},
+	"generated": "2026-09-02T19:48:20+00:00",
 	"mattress_pickup": {
 		"automation_closures": 31764,
 		"by_source": {
@@ -981,6 +1016,11 @@
 		"total": 36548
 	},
 	"open311": {
+		"illegal-dumping": {
+			"mattress": {},
+			"samples": [],
+			"total": {}
+		},
 		"illegal-trash": {
 			"mattress": {
 				"2023-01": 126,
@@ -1083,6 +1123,35 @@
 				"2026-04": 1655,
 				"2026-05": 1930,
 				"2026-06": 1431
+			}
+		},
+		"improper-trash-storage": {
+			"mattress": {},
+			"samples": [],
+			"total": {}
+		},
+		"litter-debris": {
+			"mattress": {
+				"2026-08": 233,
+				"2026-09": 26
+			},
+			"samples": [
+				"Box spring left on sidewalk of Rusfield St",
+				"Mattress side of house",
+				"Mattress has been left on the sidewalk for days.",
+				"Mattress left on sidewalk",
+				"Mattresses (2) on sidewalk. 165 F st",
+				"Hi - there have been 2 mattresses outside on the sidewalk since 5:00 pm last night. If anyone is around could they be picked up? Thank you.",
+				"Mattress blocking sidewalk",
+				"Discarded mattress on sidewalk in front of 42 Anderson St., beacon Hill. Has been there a week. Thank you.",
+				"Mattress not picked up",
+				"Mattress on the sidewalk",
+				"Can someone please pickup this box spring which the trash guys did not get today?",
+				"Trash and matress not picked up rats eating trash"
+			],
+			"total": {
+				"2026-08": 2671,
+				"2026-09": 149
 			}
 		},
 		"other": {
@@ -1188,7 +1257,9 @@
 				"2026-04": 2763,
 				"2026-05": 3316,
 				"2026-06": 2767,
-				"2026-07": 24
+				"2026-07": 26,
+				"2026-08": 10,
+				"2026-09": 2
 			}
 		},
 		"street-cleaning": {
@@ -1296,6 +1367,6 @@
 			}
 		}
 	},
-	"open311_last_full_month": "2026-06",
-	"open311_through": "2026-07-25"
+	"open311_last_full_month": "2026-08",
+	"open311_through": "2026-09-01"
 }

@@ -117,6 +117,16 @@ transition (expected complete mid-2026).
 
 - [Data Transition Guide (Google Doc)](https://docs.google.com/document/d/e/2PACX-1vQ9ExKIGyrLJeyVUO92qNw0Cbj5m6Sz2IAATdBgYiAGW69Wuv7dk10PHUPR7UdawGt_e89q9VhxH-I0/pub)
 
+**Observed cutoffs (checked 2026-09-02):** in the legacy yearly file, Requests for Street Cleaning,
+Illegal Dumping and Encampments have no cases after June 2026; Improper Storage of Trash drops ~75%
+from July. Needle Pickup and General Request ("Other") are still legacy. The encampment Open311 feed's
+last request is 2026-05-27 and the new system has no encampment topic at all. The Open311 endpoint
+(`311.boston.gov` = `boston2-production.spotmobile.net`) already serves new-system cases under UUID
+`service_code`s that `/services.json` does not list — with resident descriptions and photos. Code table:
+[creatio-open311-codes.json](creatio-open311-codes.json); plan: `docs/plans/2026-09-02-creatio-migration-plan.md`.
+The pipeline maps new-system `service_name`s to legacy types via `CREATIO_SERVICE_MAP` (config.py) and
+writes per-source freshness to `metadata/source_health.json`.
+
 ## 14. Description Still Missing from New System
 
 The new Creatio system has 29 fields. Still no `description`. The Open311 API
