@@ -32,6 +32,31 @@ RESOURCE_IDS: dict[int, str] = {
 
 UA = "BostonHazardPipeline/1.0 (daily-pipeline; public-health-research)"
 
+# --- Creatio ("311 Service Requests - NEW SYSTEM") ---
+# Boston is migrating 311 from Lagan to Creatio in department waves (2025-08 →).
+# Migrated case types stop appearing in the legacy yearly resources (e.g. Requests
+# for Street Cleaning / Illegal Dumping / Encampments end June 2026).
+# See docs/plans/2026-09-02-creatio-migration-plan.md.
+CREATIO_RESOURCE_ID = "254adca6-64ab-4c5c-9fc0-a6da622be185"
+CREATIO_START_DATE: date = date(2025, 8, 1)
+
+# Creatio service_name -> legacy CKAN type (deterministic mapping table).
+CREATIO_SERVICE_MAP: dict[str, str] = {
+    "Litter & Debris": "Requests for Street Cleaning",
+    "Park Litter & Debris": "Requests for Street Cleaning",
+    "Improper Trash Storage": "Improper Storage of Trash (Barrels)",
+    "Trash Placed Out Early": "Improper Storage of Trash (Barrels)",
+    "Overflowing Trash": "Improper Storage of Trash (Barrels)",
+    "Illegal Dumping or Disposal": "Illegal Dumping",
+    "Missed Waste Pick-up": "Missed Trash/Recycling/Yard Waste/Bulk Item",
+    "Code Enforcement Collection": "CE Collection",
+}
+
+# Successor of "Requests for Street Cleaning". Resident text for these comes only
+# from the Open311 scraper slugs (SCRAPER_SLUGS_FOR_WASTE_INPUT); Creatio CKAN
+# rows carry staff comments and are used for counts and coverage QA only.
+CREATIO_WASTE_SERVICE_NAMES: set[str] = {"Litter & Debris", "Park Litter & Debris"}
+
 # --- Dataset type filters ---
 
 NEEDLE_TYPES: set[str] = {"Needle Pickup", "Needle Clean-up", "Needle Cleanup"}
@@ -161,7 +186,7 @@ SCRAPER_SLUGS_FOR_NEEDLES = ["needles"]
 # "other" = BOS:311 app's free-text "General Request" button. Staff reclassify
 # these after submission, but CKAN never surfaces them — they only exist in
 # the Open311 API. See issue #57 §4b-1 for verification.
-SCRAPER_SLUGS_FOR_WASTE_INPUT: list[str] = ["other"]
+SCRAPER_SLUGS_FOR_WASTE_INPUT: list[str] = ["other", "litter-debris", "park-litter-debris"]
 
 # Earliest date of Open311 scraper coverage for waste ingest.
 # The 2023 data is net-new — CKAN waste starts 2024.

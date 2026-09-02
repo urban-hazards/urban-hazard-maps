@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from pipeline import storage
@@ -10,6 +10,9 @@ from pipeline.analytics import compute_stats
 from pipeline.classifier import WasteClassifier
 from pipeline.cleaner import clean
 from pipeline.config import (
+    CREATIO_SERVICE_MAP,
+    CREATIO_START_DATE,
+    CREATIO_WASTE_SERVICE_NAMES,
     ENCAMPMENT_QUEUE_START_YEAR,
     ENCAMPMENT_TYPES,
     NEEDLE_TYPES,
@@ -19,9 +22,12 @@ from pipeline.config import (
     SCRAPER_SLUGS_FOR_WASTE_INPUT,
     STREET_CLEANING_TYPES,
 )
+from pipeline.creatio import fetch_creatio_records, monthly_counts, normalize_creatio_record
+from pipeline.dedupe import match_cross_system
 from pipeline.districts import DistrictLookup
 from pipeline.enricher import enrich_records
 from pipeline.fetcher import fetch_encampment_year, fetch_year
+from pipeline.health import compute_source_health, write_source_health
 from pipeline.models import CleanedRecord
 from pipeline.open311_loader import load_records_from_s3, normalize_open311_record
 
@@ -166,6 +172,7 @@ def _process_dataset(dataset: str, raw_records: list[dict[str, Any]]) -> int:
         "peak_dow": stats.peak_dow,
         "avg_monthly": stats.avg_monthly,
         "initial_heat": stats.heat_keys.get("all", []),
+        "schema_version": 2,
         "council_districts": stats.council_districts,
         "council_district_labels": _district_labels("council", stats.council_districts),
         "police_districts": stats.police_districts,
@@ -257,6 +264,43 @@ def _compute_routing_stats(
     }
 
 
+CREATIO_CACHE_MAX_AGE_DAYS = 7
+
+
+def _cache_is_recent(rows: list[dict[str, Any]]) -> bool:
+    """True if the newest cached row is within CREATIO_CACHE_MAX_AGE_DAYS of today.
+
+    Prevents a broken CKAN feed from silently serving stale counts forever.
+    """
+    newest = max((str(r.get("open_dt") or "")[:10] for r in rows), default="")
+    if not newest:
+        return False
+    age = (datetime.now(UTC).date() - date.fromisoformat(newest)).days
+    if age > CREATIO_CACHE_MAX_AGE_DAYS:
+        logger.error("Cached raw/creatio.json is %d days old (newest %s); refusing stale fallback", age, newest)
+        return False
+    return True
+
+
+def _load_creatio_rows() -> list[dict[str, Any]]:
+    """Fetch + normalize Creatio rows; on a fetch failure fall back to the cached copy.
+
+    A transient CKAN failure must not abort the waste run. If no cache exists either,
+    re-raise so the failure is loud rather than silently producing empty counts.
+    """
+    try:
+        raw = fetch_creatio_records(set(CREATIO_SERVICE_MAP), CREATIO_START_DATE)
+    except Exception:
+        cached = storage.read_json("raw/creatio.json")
+        if isinstance(cached, list) and cached and _cache_is_recent(cached):
+            logger.exception("Creatio fetch failed; using cached raw/creatio.json (%d rows)", len(cached))
+            return cached
+        raise
+    rows = [normalize_creatio_record(r) for r in raw]
+    storage.write_json("raw/creatio.json", rows)
+    return rows
+
+
 def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
     """Classify street cleaning records for human waste, enrich, compute stats.
 
@@ -274,36 +318,46 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
     ckan_ids: set[str] = {str(r.get("case_enquiry_id", "")) for r in raw_records}
     ckan_ids.discard("")
 
-    # Load Other corpus from Open311 scraper
     today = datetime.now(UTC).date()
-    open311_raw = load_records_from_s3(
-        SCRAPER_SLUGS_FOR_WASTE_INPUT,
-        OPEN311_WASTE_START_DATE,
-        today,
-    )
 
-    # Dedupe: drop Other records whose service_request_id already exists in CKAN
+    # Resident-text corpora from the Open311 scraper: "other" (Lagan, numeric ids)
+    # and the Creatio successors of Street Cleaning (UUID ids, litter-debris slugs).
+    open311_raw = load_records_from_s3(SCRAPER_SLUGS_FOR_WASTE_INPUT, OPEN311_WASTE_START_DATE, today)
+
+    # Same-namespace exact-id dedupe (Other vs legacy CKAN share numeric ids).
     dupes_dropped = 0
     open311_unique: list[dict[str, Any]] = []
     for rec in open311_raw:
-        sr_id = str(rec.get("service_request_id", ""))
-        if sr_id in ckan_ids:
+        if str(rec.get("service_request_id", "")) in ckan_ids:
             dupes_dropped += 1
         else:
             open311_unique.append(rec)
-
-    # Normalize Open311 records to CKAN-like format
     open311_normalized = [normalize_open311_record(r) for r in open311_unique]
+    n_litter = sum(1 for r in open311_unique if str(r.get("service_name", "")) in CREATIO_WASTE_SERVICE_NAMES)
 
-    # Merge: CKAN first (canonical), then Open311 Other
+    # Creatio CKAN rows: counts + coverage QA only. They carry staff text, so they
+    # are NOT classified and NOT merged into the candidate corpus.
+    creatio_rows = _load_creatio_rows()
+    storage.write_json("metadata/creatio_monthly.json", monthly_counts(creatio_rows))
+    creatio_waste = [r for r in creatio_rows if r.get("creatio_service_name") in CREATIO_WASTE_SERVICE_NAMES]
+    litter_rows = [r for r in open311_normalized if r.get("type") in CREATIO_WASTE_SERVICE_NAMES]
+    unmatched, pairs = match_cross_system(litter_rows, creatio_waste)
+    storage.write_json(
+        "waste/qa_creatio_coverage.json",
+        {"pairs": pairs, "unmatched_creatio_ids": [r["case_enquiry_id"] for r in unmatched]},
+    )
+
     all_raw = raw_records + open311_normalized
+    source_counts = {
+        "ckan_legacy": len(raw_records),
+        "open311_other": len(open311_unique) - n_litter,
+        "open311_litter_debris": n_litter,
+        "creatio_ckan_rows": len(creatio_rows),
+        "creatio_open311_matched": len(pairs),
+        "creatio_open311_unmatched": len(unmatched),
+    }
     logger.info(
-        "Waste input: ckan=%d, open311_loaded=%d, open311_dupes_dropped=%d, open311_normalized=%d, total_candidates=%d",
-        len(raw_records),
-        len(open311_raw),
-        dupes_dropped,
-        len(open311_normalized),
-        len(all_raw),
+        "Waste input: %s (exact-id dupes dropped=%d) total_candidates=%d", source_counts, dupes_dropped, len(all_raw)
     )
 
     # Step 1: Classify on closure_reason first (fast, no API calls)
@@ -413,6 +467,8 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
         "avg_monthly": stats.avg_monthly,
         "initial_heat": stats.heat_keys.get("all", []),
         "routing_stats": routing_stats,
+        "schema_version": 2,
+        "sources": source_counts,
         "council_districts": stats.council_districts,
         "council_district_labels": _district_labels("council", stats.council_districts),
         "police_districts": stats.police_districts,
@@ -471,6 +527,11 @@ def run_pipeline(
             counts[dataset] = _process_waste(raw, force)
         else:
             counts[dataset] = _process_dataset(dataset, raw)
+
+    try:
+        write_source_health(compute_source_health())
+    except Exception:  # the monitor must never break the data run
+        logger.exception("source health failed")
 
     # Write metadata
     metadata = {

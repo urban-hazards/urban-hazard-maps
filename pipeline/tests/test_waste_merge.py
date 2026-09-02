@@ -263,3 +263,98 @@ class TestProcessWasteIntegration:
 
         # No record should be missing source
         assert all(r.source is not None for r in cleaned_records)
+
+
+CREATIO_ROW: dict[str, Any] = {
+    "case_id": "BCS-00256693",
+    "open_date": "2026-07-16 16:10:24+00",
+    "close_date": "2026-07-17 08:06:36+00",
+    "case_topic": "Litter & Debris",
+    "service_name": "Litter & Debris",
+    "assigned_department": "PWD",
+    "assigned_team": "PWD Highway (BEAM)",
+    "case_status": "Closed",
+    "closure_reason": "Resolved",
+    "closure_comments": "Human feces removed",
+    "report_source": "BOS311",
+    "full_address": "11-17 E Concord St, Boston, MA 02118",
+    "street_name": "E Concord St",
+    "zip_code": "02118",
+    "neighborhood": "South End",
+    "longitude": "-71.07473228",
+    "latitude": "42.33768644",
+}
+OPEN311_LITTER_SAME_CASE: dict[str, Any] = {
+    "service_request_id": "6a2af5bf-cbba-4b18-8a2a-59eed542c8ef",
+    "status": "closed",
+    "service_name": "Litter & Debris",
+    "service_code": "155a5e9b-8c3a-4279-bbab-f6bba6ddb0d0",
+    "description": "Human feces on the sidewalk by the bus stop",
+    "requested_datetime": "2026-07-16T16:10:30Z",
+    "updated_datetime": "2026-07-17T08:06:36Z",
+    "address": "11-17 E Concord St, South End, Ma, 02118",
+    "lat": 42.33768644,
+    "long": -71.07473228,
+}
+
+
+def test_waste_uses_litter_debris_text_and_reports_creatio_coverage(s3_bucket: tuple[Any, str]) -> None:
+    from pipeline import run
+
+    def fake_load(slugs: list[str], start: Any, end: Any) -> list[dict[str, Any]]:
+        return [OPEN311_LITTER_SAME_CASE] if "litter-debris" in slugs else []
+
+    fake_classifier = _make_fake_classifier({"101005000001", "6a2af5bf-cbba-4b18-8a2a-59eed542c8ef"})
+    with (
+        patch("pipeline.run.fetch_creatio_records", return_value=[CREATIO_ROW]),
+        patch("pipeline.run.load_records_from_s3", side_effect=fake_load),
+        patch("pipeline.run.WasteClassifier", return_value=fake_classifier),
+        patch("pipeline.run.enrich_records", side_effect=lambda recs, cache, **kw: (recs, cache)),
+        patch("pipeline.run._enrich_districts"),
+    ):
+        count = run._process_waste([CKAN_CONFIRMED], force=False)
+
+    client, bucket = s3_bucket
+    stats = json.loads(client.get_object(Bucket=bucket, Key="waste/stats.json")["Body"].read())
+    assert stats["schema_version"] == 2
+    assert stats["sources"] == {
+        "ckan_legacy": 1,
+        "open311_other": 0,
+        "open311_litter_debris": 1,
+        "creatio_ckan_rows": 1,
+        "creatio_open311_matched": 1,
+        "creatio_open311_unmatched": 0,
+    }
+    assert count == 2  # legacy confirmed + the Litter & Debris resident report; Creatio CKAN row not classified
+    qa = json.loads(client.get_object(Bucket=bucket, Key="waste/qa_creatio_coverage.json")["Body"].read())
+    assert qa["pairs"][0]["secondary_id"] == "BCS-00256693"
+    monthly = json.loads(client.get_object(Bucket=bucket, Key="metadata/creatio_monthly.json")["Body"].read())
+    assert monthly["Requests for Street Cleaning"]["2026-07"] == 1
+
+
+def test_creatio_fetch_failure_uses_recent_cache_only(s3_bucket: tuple[Any, str]) -> None:
+    from pipeline import run
+    from pipeline.creatio import normalize_creatio_record
+
+    cached = [normalize_creatio_record(CREATIO_ROW)]
+    with patch("pipeline.run.fetch_creatio_records", side_effect=RuntimeError("ckan down")):
+        try:
+            run._load_creatio_rows()
+        except RuntimeError as e:
+            assert "ckan down" in str(e)  # no cache yet -> loud failure
+        else:
+            raise AssertionError("expected RuntimeError without a cache")
+        from pipeline import storage
+
+        storage.write_json("raw/creatio.json", cached)
+        try:
+            run._load_creatio_rows()
+        except RuntimeError:
+            pass  # cache is from 2026-07 -> too old to trust, loud failure
+        else:
+            raise AssertionError("expected stale cache to be refused")
+        from datetime import UTC, datetime
+
+        fresh = [{**cached[0], "open_dt": datetime.now(UTC).strftime("%Y-%m-%d 12:00:00+00")}]
+        storage.write_json("raw/creatio.json", fresh)
+        assert run._load_creatio_rows() == fresh  # recent cache -> run continues
