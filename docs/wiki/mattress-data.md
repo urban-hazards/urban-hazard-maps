@@ -54,3 +54,22 @@ are different populations; the scheduler changed where the first group is record
 1. Export of boston.gov/mattress appointments since 2024-06 (date, neighborhood/zip) — restores the pickup series.
 2. Pre-2023 311 export **with** `description` — the public CKAN drops it; the API doesn't go back that far.
 3. A "dumped mattress" case type or sub-type so ~4,000 free-text reports a year become countable.
+
+## Going further back, and the Creatio split (checked 2026-09-02)
+
+- **CSV dumps 2011–2014 exist** (`lagan_311_open_data_2011_rvsd2.csv` etc.) but are download-only: the
+  datastore for those resource IDs is empty (`total: 0`), so `datastore_search_sql` cannot query them.
+  Same 30-column schema as 2015+, including `source`. No `description` in any year — the KB rule holds.
+  Extending counts to 2011 means downloading the CSVs, not the API.
+- **Descriptions never go further back than 2023.** Open311 API is the only source and starts 2023-01.
+- **Creatio ("311 Service Requests - NEW SYSTEM", resource `254adca6-64ab-4c5c-9fc0-a6da622be185`)**
+  starts 2025-08 and ramps hard: Jun 2026 6,082 → Jul 13,321 → Aug 15,428. Legacy 2026 falls from
+  ~29k/mo to ~11k/mo. Migrated types stop in the legacy file: Requests for Street Cleaning, Illegal
+  Dumping and Encampments end June 2026; Improper Storage drops ~75% from July. Needle Pickup, General
+  Request (Other) remain legacy as of Sept 2026. Creatio has **no encampment category**.
+- Creatio equivalents: `Improper Trash Storage`, `Illegal Dumping or Disposal`, `Litter & Debris`,
+  `Missed Waste Pick-up`, `Trash Placed Out Early`, `Overflowing Trash`. `report_source` is BOS311 / Call.
+  `closure_comments` is staff free text (409 mattress mentions in 48k cases); still no resident description.
+- The Open311 API drops migrated codes too: Street Cleaning returns 0 requests since 2026-07-01;
+  Improper Storage last 2026-08-10; Needle Pickup and Other still live. So the scraper is not stalled —
+  its sources are migrating. Any 2026 count on the /mattress page for the migrated types is low from June on.
