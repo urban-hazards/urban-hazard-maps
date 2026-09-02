@@ -264,6 +264,25 @@ def _compute_routing_stats(
     }
 
 
+def _load_creatio_rows() -> list[dict[str, Any]]:
+    """Fetch + normalize Creatio rows; on a fetch failure fall back to the cached copy.
+
+    A transient CKAN failure must not abort the waste run. If no cache exists either,
+    re-raise so the failure is loud rather than silently producing empty counts.
+    """
+    try:
+        raw = fetch_creatio_records(set(CREATIO_SERVICE_MAP), CREATIO_START_DATE)
+    except Exception:
+        cached = storage.read_json("raw/creatio.json")
+        if isinstance(cached, list) and cached:
+            logger.exception("Creatio fetch failed; using cached raw/creatio.json (%d rows)", len(cached))
+            return cached
+        raise
+    rows = [normalize_creatio_record(r) for r in raw]
+    storage.write_json("raw/creatio.json", rows)
+    return rows
+
+
 def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
     """Classify street cleaning records for human waste, enrich, compute stats.
 
@@ -300,9 +319,7 @@ def _process_waste(raw_records: list[dict[str, Any]], force: bool) -> int:
 
     # Creatio CKAN rows: counts + coverage QA only. They carry staff text, so they
     # are NOT classified and NOT merged into the candidate corpus.
-    creatio_raw = fetch_creatio_records(set(CREATIO_SERVICE_MAP), CREATIO_START_DATE)
-    creatio_rows = [normalize_creatio_record(r) for r in creatio_raw]
-    storage.write_json("raw/creatio.json", creatio_rows)
+    creatio_rows = _load_creatio_rows()
     storage.write_json("metadata/creatio_monthly.json", monthly_counts(creatio_rows))
     creatio_waste = [r for r in creatio_rows if r.get("creatio_service_name") in CREATIO_WASTE_SERVICE_NAMES]
     litter_rows = [r for r in open311_normalized if r.get("type") in CREATIO_WASTE_SERVICE_NAMES]

@@ -330,3 +330,21 @@ def test_waste_uses_litter_debris_text_and_reports_creatio_coverage(s3_bucket: t
     assert qa["pairs"][0]["secondary_id"] == "BCS-00256693"
     monthly = json.loads(client.get_object(Bucket=bucket, Key="metadata/creatio_monthly.json")["Body"].read())
     assert monthly["Requests for Street Cleaning"]["2026-07"] == 1
+
+
+def test_creatio_fetch_failure_falls_back_to_cache_then_raises(s3_bucket: tuple[Any, str]) -> None:
+    from pipeline import run
+    from pipeline.creatio import normalize_creatio_record
+
+    cached = [normalize_creatio_record(CREATIO_ROW)]
+    with patch("pipeline.run.fetch_creatio_records", side_effect=RuntimeError("ckan down")):
+        try:
+            run._load_creatio_rows()
+        except RuntimeError as e:
+            assert "ckan down" in str(e)  # no cache yet -> loud failure
+        else:
+            raise AssertionError("expected RuntimeError without a cache")
+        from pipeline import storage
+
+        storage.write_json("raw/creatio.json", cached)
+        assert run._load_creatio_rows() == cached  # cache present -> run continues

@@ -119,7 +119,7 @@ def _creatio_service_names() -> list[str]:
 
 def compute_source_health(today: date | None = None) -> dict[str, Any]:
     today = today or datetime.now(UTC).date()
-    start = today - timedelta(days=WINDOW_DAYS)
+    start = today - timedelta(days=WINDOW_DAYS - 1)  # inclusive 30-day window
     py_start, py_end = start - timedelta(days=365), today - timedelta(days=365)
     years = {start.year, today.year, py_start.year, py_end.year}
     sources: dict[str, Any] = {}
