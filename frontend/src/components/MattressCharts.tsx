@@ -293,8 +293,10 @@ export default function MattressCharts({ data, buttonMonth, cutoffMonth }: Props
 			<figure className="chart-figure">
 				<figcaption>
 					<strong>Mattress pickup cases in Boston 311, by month.</strong> The case type appears in{" "}
-					{shortLabel(buttonMonth)} and disappears after {cutoffMonth}. Source: data.boston.gov 311
-					export.
+					{shortLabel(buttonMonth)} and disappears after {cutoffMonth}. The zero afterwards is real,
+					not a gap in our data: the city's full export has no mattress case type after that month,
+					because bookings moved to boston.gov/mattress, which does not create 311 cases. Source:
+					data.boston.gov 311 export.
 				</figcaption>
 				<div className="chart-box" style={{ height: 260 }}>
 					<canvas ref={pickupRef} aria-label="Mattress pickup 311 cases per month" />

@@ -41,6 +41,41 @@ const queueTotalYear = (y: string) =>
 	queues.reduce((a, s) => a + (yearOf(mattress.open311[s].total)[y] ?? 0), 0)
 const sharePct = (y: string) =>
 	((totalMentions(y) / Math.max(queueTotalYear(y), 1)) * 100).toFixed(1)
+// Intake channel by case type and year (CKAN `source`).
+const SOURCE_ORDER = [
+	"Citizens Connect App",
+	"Constituent Call",
+	"Self Service",
+	"Employee Generated",
+	"City Worker App",
+]
+const sourceYears = ["2023", "2024", "2025", "2026"]
+const sourceRows = (type: string) => {
+	const byYear =
+		(mattress.ckan_source_yearly as Record<string, Record<string, Record<string, number>>>)[type] ??
+		{}
+	const labels = new Set<string>()
+	for (const y of sourceYears) for (const k of Object.keys(byYear[y] ?? {})) labels.add(k)
+	const ordered = [
+		...SOURCE_ORDER.filter((l) => labels.has(l)),
+		...[...labels].filter((l) => !SOURCE_ORDER.includes(l)).sort(),
+	]
+	return ordered.map((label) => ({
+		label,
+		values: sourceYears.map((y) => {
+			const yr = byYear[y] ?? {}
+			const tot = Object.values(yr).reduce((a, b) => a + b, 0)
+			const v = yr[label] ?? 0
+			return { n: v, pct: tot ? (v / tot) * 100 : 0 }
+		}),
+	}))
+}
+const INTAKE_TYPES = [
+	"Mattress_Pickup",
+	"Improper Storage of Trash (Barrels)",
+	"Requests for Street Cleaning",
+	"Illegal Dumping",
+]
 const samples = [
 	...mattress.open311["illegal-trash"].samples.slice(0, 2),
 	...mattress.open311["street-cleaning"].samples.slice(0, 2),
@@ -194,7 +229,42 @@ const samples = [
 		</section>
 
 		<section class="section">
-			<h2 class="section-title">3. The queues a mattress complaint lands in</h2>
+			<h2 class="section-title">3. How these reports come in</h2>
+			<div class="card prose">
+				<p>
+					Intake channel for each case, from the <code>source</code> field in the 311 export.
+					Mattress pickups were almost entirely phone calls. The queues where dumped-mattress
+					complaints land are split between the app and the phone, and "Illegal Dumping" is
+					still mostly a phone call, which is why it has no app spike.
+				</p>
+				{INTAKE_TYPES.map((t) => (
+					<div class="table-wrap">
+						<table class="data-table intake-table">
+							<thead>
+								<tr>
+									<th>{t}</th>
+									{sourceYears.map((y) => <th>{y}{y === "2026" ? "*" : ""}</th>)}
+								</tr>
+							</thead>
+							<tbody>
+								{sourceRows(t).map((r) => (
+									<tr>
+										<td>{r.label}</td>
+										{r.values.map((v) => (
+											<td>{v.n ? `${v.n.toLocaleString()} (${v.pct.toFixed(0)}%)` : "—"}</td>
+										))}
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				))}
+				<p class="example-note">* 2026 through {mattress.ckan_through}.</p>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2 class="section-title">4. The queues a mattress complaint lands in</h2>
 			<div class="card prose">
 				<p>
 					For context, the case types above and their neighbors, by year. There is no obvious

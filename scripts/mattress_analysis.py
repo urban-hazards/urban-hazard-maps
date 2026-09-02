@@ -103,6 +103,23 @@ def ckan_closure_mentions_monthly() -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def ckan_source_by_type_year() -> dict[str, dict[str, dict[str, int]]]:
+    """Intake channel (CKAN `source`: Constituent Call, Citizens Connect App, Self Service, ...)
+    per case type per year, 2021 onward."""
+    clauses = " OR ".join(f"\"type\"='{t}'" for t in CKAN_TYPES)
+    out: dict[str, dict[str, dict[str, int]]] = collections.defaultdict(lambda: collections.defaultdict(dict))
+    for year in YEARS:
+        rid = RESOURCE_IDS.get(year)
+        if not rid or year < 2021:
+            continue
+        rows = ckan_sql(
+            f'SELECT "type", "source", COUNT(*) c FROM "{rid}" WHERE ({clauses}) GROUP BY 1,2 ORDER BY 1,3 DESC'
+        )
+        for r in rows:
+            out[r["type"]][str(year)][r["source"] or "(blank)"] = r["c"]
+    return {t: dict(v) for t, v in out.items()}
+
+
 def mattress_pickup_facts() -> dict:
     facts: dict = {"by_source": collections.Counter(), "automation_closures": 0, "total": 0}
     for year in (2022, 2023, 2024):
@@ -172,6 +189,7 @@ def open311_mentions() -> tuple[dict, str]:
 def main() -> None:
     ckan_types, ckan_latest = ckan_monthly_by_type()
     closure = ckan_closure_mentions_monthly()
+    sources = ckan_source_by_type_year()
     facts = mattress_pickup_facts()
     open311, open311_latest = open311_mentions()
     # Last month whose data is complete: drop the trailing month if the scrape ends before the 28th.
@@ -193,6 +211,7 @@ def main() -> None:
             **facts,
         },
         "ckan_types_monthly": ckan_types,
+        "ckan_source_yearly": sources,
         "closure_mentions_monthly": closure,
         "open311": open311,
     }

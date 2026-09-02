@@ -1,4 +1,245 @@
 {
+	"ckan_source_yearly": {
+		"CE Collection": {
+			"2021": {
+				"City Worker App": 11798,
+				"Employee Generated": 1
+			},
+			"2022": {
+				"City Worker App": 13161
+			},
+			"2023": {
+				"City Worker App": 15419,
+				"Employee Generated": 1
+			},
+			"2024": {
+				"City Worker App": 18129,
+				"Employee Generated": 2
+			},
+			"2025": {
+				"City Worker App": 18649,
+				"Employee Generated": 4
+			},
+			"2026": {
+				"City Worker App": 6657,
+				"Employee Generated": 15
+			}
+		},
+		"Illegal Dumping": {
+			"2021": {
+				"Constituent Call": 504,
+				"Employee Generated": 995,
+				"Self Service": 81
+			},
+			"2022": {
+				"Constituent Call": 725,
+				"Employee Generated": 1276,
+				"Self Service": 138
+			},
+			"2023": {
+				"Constituent Call": 1298,
+				"Employee Generated": 1769,
+				"Self Service": 77
+			},
+			"2024": {
+				"Constituent Call": 1015,
+				"Employee Generated": 1984,
+				"Self Service": 8
+			},
+			"2025": {
+				"Constituent Call": 1089,
+				"Employee Generated": 2467,
+				"Self Service": 11
+			},
+			"2026": {
+				"Constituent Call": 544,
+				"Employee Generated": 1237,
+				"Self Service": 4
+			}
+		},
+		"Improper Storage of Trash (Barrels)": {
+			"2021": {
+				"Citizens Connect App": 5618,
+				"Constituent Call": 245,
+				"Employee Generated": 7597,
+				"Self Service": 141
+			},
+			"2022": {
+				"Citizens Connect App": 7440,
+				"Constituent Call": 320,
+				"Employee Generated": 7992,
+				"Self Service": 165
+			},
+			"2023": {
+				"Citizens Connect App": 8738,
+				"Constituent Call": 503,
+				"Employee Generated": 10137,
+				"Self Service": 82
+			},
+			"2024": {
+				"Citizens Connect App": 8529,
+				"Constituent Call": 389,
+				"Employee Generated": 11523,
+				"Self Service": 19
+			},
+			"2025": {
+				"Citizens Connect App": 8453,
+				"Constituent Call": 334,
+				"Employee Generated": 11286,
+				"Self Service": 10
+			},
+			"2026": {
+				"Citizens Connect App": 4300,
+				"Constituent Call": 122,
+				"Employee Generated": 6526,
+				"Self Service": 2
+			}
+		},
+		"Mattress_Pickup": {
+			"2022": {
+				"Employee Generated": 1
+			},
+			"2023": {
+				"Constituent Call": 27274,
+				"Employee Generated": 739
+			},
+			"2024": {
+				"Constituent Call": 8449,
+				"Employee Generated": 85
+			}
+		},
+		"Missed Trash/Recycling/Yard Waste/Bulk Item": {
+			"2021": {
+				"Constituent Call": 4433,
+				"Employee Generated": 8417,
+				"Self Service": 1165
+			},
+			"2022": {
+				"Constituent Call": 4953,
+				"Employee Generated": 7487,
+				"Self Service": 1351
+			},
+			"2023": {
+				"Constituent Call": 5999,
+				"Employee Generated": 5405,
+				"Self Service": 1184
+			},
+			"2024": {
+				"Constituent Call": 5224,
+				"Employee Generated": 4335,
+				"Self Service": 1034
+			},
+			"2025": {
+				"Constituent Call": 4094,
+				"Employee Generated": 4936,
+				"Self Service": 942
+			},
+			"2026": {
+				"Constituent Call": 1849,
+				"Employee Generated": 2901,
+				"Self Service": 326
+			}
+		},
+		"Poor Conditions of Property": {
+			"2021": {
+				"Citizens Connect App": 2260,
+				"City Worker App": 256,
+				"Constituent Call": 176,
+				"Employee Generated": 3434,
+				"Self Service": 117
+			},
+			"2022": {
+				"Citizens Connect App": 2502,
+				"City Worker App": 232,
+				"Constituent Call": 284,
+				"Employee Generated": 3452,
+				"Self Service": 126
+			},
+			"2023": {
+				"Citizens Connect App": 3095,
+				"City Worker App": 267,
+				"Constituent Call": 445,
+				"Employee Generated": 4340,
+				"Self Service": 78
+			},
+			"2024": {
+				"Citizens Connect App": 2891,
+				"City Worker App": 188,
+				"Constituent Call": 442,
+				"Employee Generated": 5186,
+				"Self Service": 69
+			},
+			"2025": {
+				"Citizens Connect App": 2690,
+				"City Worker App": 160,
+				"Constituent Call": 353,
+				"Employee Generated": 5769,
+				"Self Service": 91
+			},
+			"2026": {
+				"Citizens Connect App": 1542,
+				"Constituent Call": 168,
+				"Employee Generated": 2630,
+				"Self Service": 4
+			}
+		},
+		"Requests for Street Cleaning": {
+			"2021": {
+				"Citizens Connect App": 9114,
+				"City Worker App": 1147,
+				"Constituent Call": 1435,
+				"Employee Generated": 8127
+			},
+			"2022": {
+				"Citizens Connect App": 8869,
+				"City Worker App": 964,
+				"Constituent Call": 1385,
+				"Employee Generated": 8005
+			},
+			"2023": {
+				"Citizens Connect App": 9623,
+				"City Worker App": 1031,
+				"Constituent Call": 1832,
+				"Employee Generated": 9331
+			},
+			"2024": {
+				"Citizens Connect App": 9554,
+				"City Worker App": 1091,
+				"Constituent Call": 1454,
+				"Employee Generated": 10408
+			},
+			"2025": {
+				"Citizens Connect App": 8712,
+				"City Worker App": 726,
+				"Constituent Call": 1264,
+				"Employee Generated": 10215
+			},
+			"2026": {
+				"Citizens Connect App": 4483,
+				"City Worker App": 193,
+				"Constituent Call": 464,
+				"Employee Generated": 5869
+			}
+		},
+		"Schedule a Bulk Item Pickup": {
+			"2021": {
+				"Constituent Call": 5787,
+				"Employee Generated": 6055
+			},
+			"2022": {
+				"Constituent Call": 6171,
+				"Employee Generated": 4182
+			},
+			"2023": {
+				"Constituent Call": 9340,
+				"Employee Generated": 3947
+			},
+			"2024": {
+				"Constituent Call": 8348,
+				"Employee Generated": 3481
+			}
+		}
+	},
 	"ckan_through": "2026-08-31",
 	"ckan_types_monthly": {
 		"CE Collection": {
@@ -708,7 +949,7 @@
 		"2026-06": 90,
 		"2026-08": 4
 	},
-	"generated": "2026-09-02T17:58:15+00:00",
+	"generated": "2026-09-02T18:02:53+00:00",
 	"mattress_pickup": {
 		"automation_closures": 31764,
 		"by_source": {
