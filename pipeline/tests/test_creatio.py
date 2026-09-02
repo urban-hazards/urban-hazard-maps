@@ -88,6 +88,11 @@ def _page(total: int, ids: list[str]) -> dict[str, Any]:
 
 def test_fetch_pages_filters_since_and_asserts_total() -> None:
     pages = [_page(3, ["a", "b"]), _page(3, ["c"])]
+    pages[1]["result"]["records"][0]["open_date"] = "2026-07-01 00:00:00+00"
+    early = {**ROW, "case_id": "old", "open_date": "2025-09-01 00:00:00+00"}
+    pages[0]["result"]["records"].append(early)
+    pages[0]["result"]["total"] = 4
+    pages[1]["result"]["total"] = 4
     with patch("pipeline.creatio._api_get", side_effect=pages) as get:
         out = fetch_creatio_records({"Litter & Debris"}, since=date(2026, 6, 1), page_size=2)
     assert [r["case_id"] for r in out] == ["a", "b", "c"]

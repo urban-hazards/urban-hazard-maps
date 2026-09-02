@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from pipeline import storage
@@ -264,6 +264,24 @@ def _compute_routing_stats(
     }
 
 
+CREATIO_CACHE_MAX_AGE_DAYS = 7
+
+
+def _cache_is_recent(rows: list[dict[str, Any]]) -> bool:
+    """True if the newest cached row is within CREATIO_CACHE_MAX_AGE_DAYS of today.
+
+    Prevents a broken CKAN feed from silently serving stale counts forever.
+    """
+    newest = max((str(r.get("open_dt") or "")[:10] for r in rows), default="")
+    if not newest:
+        return False
+    age = (datetime.now(UTC).date() - date.fromisoformat(newest)).days
+    if age > CREATIO_CACHE_MAX_AGE_DAYS:
+        logger.error("Cached raw/creatio.json is %d days old (newest %s); refusing stale fallback", age, newest)
+        return False
+    return True
+
+
 def _load_creatio_rows() -> list[dict[str, Any]]:
     """Fetch + normalize Creatio rows; on a fetch failure fall back to the cached copy.
 
@@ -274,7 +292,7 @@ def _load_creatio_rows() -> list[dict[str, Any]]:
         raw = fetch_creatio_records(set(CREATIO_SERVICE_MAP), CREATIO_START_DATE)
     except Exception:
         cached = storage.read_json("raw/creatio.json")
-        if isinstance(cached, list) and cached:
+        if isinstance(cached, list) and cached and _cache_is_recent(cached):
             logger.exception("Creatio fetch failed; using cached raw/creatio.json (%d rows)", len(cached))
             return cached
         raise

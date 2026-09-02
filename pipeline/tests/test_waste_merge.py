@@ -332,7 +332,7 @@ def test_waste_uses_litter_debris_text_and_reports_creatio_coverage(s3_bucket: t
     assert monthly["Requests for Street Cleaning"]["2026-07"] == 1
 
 
-def test_creatio_fetch_failure_falls_back_to_cache_then_raises(s3_bucket: tuple[Any, str]) -> None:
+def test_creatio_fetch_failure_uses_recent_cache_only(s3_bucket: tuple[Any, str]) -> None:
     from pipeline import run
     from pipeline.creatio import normalize_creatio_record
 
@@ -347,4 +347,14 @@ def test_creatio_fetch_failure_falls_back_to_cache_then_raises(s3_bucket: tuple[
         from pipeline import storage
 
         storage.write_json("raw/creatio.json", cached)
-        assert run._load_creatio_rows() == cached  # cache present -> run continues
+        try:
+            run._load_creatio_rows()
+        except RuntimeError:
+            pass  # cache is from 2026-07 -> too old to trust, loud failure
+        else:
+            raise AssertionError("expected stale cache to be refused")
+        from datetime import UTC, datetime
+
+        fresh = [{**cached[0], "open_dt": datetime.now(UTC).strftime("%Y-%m-%d 12:00:00+00")}]
+        storage.write_json("raw/creatio.json", fresh)
+        assert run._load_creatio_rows() == fresh  # recent cache -> run continues
