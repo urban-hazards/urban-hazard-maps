@@ -16,6 +16,7 @@
 - [SHARPS Team Analysis](sharps-team-analysis.md) — 6 workers identified from closure notes; shift patterns; syringe count parsing
 - [Reporting Patterns](reporting-patterns.md) — peak hour analysis; citizen vs sweep theory (disproved); reporting time vs activity time
 - [Other Ticket Black Hole](other-ticket-analysis.md) — 142k invisible "General Request" tickets; misrouted rodent/waste reports
+- [Mattress Data](mattress-data.md) — 36k phone-scheduled pickups 2023–May 2024, then self-service scheduler removed them from 311; where dumped-mattress complaints live now
 
 ## Open Questions
 
