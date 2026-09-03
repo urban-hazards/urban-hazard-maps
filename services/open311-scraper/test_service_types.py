@@ -17,6 +17,7 @@ NEW = {
     "missed-waste": "994a8200-95d6-4720-826c-19bd142847b5",
     "ce-collection": "cb65b3ee-ab13-4c3c-8f3b-ffc743f99c94",
     "student-move-in": "715f7134-aac4-43f4-9e8b-b6fff5f47ad3",
+    "other-creatio": "fdd312ca-bb42-4ce7-9409-8bf86c9c010b",
 }
 
 
@@ -31,6 +32,7 @@ def test_slug_start_table_matches_observed_first_cases():
     assert fetch.slug_start("litter-debris") == date(2026, 6, 23)
     assert fetch.slug_start("improper-trash-storage") == date(2026, 6, 24)
     assert fetch.slug_start("student-move-in") == date(2026, 8, 24)
+    assert fetch.slug_start("other-creatio") == date(2026, 6, 1)
     assert fetch.slug_start("needles") == date.fromisoformat(fetch.START_DATE)
 
 
