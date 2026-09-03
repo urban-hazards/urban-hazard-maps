@@ -186,7 +186,7 @@ SCRAPER_SLUGS_FOR_NEEDLES = ["needles"]
 # "other" = BOS:311 app's free-text "General Request" button. Staff reclassify
 # these after submission, but CKAN never surfaces them — they only exist in
 # the Open311 API. See issue #57 §4b-1 for verification.
-SCRAPER_SLUGS_FOR_WASTE_INPUT: list[str] = ["other", "litter-debris", "park-litter-debris"]
+SCRAPER_SLUGS_FOR_WASTE_INPUT: list[str] = ["other", "other-creatio", "litter-debris", "park-litter-debris"]
 
 # Earliest date of Open311 scraper coverage for waste ingest.
 # The 2023 data is net-new — CKAN waste starts 2024.

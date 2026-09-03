@@ -147,6 +147,9 @@ SERVICE_TYPES: dict[str, tuple[str, str]] = {
     "missed-waste": ("994a8200-95d6-4720-826c-19bd142847b5", "Missed Waste Pick-up"),
     "ce-collection": ("cb65b3ee-ab13-4c3c-8f3b-ffc743f99c94", "Code Enforcement Collection"),
     "student-move-in": ("715f7134-aac4-43f4-9e8b-b6fff5f47ad3", "Student Move-In (Trash Collection)"),
+    # General Request ("Other") moved to the new system in July 2026; the legacy
+    # colon-code above ("other") went from ~2,800/month to ~20/month that month.
+    "other-creatio": ("fdd312ca-bb42-4ce7-9409-8bf86c9c010b", "Other (General Request, new system)"),
 }
 
 # Creatio codes have no cases before June 2026. The scanner walks newest→oldest
@@ -168,6 +171,7 @@ SLUG_START: dict[str, date] = {
     "trash-out-early": date(2026, 6, 24),
     "ce-collection": date(2026, 6, 24),
     "student-move-in": date(2026, 8, 24),
+    "other-creatio": date(2026, 6, 1),
 }
 
 

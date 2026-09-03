@@ -32,6 +32,7 @@ SOURCES: dict[str, tuple[str, tuple[str, ...]]] = {
     "open311:needles": ("open311", ("needles",)),
     "open311:encampments": ("open311", ("encampments",)),
     "open311:other": ("open311", ("other",)),
+    "open311:other-creatio": ("open311", ("other-creatio",)),
     "open311:litter-debris": ("open311", ("litter-debris",)),
     "open311:park-litter-debris": ("open311", ("park-litter-debris",)),
 }
@@ -43,6 +44,7 @@ LAYER_SOURCES: dict[str, list[str]] = {
         "ckan_creatio:Litter & Debris",
         "ckan_creatio:Park Litter & Debris",
         "open311:other",
+        "open311:other-creatio",
         "open311:litter-debris",
         "open311:park-litter-debris",
     ],
