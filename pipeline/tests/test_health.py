@@ -36,6 +36,8 @@ def test_compute_from_uncapped_sources(s3_bucket: tuple[Any, str]) -> None:
         [{"creatio_service_name": "Litter & Debris", "open_dt": "2026-08-25 10:00:00+00"} for _ in range(7)],
     )
     storage.write_json("open311/needles/2026-08-30.json", [{"service_request_id": "1"}] * 3)
+    storage.write_json("open311/encampments/2026-05-27.json", [{"service_request_id": "e"}])
+    storage.write_json("open311/encampments/2026-09-01.json", [])  # persisted empty day
     storage.write_json("open311/litter-debris/2026-08-30.json", [{"service_request_id": "u"}] * 4)
     storage.write_json("metadata/creatio_service_names.json", ["Litter & Debris"])
     with patch("pipeline.health._creatio_service_names", return_value=["Litter & Debris", "Needle Cleanup"]):
@@ -48,6 +50,8 @@ def test_compute_from_uncapped_sources(s3_bucket: tuple[Any, str]) -> None:
     assert s["ckan_creatio:Litter & Debris"]["ratio"] is None
     assert s["ckan_creatio:Litter & Debris"]["status"] == "ok"
     assert s["open311:litter-debris"]["last_30d"] == 4
+    assert s["open311:encampments"]["through"] == "2026-05-27"  # empty-day files do not advance "through"
+    assert h["layers"]["encampments"]["through"] == "2026-05-27"
     assert h["layers"]["encampments"]["status"] == "stale"
     assert h["layers"]["waste"]["status"] == "ok"
     assert h["new_service_names"] == ["Needle Cleanup"]
