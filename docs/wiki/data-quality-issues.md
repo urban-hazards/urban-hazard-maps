@@ -132,6 +132,59 @@ writes per-source freshness to `metadata/source_health.json`.
 The new Creatio system has 29 fields. Still no `description`. The Open311 API
 continues serving it live — it's deliberately excluded from the open data export.
 
+## 15. Validating the waste classifier on new-system text
+
+The Litter & Debris and Park Litter & Debris resident descriptions are a new
+input distribution. **Precision must be ≥0.85 before this layer is trusted.**
+Ingesting the feed does not establish its precision; human review is still required.
+
+Use `pipeline.tools.precision_sample` as a manual research tool, separate from
+the daily pipeline. It reads `waste/classified.json` and the two scraper slugs'
+day files using `storage.read_json` / `list_keys`. It makes no LLM or spaCy calls
+and writes no bucket objects. Use explicitly configured read-only credentials
+or a local/moto bucket; do not use `pipeline/.env`, which points at production.
+
+From `pipeline/`, with the intended bucket environment already set:
+
+```sh
+PYTHON_DOTENV_DISABLED=1 uv run python -m pipeline.tools.precision_sample \
+  --n 100 --seed 42 --output-dir ../research
+```
+
+The output is `research/precision_sample_<date>.csv`. Preserve stdout alongside
+the CSV: it records the seed, eligible population and sample count in each
+stratum, plus per-case and aggregate HIGH/MEDIUM keyword hits saved by the
+classifier. Existing CSVs are never overwritten; use a separate output directory
+for another audit on the same day. Save the input snapshot/version and code commit
+with the audit so the seeded draw can be reproduced after bucket updates.
+
+Eligible cases are unique classified-positive IDs (`high` or `medium`) joined
+to `litter-debris` / `park-litter-debris`, opened July 1–August 31, 2026 inclusive
+in America/New_York. The September 1 UTC day file is included for Boston's last
+August evening. Unmatched IDs, low/none classifications and other slugs are
+excluded. Description/closure text saved with the classification takes priority
+over newer day-file text. Sampling is random within each (slug, month,
+confidence) stratum, with balanced allocation; small strata are exhausted and
+remaining slots redistributed. N must cover all nonempty strata and cannot exceed
+the eligible population. Report missing scraper coverage before interpreting
+precision: the estimate applies only to the joined population.
+
+Label every sampled row `1` for an actual human-waste report, `0` for a false
+positive, or `uncertain` pending adjudication. Keep a short rationale in `notes`,
+especially for animal waste, generic contractor wording, and closure-only hits.
+Review the resident description and staff closure separately; a keyword hit is
+an explanation of the prediction, not a human label. Resolve uncertain cases
+before declaring the target met, and report them explicitly in interim results.
+
+For each stratum h, calculate precision `p_h = true positives / labeled cases`.
+Overall precision is `sum(N_h * p_h) / sum(N_h)`, using the eligible population
+counts printed by the tool. A simple pooled percentage would overweight small
+strata. Report per-slug and per-confidence results, sample sizes and uncertainty
+alongside the weighted estimate. If precision is below 0.85, revise deterministic
+signals, then validate on a fresh held-out sample; keep the migration caveat and
+beta designation until validation succeeds. A positive-only audit measures
+precision, not recall or the number of missed reports.
+
 ## Research Scripts
 
 All audit scripts live in `research/` in the repo:

@@ -7,11 +7,12 @@
 
 - [Open311 API Reference](open311-api-reference.md) — endpoints, rate limits, auth, extensions, field inventory
 - [Service Code Mapping](service-code-mapping.md) — scraper slug→code table, input.* discovery, /services.json gaps
-- [Data Quality Issues](data-quality-issues.md) — 14 systemic problems with Boston's 311 open data feed
+- [Data Quality Issues](data-quality-issues.md) — systemic problems with Boston's 311 open data feed and classifier validation
 - [Dev Setup & Deployment Gotchas](dev-setup.md) — dev-server env-loading trap, pipeline-deploy skip trap, local-run-is-prod-write warning
 
 ## Research (findings from analysis, evolves)
 
+- [Encampment intake ended in May 2026](encampment-intake-ended-2026.md) — dedicated intake cutoff, cross-code text checks, and the frozen-layer policy
 - [Ticket Routing](ticket-routing.md) — how app buttons map to stored types; litter, trash can, graffiti flows
 - [SHARPS Team Analysis](sharps-team-analysis.md) — 6 workers identified from closure notes; shift patterns; syringe count parsing
 - [Reporting Patterns](reporting-patterns.md) — peak hour analysis; citizen vs sweep theory (disproved); reporting time vs activity time
