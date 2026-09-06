@@ -97,13 +97,23 @@ def _creatio_days(service_name: str) -> list[str]:
 
 
 def _open311_counts(slug: str, start: date, end: date) -> tuple[int, str]:
+    """(records in [start, end], last day that actually has records).
+
+    Empty days are persisted as [] files, so "through" must be the newest
+    non-empty day, not the newest file.
+    """
     keys = storage.list_keys(f"open311/{slug}/")
     days = sorted(k.rsplit("/", 1)[-1][:10] for k in keys if k.endswith(".json"))
     total = 0
     for d in days:
         if start.isoformat() <= d <= end.isoformat():
             total += len(_rows(f"open311/{slug}/{d}.json"))
-    return total, (days[-1] if days else "")
+    through = ""
+    for d in reversed(days):
+        if _rows(f"open311/{slug}/{d}.json"):
+            through = d
+            break
+    return total, through
 
 
 def _window(days: list[str], start: date, end: date) -> int:
