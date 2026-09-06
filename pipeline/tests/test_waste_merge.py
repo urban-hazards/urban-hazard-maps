@@ -267,8 +267,8 @@ class TestProcessWasteIntegration:
 
 CREATIO_ROW: dict[str, Any] = {
     "case_id": "BCS-00256693",
-    "open_date": "2026-07-16 16:10:24+00",
-    "close_date": "2026-07-17 08:06:36+00",
+    "open_date": "2026-07-16 12:10:24+00",  # Boston wall clock (export mislabels as +00)
+    "close_date": "2026-07-17 04:06:36+00",
     "case_topic": "Litter & Debris",
     "service_name": "Litter & Debris",
     "assigned_department": "PWD",

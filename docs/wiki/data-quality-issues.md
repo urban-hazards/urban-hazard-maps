@@ -138,3 +138,13 @@ All audit scripts live in `research/` in the repo:
 - `data_quality_audit.py` — full audit
 - `data_quality_patch.py` — supplemental queries
 - `human_waste_explore.py`, `human_waste_extract.py`, `human_waste_deep_dive.py`
+
+## 15. New-System Timestamps Are Local Time Labeled "+00"
+
+The Creatio export writes `open_date` / `close_date` like `2026-08-20 09:41:28+00`, but the wall-clock
+value is America/New_York, not UTC. Verified 2026-09-06 on exact-coordinate pairs against Open311 (which
+is true UTC): the Open311 `requested_datetime` is exactly 240 minutes later on every matched case across
+three days (Litter & Debris, Illegal Dumping, Park Litter & Debris). Parsing the string as UTC puts every
+case four hours early and shifts late-evening cases to the previous day. The pipeline re-labels these
+timestamps as Eastern in `creatio.creatio_timestamp()` before anything buckets them. Re-check the offset
+after the November DST change (expect the label to stay "+00" and the wall clock to stay local).

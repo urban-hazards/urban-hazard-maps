@@ -8,7 +8,7 @@ from pipeline.open311_loader import normalize_open311_record
 
 CREATIO_ROW: dict[str, Any] = {
     "case_id": "BCS-00256693",
-    "open_date": "2026-07-16 16:10:24+00",
+    "open_date": "2026-07-16 12:10:24+00",  # Boston wall clock (export mislabels as +00)
     "close_date": "",
     "case_topic": "Litter & Debris",
     "service_name": "Litter & Debris",
@@ -54,7 +54,7 @@ def test_fingerprint_none_without_coords_or_time() -> None:
 def test_match_reports_pairs_and_keeps_unmatched() -> None:
     primary = [normalize_open311_record(OPEN311_SAME_CASE)]
     far = normalize_creatio_record({**CREATIO_ROW, "case_id": "BCS-2", "latitude": "42.3500", "longitude": "-71.0600"})
-    late = normalize_creatio_record({**CREATIO_ROW, "case_id": "BCS-3", "open_date": "2026-07-16 16:25:00+00"})
+    late = normalize_creatio_record({**CREATIO_ROW, "case_id": "BCS-3", "open_date": "2026-07-16 12:25:00+00"})
     unmatched, pairs = match_cross_system(primary, [normalize_creatio_record(CREATIO_ROW), far, late], window_min=2)
     assert [r["case_enquiry_id"] for r in unmatched] == ["BCS-2", "BCS-3"]
     assert pairs == [
