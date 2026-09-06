@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 from pipeline.cleaner import clean
 from pipeline.config import CREATIO_SERVICE_MAP
-from pipeline.creatio import fetch_creatio_records, monthly_counts, normalize_creatio_record
+from pipeline.creatio import creatio_timestamp, fetch_creatio_records, monthly_counts, normalize_creatio_record
 
 ROW: dict[str, Any] = {
     "case_id": "BCS-00256693",
-    "open_date": "2026-07-31 23:30:00+00",  # 7:30 PM Boston, still July
+    "open_date": "2026-07-31 23:30:00+00",  # wall clock is Boston local despite the +00 label
     "close_date": "2026-08-01 12:06:36+00",
     "case_topic": "Litter & Debris",
     "service_name": "Litter & Debris",
@@ -49,10 +49,16 @@ def test_none_comments_become_empty() -> None:
     assert normalize_creatio_record({**ROW, "closure_comments": "None"})["creatio_closure_comments"] == ""
 
 
+def test_creatio_timestamp_relabels_as_boston_local() -> None:
+    assert creatio_timestamp("2026-08-20 09:41:28+00") == "2026-08-20T09:41:28-04:00"
+    assert creatio_timestamp("2026-01-15 09:41:28.123456+00") == "2026-01-15T09:41:28.123456-05:00"
+    assert creatio_timestamp("") == ""
+
+
 def test_normalized_row_cleans_in_boston_local_time() -> None:
     rec = clean(normalize_creatio_record(ROW))
     assert rec is not None
-    assert (rec.year, rec.month, rec.hour) == (2026, 7, 19)
+    assert (rec.year, rec.month, rec.hour) == (2026, 7, 23)
     assert rec.resp_hrs == 12.6
 
 
@@ -72,7 +78,7 @@ def test_service_map_covers_spec_table() -> None:
 def test_monthly_counts_bucket_in_boston_time_by_legacy_type() -> None:
     rows = [
         normalize_creatio_record(ROW),  # July (Boston)
-        normalize_creatio_record({**ROW, "case_id": "BCS-2", "open_date": "2026-08-01 03:59:00+00"}),  # Jul 31 Boston
+        normalize_creatio_record({**ROW, "case_id": "BCS-2", "open_date": "2026-07-31 03:59:00+00"}),
         normalize_creatio_record({**ROW, "case_id": "BCS-3", "service_name": "Illegal Dumping or Disposal"}),
     ]
     assert monthly_counts(rows) == {

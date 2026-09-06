@@ -4,8 +4,9 @@ import json
 import logging
 import urllib.parse
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pipeline.cleaner import _parse_datetime
 from pipeline.config import CKAN_BASE, CREATIO_RESOURCE_ID, CREATIO_SERVICE_MAP
@@ -71,6 +72,29 @@ def fetch_creatio_records(service_names: set[str], since: date, page_size: int =
     return out
 
 
+_EASTERN = ZoneInfo("America/New_York")
+
+
+def creatio_timestamp(value: str) -> str:
+    """Re-label a Creatio CKAN timestamp as Boston local time.
+
+    The export writes e.g. "2026-08-20 09:41:28+00" but the wall-clock value is
+    America/New_York, not UTC: matching Open311 requests (which are true UTC)
+    sit exactly 4 hours later during EDT (verified 2026-09-06 on exact-coordinate
+    pairs across three days). Strip the bogus offset and attach the real zone so
+    cleaner._parse_datetime buckets it correctly. Returns "" for empty input.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    naive = raw.split("+")[0].rstrip("Z").strip()
+    try:
+        dt = datetime.fromisoformat(naive)
+    except ValueError:
+        return raw
+    return dt.replace(tzinfo=_EASTERN).isoformat()
+
+
 def normalize_creatio_record(row: dict[str, Any]) -> dict[str, Any]:
     """Convert a Creatio CKAN row into the legacy CKAN shape cleaner.clean() expects.
 
@@ -83,8 +107,8 @@ def normalize_creatio_record(row: dict[str, Any]) -> dict[str, Any]:
         comments = ""
     return {
         "case_enquiry_id": str(row.get("case_id") or ""),
-        "open_dt": str(row.get("open_date") or ""),
-        "closed_dt": str(row.get("close_date") or ""),
+        "open_dt": creatio_timestamp(str(row.get("open_date") or "")),
+        "closed_dt": creatio_timestamp(str(row.get("close_date") or "")),
         "case_title": service_name,
         "subject": str(row.get("assigned_department") or ""),
         "reason": str(row.get("case_topic") or ""),
