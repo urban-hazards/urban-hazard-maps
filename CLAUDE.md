@@ -95,7 +95,7 @@ issues.
 
 ## Data Sources
 All datasets come from the Boston 311 Service Requests on data.boston.gov:
-- **Sharps:** type = "Needle Pickup" / "Needle Clean-up" / "Needle Cleanup" (2015–present)
+- **Sharps:** type = "Needle Pickup" / "Needle Clean-up" / "Needle Cleanup" (2015–present; the 2011–2014 CSV dumps contain no needle records — verified 2026-09-07)
 - **Encampments:** type = "Encampments" (2025–present only)
 - **Human Waste (Beta):** type = "Requests for Street Cleaning", classified via spaCy NLP (2024–present)
 

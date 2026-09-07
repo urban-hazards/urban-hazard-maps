@@ -129,5 +129,6 @@ export interface SourceHealth {
 	layers: Record<string, LayerHealth>
 	creatio_service_names?: string[]
 	new_service_names?: string[]
+	alerts?: string[]
 	notes?: string[]
 }
