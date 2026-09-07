@@ -28,8 +28,9 @@ We checked the following paths:
   2026 resource in `pipeline.config.RESOURCE_IDS`.
 - The legacy encampment Open311 feed on both `311.boston.gov` and
   `boston2-production.spotmobile.net`: no requests since June 1, 2026.
-  The scraper's encampment service code starts `8638e79a-`; a UUID by itself
-  does not prove a code belongs to Creatio.
+  The scraper uses `Mayor's 24 Hour Hotline:Quality of Life:Encampments`.
+  The migration audit also checked the encampment UUID code beginning
+  `8638e79a-`; a UUID by itself does not prove a code belongs to Creatio.
 - The Creatio CKAN resource `254adca6-64ab-4c5c-9fc0-a6da622be185` and
   new-system Open311 UUID service codes in the
   [observed code table](creatio-open311-codes.json): no dedicated encampment topic.

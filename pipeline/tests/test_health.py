@@ -5,6 +5,8 @@ from datetime import date
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 from pipeline import storage
 from pipeline.health import classify_status, compute_source_health, layer_status, write_source_health
 
@@ -59,10 +61,40 @@ def test_compute_from_uncapped_sources(s3_bucket: tuple[Any, str]) -> None:
     client, bucket = s3_bucket
     saved = json.loads(client.get_object(Bucket=bucket, Key="metadata/source_health.json")["Body"].read())
     assert saved["schema_version"] == 1
+    assert saved["alerts"] == ["Needle intake may have migrated: Needle Cleanup — add scraper slug + NEEDLE mapping"]
+    assert saved["alerts"][0] in saved["notes"]
 
 
 def test_first_run_seeds_service_names_without_flagging_all_as_new(s3_bucket: tuple[Any, str]) -> None:
     with patch("pipeline.health._creatio_service_names", return_value=["A", "B"]):
         h = compute_source_health(today=date(2026, 9, 2))
     assert h["new_service_names"] == []
+    assert h["alerts"] == []
     assert storage.read_json("metadata/creatio_service_names.json") == ["A", "B"]
+
+
+@pytest.mark.parametrize("name", ["NEEDLE Pickup", "Syringe Collection", "SHARPS Disposal"])
+def test_needle_wave_alerts_only_on_new_matching_names(s3_bucket: tuple[Any, str], name: str) -> None:
+    storage.write_json("metadata/creatio_service_names.json", ["Litter & Debris"])
+    names = ["Litter & Debris", "Tree Inspection", name]
+    with patch("pipeline.health._creatio_service_names", return_value=names):
+        first = compute_source_health(today=date(2026, 9, 2))
+        second = compute_source_health(today=date(2026, 9, 3))
+    alert = f"Needle intake may have migrated: {name} — add scraper slug + NEEDLE mapping"
+    assert first["alerts"] == [alert]
+    assert alert in first["notes"]
+    assert second["alerts"] == []  # names are now in the discovery baseline
+
+
+@pytest.mark.parametrize("names", [[], ["Tree Inspection"], ["Needle Pickup", "SHARPS Disposal", "Syringes"]])
+def test_needle_wave_combines_names_and_ignores_nonmatches(s3_bucket: tuple[Any, str], names: list[str]) -> None:
+    storage.write_json("metadata/creatio_service_names.json", [])
+    with patch("pipeline.health._creatio_service_names", return_value=names):
+        health = compute_source_health(today=date(2026, 9, 2))
+    if len(names) == 3:
+        assert health["alerts"] == [
+            "Needle intake may have migrated: Needle Pickup, SHARPS Disposal, Syringes"
+            " — add scraper slug + NEEDLE mapping"
+        ]
+    else:
+        assert health["alerts"] == []

@@ -6,6 +6,7 @@ markers.json. Writes metadata/source_health.json for the frontend.
 """
 
 import logging
+import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -170,6 +171,12 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
         storage.write_json("metadata/creatio_service_names.json", names)
     if new_names:
         notes.append(f"New Creatio service names: {', '.join(new_names)}")
+    alerts: list[str] = []
+    needle_names = [name for name in new_names if re.search(r"needle|syringe|sharp", name, re.IGNORECASE)]
+    if needle_names:
+        alert = f"Needle intake may have migrated: {', '.join(needle_names)} — add scraper slug + NEEDLE mapping"
+        alerts.append(alert)
+        notes.append(alert)
     return {
         "generated": datetime.now(UTC).isoformat(timespec="seconds"),
         "schema_version": SCHEMA_VERSION,
@@ -177,6 +184,7 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
         "layers": layers,
         "creatio_service_names": names,
         "new_service_names": new_names,
+        "alerts": alerts,
         "notes": notes,
     }
 

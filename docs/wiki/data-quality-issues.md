@@ -132,7 +132,17 @@ writes per-source freshness to `metadata/source_health.json`.
 The new Creatio system has 29 fields. Still no `description`. The Open311 API
 continues serving it live — it's deliberately excluded from the open data export.
 
-## 15. Validating the waste classifier on new-system text
+## 15. New-System Timestamps Are Local Time Labeled "+00"
+
+The Creatio export writes `open_date` / `close_date` like `2026-08-20 09:41:28+00`, but the wall-clock
+value is America/New_York, not UTC. Verified 2026-09-06 on exact-coordinate pairs against Open311 (which
+is true UTC): the Open311 `requested_datetime` is exactly 240 minutes later on every matched case across
+three days (Litter & Debris, Illegal Dumping, Park Litter & Debris). Parsing the string as UTC puts every
+case four hours early and shifts late-evening cases to the previous day. The pipeline re-labels these
+timestamps as Eastern in `creatio.creatio_timestamp()` before anything buckets them. Re-check the offset
+after the November DST change (expect the label to stay "+00" and the wall clock to stay local).
+
+## 16. Validating the waste classifier on new-system text
 
 The Litter & Debris and Park Litter & Debris resident descriptions are a new
 input distribution. **Precision must be ≥0.85 before this layer is trusted.**
@@ -192,12 +202,11 @@ All audit scripts live in `research/` in the repo:
 - `data_quality_patch.py` — supplemental queries
 - `human_waste_explore.py`, `human_waste_extract.py`, `human_waste_deep_dive.py`
 
-## 15. New-System Timestamps Are Local Time Labeled "+00"
 
-The Creatio export writes `open_date` / `close_date` like `2026-08-20 09:41:28+00`, but the wall-clock
-value is America/New_York, not UTC. Verified 2026-09-06 on exact-coordinate pairs against Open311 (which
-is true UTC): the Open311 `requested_datetime` is exactly 240 minutes later on every matched case across
-three days (Litter & Debris, Illegal Dumping, Park Litter & Debris). Parsing the string as UTC puts every
-case four hours early and shifts late-evening cases to the previous day. The pipeline re-labels these
-timestamps as Eastern in `creatio.creatio_timestamp()` before anything buckets them. Re-check the offset
-after the November DST change (expect the label to stay "+00" and the wall clock to stay local).
+## 17. 2011–2014 Dumps Contain No Needle Records
+
+Checked 2026-09-07 by streaming all four legacy CSVs (56k, 117k, 140k, 141k rows): zero rows whose
+`type`, `case_title`, `reason` or `subject` match needle / syringe / sharp / hypodermic. The sharps series
+correctly starts in 2015. `pipeline/legacy_csv.py` remains as a reader for those files (it handles the
+data.boston.gov → presigned-S3 redirect, which needs the explicit `:443` stripped or AWS rejects the
+signature) but it is not wired into the daily run.

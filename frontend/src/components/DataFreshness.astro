@@ -46,9 +46,10 @@ const chips: Chip[] = layers.length
 			sources: [],
 		}))
 const troubled = chips.filter((c) => c.status !== "ok")
+const alerts = health?.alerts ?? []
 ---
 
-{chips.length > 0 && (
+{(chips.length > 0 || alerts.length > 0) && (
 	<section class="freshness" aria-label="Data freshness">
 		<div class="container freshness-inner">
 			<div class="chips">
@@ -66,6 +67,7 @@ const troubled = chips.filter((c) => c.status !== "ok")
 					<a href="/data-quality#migration">What changed</a>
 				</p>
 			)}
+			{alerts.map((alert) => <p class="notice">{alert}</p>)}
 		</div>
 	</section>
 )}

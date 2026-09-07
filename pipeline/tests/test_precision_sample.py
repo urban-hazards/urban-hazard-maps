@@ -107,3 +107,42 @@ def test_missing_classifications_fail(s3_bucket: tuple[Any, str], tmp_path: Path
         write_precision_sample(1, output_dir=tmp_path)
     with pytest.raises(ValueError, match="positive"):
         write_precision_sample(0, output_dir=tmp_path)
+
+
+def test_small_strata_redistribute_and_preserve_scored_text(
+    s3_bucket: tuple[Any, str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    classified = []
+    for slug, count in [("litter-debris", 1), ("park-litter-debris", 5)]:
+        records = []
+        for i in range(count):
+            cid = f"{slug}-{i}"
+            classified.append(
+                {
+                    "case_id": cid,
+                    "confidence": "high",
+                    "score": 0.8,
+                    "bpw_rejection": True,
+                    "source_texts": {"open311_description": "Scored description", "closure_reason": ""},
+                }
+            )
+            records.append(
+                {
+                    "service_request_id": cid,
+                    "requested_datetime": "2026-07-15T12:00:00Z",
+                    "description": "Edited later",
+                    "status_notes": "Closure added later",
+                }
+            )
+        storage.write_json(f"open311/{slug}/2026-07-15.json", records)
+    storage.write_json("waste/classified.json", classified)
+    path = write_precision_sample(5, output_dir=tmp_path)
+    with path.open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 5
+    assert sum(r["slug"] == "litter-debris" for r in rows) == 1
+    assert sum(r["slug"] == "park-litter-debris" for r in rows) == 4
+    assert all(r["description"] == "Scored description" and r["closure_reason"] == "" for r in rows)
+    assert "HIGH BPW rejection: 5" in capsys.readouterr().out
+    assert storage.read_json("waste/classified.json") == classified
+    assert storage.list_keys("research/") == []
