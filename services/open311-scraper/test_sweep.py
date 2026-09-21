@@ -176,7 +176,7 @@ def test_run_sweep_skips_done_days_and_goes_newest_to_oldest():
 
     calls = []
 
-    def _fake_sweep_day(s3, day, delay, dry_run):
+    def _fake_sweep_day(s3, day, delay, dry_run, extra_slugs=()):
         calls.append(day)
         return {"day": str(day), "status": "done", "records": 0, "pages": 1}
 
@@ -363,6 +363,111 @@ def test_marker_write_failure_rolls_back_slug_files():
     assert s3.objects == {}
 
 
+# --- audit_deepseek_2026-09-21.md Finding 1: verify loop exception ---
+
+
+def test_verify_day_raising_rolls_back_and_reports_skipped():
+    day = date(2026, 8, 20)
+    page1 = _records(OTHER_CODE, 30) + _records(NEEDLES_CODE, 20)
+    s3 = FakeS3()
+
+    with (
+        patch("fetch._do_request", side_effect=[(page1, None)]),
+        patch("fetch.verify_day", side_effect=Exception("head_object exploded")),
+    ):
+        result = fetch.sweep_day(s3, day, delay=0.0, dry_run=False)
+
+    assert result["status"] == "skipped"
+    assert "error" in result
+    marker_key = f"{fetch.SWEEP_DONE_PREFIX}{day}.json"
+    assert marker_key not in s3.objects
+    # Both slug files written before the verify raise were batch-deleted.
+    assert f"{fetch.SWEEP_PREFIX}other/{day}.json" not in s3.objects
+    assert f"{fetch.SWEEP_PREFIX}needles/{day}.json" not in s3.objects
+    assert s3.objects == {}
+
+
+# --- audit_deepseek_2026-09-21.md Finding 5: orphans for slugs removed from
+# SERVICE_TYPES are still cleaned up when their slug is in the manifest ---
+
+
+def test_extra_slugs_from_manifest_clean_up_orphan_no_longer_in_service_types():
+    day = date(2026, 8, 21)
+    orphan_slug = "retired-slug-not-in-service-types"
+    orphan_key = f"{fetch.SWEEP_PREFIX}{orphan_slug}/{day}.json"
+
+    s3 = FakeS3()
+    s3.objects[orphan_key] = {
+        "Body": b"[]",
+        "Metadata": {"record-count": "3"},
+        "LastModified": datetime.now(timezone.utc),
+    }
+
+    page1 = _records(OTHER_CODE, 5)
+    with patch("fetch._do_request", side_effect=[(page1, None)]):
+        result = fetch.sweep_day(s3, day, delay=0.0, dry_run=False, extra_slugs=[orphan_slug])
+
+    assert result["status"] == "done"
+    # The orphan for a slug no longer in SERVICE_TYPES was deleted by the
+    # pre-write cleanup because it was present in extra_slugs.
+    assert orphan_key not in s3.objects
+
+
+def test_sweep_day_without_extra_slugs_leaves_orphan_for_unknown_slug():
+    """Baseline: without extra_slugs, _sweep_day_keys only knows about slugs
+    still in SERVICE_TYPES, so an orphan under a since-removed slug survives.
+    This documents the gap that `extra_slugs` (fed from the manifest by
+    run_sweep) closes."""
+    day = date(2026, 8, 22)
+    orphan_slug = "another-retired-slug"
+    orphan_key = f"{fetch.SWEEP_PREFIX}{orphan_slug}/{day}.json"
+
+    s3 = FakeS3()
+    s3.objects[orphan_key] = {
+        "Body": b"[]",
+        "Metadata": {"record-count": "3"},
+        "LastModified": datetime.now(timezone.utc),
+    }
+
+    page1 = _records(OTHER_CODE, 5)
+    with patch("fetch._do_request", side_effect=[(page1, None)]):
+        result = fetch.sweep_day(s3, day, delay=0.0, dry_run=False)
+
+    assert result["status"] == "done"
+    assert orphan_key in s3.objects
+
+
+def test_run_sweep_passes_manifest_slug_counts_as_extra_slugs_to_sweep_day():
+    start = date(2026, 9, 10)
+    end = date(2026, 9, 10)
+    s3 = FakeS3()
+
+    prior_manifest = {
+        "slug_counts": {"retired-slug": 7},
+        "unmapped_codes": {},
+    }
+    s3.objects[fetch.SWEEP_MANIFEST_KEY] = {
+        "Body": json.dumps(prior_manifest).encode(),
+        "Metadata": {},
+        "LastModified": datetime.now(timezone.utc),
+    }
+
+    seen_extra_slugs = []
+
+    def _fake_sweep_day(s3, day, delay, dry_run, extra_slugs=()):
+        seen_extra_slugs.append(set(extra_slugs))
+        return {"day": str(day), "status": "done", "records": 0, "pages": 1, "slugs": {}, "unmapped_codes": {}}
+
+    with (
+        patch("fetch.list_sweep_done", return_value=set()),
+        patch("fetch.sweep_day", side_effect=_fake_sweep_day),
+        patch("fetch.wait_if_paused"),
+    ):
+        fetch.run_sweep(s3, start, end, delay=0.0, dry_run=False)
+
+    assert seen_extra_slugs == [{"retired-slug"}]
+
+
 # --- Finding 3: O(days) manifest ---
 
 
@@ -381,7 +486,7 @@ def test_run_sweep_manifest_is_prior_manifest_plus_this_runs_days():
         "LastModified": datetime.now(timezone.utc),
     }
 
-    def _fake_sweep_day(s3, day, delay, dry_run):
+    def _fake_sweep_day(s3, day, delay, dry_run, extra_slugs=()):
         return {
             "day": str(day),
             "status": "done",

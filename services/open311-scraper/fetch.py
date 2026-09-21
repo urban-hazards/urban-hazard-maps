@@ -35,6 +35,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from collections.abc import Iterable
 from datetime import date, datetime, timedelta, timezone
 
 import boto3
@@ -715,14 +716,18 @@ def _all_sweep_slugs() -> list[str]:
     return sorted({slug for slugs in CODE_TO_SLUGS.values() for slug in slugs})
 
 
-def _sweep_day_keys(day: date) -> list[str]:
+def _sweep_day_keys(day: date, extra_slugs: Iterable[str] = ()) -> list[str]:
     """All object keys sweep_day could ever write for a given day.
 
     Built from the static SERVICE_TYPES/CODE_TO_SLUGS slug list rather than
     an S3 listing, so pre-write cleanup is O(1) API calls (one batch delete)
-    instead of O(slugs) list/delete calls.
+    instead of O(slugs) list/delete calls. `extra_slugs` (the previously
+    loaded manifest's slug_counts keys) is unioned in so a slug later removed
+    from SERVICE_TYPES still gets its orphan file cleaned up, instead of only
+    ever cleaning up slugs SERVICE_TYPES currently knows about.
     """
-    keys = [f"{SWEEP_PREFIX}{slug}/{day}.json" for slug in _all_sweep_slugs()]
+    slugs = set(_all_sweep_slugs()) | set(extra_slugs)
+    keys = [f"{SWEEP_PREFIX}{slug}/{day}.json" for slug in slugs]
     keys.append(f"{SWEEP_UNMAPPED_PREFIX}{day}.json")
     return keys
 
@@ -747,23 +752,29 @@ def _delete_objects_batch(s3, keys: list[str]) -> None:
                 log.warning("  Could not delete %s during rollback: %s", key, e2)
 
 
-def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
+def sweep_day(
+    s3, day: date, delay: float, dry_run: bool, extra_slugs: Iterable[str] = ()
+) -> dict:
     """Fetch, group, and stage one day's worth of ALL service types.
 
     Before writing, deletes every possible slug/unmapped key for this day
     (see _sweep_day_keys) so a crash-orphaned file from a prior aborted
     attempt at this same day can never survive alongside a fresh write —
     resume treats a day with no _done/ marker as not-done and retries it
-    here from scratch.
+    here from scratch. `extra_slugs` (typically the caller's already-loaded
+    manifest's slug_counts keys) is passed through to _sweep_day_keys so
+    slugs no longer in SERVICE_TYPES still get their orphans cleaned up.
 
     Writes (unless dry_run) in this order: each non-empty slug file, the
     unmapped file (if any), then verifies each written slug file. If
-    `save_day` raises for any file, or a verify fails, or the final marker
-    write raises, everything written so far for the day is rolled back and
-    the call returns status "skipped" (with an "error" key when the failure
-    was an exception rather than a verify mismatch) — no exception escapes
-    sweep_day. Only after all verifies pass and the marker write succeeds is
-    the day considered done. Empty days write ONLY the marker.
+    `save_day` raises for any file, the verify loop raises (e.g. a
+    transient S3 error out of head_object), a verify fails, or the final
+    marker write raises, everything written so far for the day is rolled
+    back and the call returns status "skipped" (with an "error" key when
+    the failure was an exception rather than a verify mismatch) — no
+    exception escapes sweep_day. Only after all verifies pass and the
+    marker write succeeds is the day considered done. Empty days write ONLY
+    the marker.
     """
     records, pages = fetch_day_all(day, delay)
 
@@ -788,7 +799,7 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
 
     # Clear any orphan left over from a crash mid-write on a previous attempt
     # at this day, before writing anything fresh.
-    _delete_objects_batch(s3, _sweep_day_keys(day))
+    _delete_objects_batch(s3, _sweep_day_keys(day, extra_slugs))
 
     written_keys: list[str] = []
     try:
@@ -808,11 +819,16 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
         return {"day": str(day), "status": "skipped", "error": str(e)}
 
     verify_ok = True
-    for slug, slug_records in by_slug.items():
-        if not slug_records:
-            continue
-        if not verify_day(s3, f"{SWEEP_PREFIX}{slug}/", day, len(slug_records)):
-            verify_ok = False
+    try:
+        for slug, slug_records in by_slug.items():
+            if not slug_records:
+                continue
+            if not verify_day(s3, f"{SWEEP_PREFIX}{slug}/", day, len(slug_records)):
+                verify_ok = False
+    except Exception as e:
+        _delete_objects_batch(s3, written_keys)
+        log.warning("  [sweep] %s: verify raised (%s), rolled back %d objects", day, e, len(written_keys))
+        return {"day": str(day), "status": "skipped", "error": str(e)}
 
     if not verify_ok:
         _delete_objects_batch(s3, written_keys)
@@ -1030,6 +1046,13 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
     use --rebuild-manifest / rebuild_sweep_manifest() to force a full rescan.
     """
     done = list_sweep_done(s3)
+    # days_done is always derived as this count (from the _done/ listing at
+    # the start of the run) plus the days this run itself completes — both
+    # the periodic checkpoint write and the final write below use this same
+    # `days_done_before_run + days_done` formula, so there is no drift
+    # between them. If the true count ever needs re-deriving from scratch
+    # (e.g. markers were manually added/removed), --rebuild-manifest /
+    # rebuild_sweep_manifest() is the authoritative recount, not this value.
     days_done_before_run = len(done)
     days: list[date] = []
     current = start
@@ -1045,11 +1068,17 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
     days_skipped = 0
     manifest = None if dry_run else _load_sweep_manifest(s3)
 
+    # Slugs the manifest already knows about (from this or prior runs) but
+    # that may no longer be in SERVICE_TYPES/CODE_TO_SLUGS — union these into
+    # each day's pre-write cleanup so orphans for a removed slug still get
+    # deleted (see Finding 5, audit_deepseek_2026-09-21.md).
+    extra_slugs = manifest["slug_counts"].keys() if manifest else ()
+
     for i, day in enumerate(days):
         if not dry_run:
             wait_if_paused(s3)
 
-        result = sweep_day(s3, day, delay, dry_run)
+        result = sweep_day(s3, day, delay, dry_run, extra_slugs)
         if result["status"] == "done":
             days_done += 1
             log.info("  [sweep] %s: %d records, %d pages (%d/%d)",

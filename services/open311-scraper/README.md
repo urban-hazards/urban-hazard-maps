@@ -139,6 +139,16 @@ call to the pause check will wait at most 3 hours total before proceeding
 regardless. Together these mean a daily-job crash that skips its `finally`
 (SIGKILL, OOM) can no longer deadlock the backfill forever.
 
+`wait_if_paused` is only checked once per day, before `sweep_day` starts —
+not before every page request inside it — so there is a race window: if the
+daily job starts while the sweep is mid-day (fetching a paginated day can
+take several minutes), both jobs can issue requests concurrently until the
+sweep finishes that day and checks the pause object again. The sweep's
+`--delay 10` (vs. the daily job's own delay) leaves enough headroom under
+the shared 10 req/min budget that this overlap is statistically unlikely to
+cause 429s; a shared token bucket would close the window fully but is out of
+scope here.
+
 **Manifest aggregation.** `manifest.json` (`slug_counts`, `unmapped_codes`,
 `days_done`, `date_range`, `last_run`) is maintained as a rolling fold, not
 a full rescan: each run reads the existing manifest once at the start,
