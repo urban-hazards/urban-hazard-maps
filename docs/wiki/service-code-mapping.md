@@ -71,3 +71,13 @@ sweeping `requests.json` June–Sept 2026; full table with observed volumes and 
 
 These slugs start at 2026-06-01 (`SLUG_START`); nothing exists before. No needle or encampment code
 exists in the new system as of Sept 2026 — watch `metadata/source_health.json` `new_service_names`.
+
+## Unmapped codes from sweep mode (2026-09-21)
+
+`fetch.py --sweep` queries without a `service_code` filter, so it also picks
+up codes not yet in `SERVICE_TYPES` above. Those accumulate under
+`open311/_sweep/unmapped_codes` in the sweep manifest (name, count,
+first/last seen) instead of being silently dropped. Promotion loop when a
+new code shows up there in volume: add the slug/code pair to `SERVICE_TYPES`
+in `fetch.py` (and this table), then promote its already-fetched records out
+of `open311/_sweep/_unmapped/YYYY-MM-DD.json` — no re-fetch needed.

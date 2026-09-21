@@ -61,3 +61,22 @@ These fields are stripped from CKAN. The API is the only source.
 3. **UUID** — rare (e.g. `11d12a6d-...` for Street Light Other)
 
 See [Service Code Mapping](service-code-mapping.md) for the full table.
+
+## Date-range filtering (verified 2026-09-21)
+
+- `service_code` is **optional** on `GET /v2/requests.json`. Omitting it
+  returns every service type for the given date range — this is how sweep
+  mode (`fetch.py --sweep`) gets a whole day's tickets in one paginated
+  query instead of one query per type.
+- `start_date`/`end_date` filter on `requested_datetime` (creation time),
+  not `updated_datetime`.
+- `updated_after`/`updated_before` are honored as a **separate** filter from
+  `start_date`/`end_date` — they filter on `updated_datetime` instead.
+  Boston documents a 90-day max range for this filter pair too.
+- Ranges slice on the API's own clock, not a corrected one: a query for
+  `T22:00:00Z`–`T23:59:59Z` returns only records whose stored timestamp
+  falls in that literal window. For Creatio-era records that stored
+  timestamp is Boston local time mislabeled as UTC (`+00`) — see
+  [Data Quality Issues #15](data-quality-issues.md#15-new-system-timestamps-are-local-time-labeled-00).
+  A day file therefore represents a *local* calendar day for Creatio
+  records, not a true UTC day.
