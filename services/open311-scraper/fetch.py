@@ -179,7 +179,10 @@ def slug_start(slug: str) -> date:
     return SLUG_START.get(slug, date.fromisoformat(START_DATE))
 
 
-CODE_TO_SLUG: dict[str, str] = {code: slug for slug, (code, _name) in SERVICE_TYPES.items()}
+CODE_TO_SLUGS: dict[str, list[str]] = {}
+for _slug, (_code, _name) in SERVICE_TYPES.items():
+    CODE_TO_SLUGS.setdefault(_code, []).append(_slug)
+del _slug, _code, _name
 
 # --- Sweep mode: one date-range query per day with NO service_code, so every
 # service type is returned. Staged under a separate prefix; sweep mode never
@@ -192,6 +195,19 @@ SWEEP_UNMAPPED_PREFIX = SWEEP_PREFIX + "_unmapped/"
 SWEEP_DONE_PREFIX = SWEEP_PREFIX + "_done/"
 SWEEP_PAUSE_KEY = SWEEP_PREFIX + "_pause"
 SWEEP_MANIFEST_KEY = SWEEP_PREFIX + "manifest.json"
+
+# Pause object body is JSON {"set_at": <ISO UTC>, "ttl_seconds": <int>}. A
+# pause older than its TTL is stale and ignored (and deleted) rather than
+# honored forever, so a daily-job crash that skips the `finally` cleanup
+# cannot deadlock the backfill sweep permanently.
+PAUSE_TTL_SECONDS = 2 * 3600  # 2 hours
+# Fallback staleness window for a non-JSON/unparsable pause body, measured
+# against the object's S3 LastModified instead of a parsed set_at.
+PAUSE_FALLBACK_STALE_SECONDS = 2 * 3600  # 2 hours
+# Hard cap on total time a single wait_if_paused() call will block, even if
+# the pause object keeps getting legitimately refreshed. Past this, proceed
+# and log rather than wait indefinitely.
+PAUSE_MAX_WAIT_SECONDS = 3 * 3600  # 3 hours
 
 
 # --- Rate limiting (API allows 10 req/min = 1 every 6s) ---
@@ -672,16 +688,21 @@ def group_by_slug(records: list[dict]) -> tuple[dict[str, list], dict[str, dict]
 
     Returns (by_slug, unmapped). by_slug maps slug -> records. unmapped maps
     service_code -> {"name": service_name, "records": [...]} for codes absent
-    from CODE_TO_SLUG. Records with no service_code go under key "".
+    from CODE_TO_SLUGS. Records with no service_code go under key "".
+
+    A service_code can map to more than one slug (SERVICE_TYPES sometimes
+    aliases the same code under two slugs); such a record is appended to
+    every matching slug's bucket, not just the first.
     """
     by_slug: dict[str, list] = {}
     unmapped: dict[str, dict] = {}
 
     for record in records:
         code = record.get("service_code", "") or ""
-        slug = CODE_TO_SLUG.get(code)
-        if slug is not None:
-            by_slug.setdefault(slug, []).append(record)
+        slugs = CODE_TO_SLUGS.get(code)
+        if slugs:
+            for slug in slugs:
+                by_slug.setdefault(slug, []).append(record)
         else:
             entry = unmapped.setdefault(code, {"name": record.get("service_name", ""), "records": []})
             entry["records"].append(record)
@@ -689,14 +710,60 @@ def group_by_slug(records: list[dict]) -> tuple[dict[str, list], dict[str, dict]
     return by_slug, unmapped
 
 
+def _all_sweep_slugs() -> list[str]:
+    """Every slug that could receive a sweep-mode day file."""
+    return sorted({slug for slugs in CODE_TO_SLUGS.values() for slug in slugs})
+
+
+def _sweep_day_keys(day: date) -> list[str]:
+    """All object keys sweep_day could ever write for a given day.
+
+    Built from the static SERVICE_TYPES/CODE_TO_SLUGS slug list rather than
+    an S3 listing, so pre-write cleanup is O(1) API calls (one batch delete)
+    instead of O(slugs) list/delete calls.
+    """
+    keys = [f"{SWEEP_PREFIX}{slug}/{day}.json" for slug in _all_sweep_slugs()]
+    keys.append(f"{SWEEP_UNMAPPED_PREFIX}{day}.json")
+    return keys
+
+
+def _delete_objects_batch(s3, keys: list[str]) -> None:
+    """Delete a batch of keys in one call. Deleting a missing key is a no-op
+    in S3, so this is safe to call unconditionally (e.g. speculative cleanup
+    of a day that may never have been partially written)."""
+    if not keys:
+        return
+    try:
+        s3.delete_objects(
+            Bucket=BUCKET,
+            Delete={"Objects": [{"Key": k} for k in keys], "Quiet": True},
+        )
+    except Exception as e:
+        log.warning("  Batch delete failed (%s), falling back to individual deletes", e)
+        for key in keys:
+            try:
+                s3.delete_object(Bucket=BUCKET, Key=key)
+            except Exception as e2:
+                log.warning("  Could not delete %s during rollback: %s", key, e2)
+
+
 def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
     """Fetch, group, and stage one day's worth of ALL service types.
 
+    Before writing, deletes every possible slug/unmapped key for this day
+    (see _sweep_day_keys) so a crash-orphaned file from a prior aborted
+    attempt at this same day can never survive alongside a fresh write —
+    resume treats a day with no _done/ marker as not-done and retries it
+    here from scratch.
+
     Writes (unless dry_run) in this order: each non-empty slug file, the
-    unmapped file (if any), then verifies each written slug file. On any
-    verify failure, deletes everything written for the day and returns
-    status "skipped" with no marker. Only after all verifies pass does it
-    write the _done/ marker. Empty days write ONLY the marker.
+    unmapped file (if any), then verifies each written slug file. If
+    `save_day` raises for any file, or a verify fails, or the final marker
+    write raises, everything written so far for the day is rolled back and
+    the call returns status "skipped" (with an "error" key when the failure
+    was an exception rather than a verify mismatch) — no exception escapes
+    sweep_day. Only after all verifies pass and the marker write succeeds is
+    the day considered done. Empty days write ONLY the marker.
     """
     records, pages = fetch_day_all(day, delay)
 
@@ -714,21 +781,33 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
         }
 
     by_slug, unmapped = group_by_slug(records)
+    slugs_summary = {slug: len(recs) for slug, recs in by_slug.items() if recs}
+    unmapped_summary = {
+        code: {"name": entry["name"], "count": len(entry["records"])} for code, entry in unmapped.items()
+    }
+
+    # Clear any orphan left over from a crash mid-write on a previous attempt
+    # at this day, before writing anything fresh.
+    _delete_objects_batch(s3, _sweep_day_keys(day))
 
     written_keys: list[str] = []
+    try:
+        for slug, slug_records in by_slug.items():
+            if not slug_records:
+                continue
+            save_day(s3, f"{SWEEP_PREFIX}{slug}/", day, slug_records)
+            written_keys.append(f"{SWEEP_PREFIX}{slug}/{day}.json")
+
+        unmapped_records = [r for entry in unmapped.values() for r in entry["records"]]
+        if unmapped_records:
+            save_day(s3, SWEEP_UNMAPPED_PREFIX, day, unmapped_records)
+            written_keys.append(f"{SWEEP_UNMAPPED_PREFIX}{day}.json")
+    except Exception as e:
+        _delete_objects_batch(s3, written_keys)
+        log.warning("  [sweep] %s: write failed (%s), rolled back %d objects", day, e, len(written_keys))
+        return {"day": str(day), "status": "skipped", "error": str(e)}
+
     verify_ok = True
-
-    for slug, slug_records in by_slug.items():
-        if not slug_records:
-            continue
-        save_day(s3, f"{SWEEP_PREFIX}{slug}/", day, slug_records)
-        written_keys.append(f"{SWEEP_PREFIX}{slug}/{day}.json")
-
-    unmapped_records = [r for entry in unmapped.values() for r in entry["records"]]
-    if unmapped_records:
-        save_day(s3, SWEEP_UNMAPPED_PREFIX, day, unmapped_records)
-        written_keys.append(f"{SWEEP_UNMAPPED_PREFIX}{day}.json")
-
     for slug, slug_records in by_slug.items():
         if not slug_records:
             continue
@@ -736,11 +815,7 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
             verify_ok = False
 
     if not verify_ok:
-        for key in written_keys:
-            try:
-                s3.delete_object(Bucket=BUCKET, Key=key)
-            except Exception as e:
-                log.warning("  Could not delete %s during sweep rollback: %s", key, e)
+        _delete_objects_batch(s3, written_keys)
         log.warning("  [sweep] %s: verify failed, rolled back %d objects", day, len(written_keys))
         return {"day": str(day), "status": "skipped"}
 
@@ -748,17 +823,22 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
         "day": str(day),
         "pages": pages,
         "records": len(records),
-        "slugs": {slug: len(recs) for slug, recs in by_slug.items() if recs},
-        "unmapped": {code: {"name": entry["name"], "count": len(entry["records"])} for code, entry in unmapped.items()},
+        "slugs": slugs_summary,
+        "unmapped": unmapped_summary,
         "fetched_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
     marker_body = json.dumps(marker, separators=(",", ":")).encode("utf-8")
-    s3.put_object(
-        Bucket=BUCKET,
-        Key=f"{SWEEP_DONE_PREFIX}{day}.json",
-        Body=marker_body,
-        ContentType="application/json",
-    )
+    try:
+        s3.put_object(
+            Bucket=BUCKET,
+            Key=f"{SWEEP_DONE_PREFIX}{day}.json",
+            Body=marker_body,
+            ContentType="application/json",
+        )
+    except Exception as e:
+        _delete_objects_batch(s3, written_keys)
+        log.warning("  [sweep] %s: marker write failed (%s), rolled back %d objects", day, e, len(written_keys))
+        return {"day": str(day), "status": "skipped", "error": str(e)}
 
     return {
         "day": str(day),
@@ -766,6 +846,8 @@ def sweep_day(s3, day: date, delay: float, dry_run: bool) -> dict:
         "records": len(records),
         "pages": pages,
         "unmapped": len(unmapped_records),
+        "slugs": slugs_summary,
+        "unmapped_codes": unmapped_summary,
     }
 
 
@@ -785,18 +867,155 @@ def _is_not_found(e: Exception) -> bool:
     return code in ("404", "NoSuchKey", "NotFound") or status == "404"
 
 
+def _pause_is_stale(body: bytes, last_modified) -> tuple[bool, str]:
+    """Decide whether a pause object should be ignored (and deleted).
+
+    A well-formed body is stale once set_at + ttl_seconds is in the past.
+    A non-JSON or otherwise unparsable body is stale once the object's S3
+    LastModified is older than PAUSE_FALLBACK_STALE_SECONDS. Returns
+    (is_stale, log_message); log_message is only meaningful when stale.
+    """
+    try:
+        data = json.loads(body)
+        set_at_raw = data["set_at"]
+        set_at = datetime.fromisoformat(set_at_raw.replace("Z", "+00:00"))
+        ttl = float(data.get("ttl_seconds", PAUSE_TTL_SECONDS))
+        expires_at = set_at + timedelta(seconds=ttl)
+        if datetime.now(timezone.utc) > expires_at:
+            return True, f"stale pause object (set_at {set_at_raw}), ignoring"
+        return False, ""
+    except Exception:
+        if last_modified is not None:
+            lm = last_modified
+            if lm.tzinfo is None:
+                lm = lm.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - lm).total_seconds()
+            if age > PAUSE_FALLBACK_STALE_SECONDS:
+                return True, f"stale pause object (unparsable body, last modified {last_modified}), ignoring"
+        return False, ""
+
+
 def wait_if_paused(s3) -> None:
-    """Block while the daily job's pause object exists."""
+    """Block while the daily job's pause object exists and is fresh.
+
+    A stale pause (past its TTL, judged either from the JSON body's set_at
+    or, for an unparsable body, S3 LastModified) is deleted and ignored
+    rather than honored forever — this is what stops a daily-job crash that
+    skips its `finally` cleanup from deadlocking the sweep. As a second
+    backstop, total waiting per call is capped at PAUSE_MAX_WAIT_SECONDS;
+    past that the sweep proceeds anyway (logged).
+    """
+    started = time.monotonic()
     while True:
         try:
-            s3.head_object(Bucket=BUCKET, Key=SWEEP_PAUSE_KEY)
+            resp = s3.get_object(Bucket=BUCKET, Key=SWEEP_PAUSE_KEY)
         except Exception as e:
             if _is_not_found(e):
                 return
             log.warning("Could not check sweep pause object: %s (assuming not paused)", e)
             return
+
+        body = resp["Body"].read()
+        last_modified = resp.get("LastModified")
+        stale, message = _pause_is_stale(body, last_modified)
+        if stale:
+            log.warning(message)
+            try:
+                s3.delete_object(Bucket=BUCKET, Key=SWEEP_PAUSE_KEY)
+            except Exception as e:
+                log.warning("Could not delete stale pause object: %s", e)
+            return
+
+        elapsed = time.monotonic() - started
+        if elapsed >= PAUSE_MAX_WAIT_SECONDS:
+            log.warning("Paused for %.0fs (cap %.0fs) — proceeding anyway", elapsed, PAUSE_MAX_WAIT_SECONDS)
+            return
+
         log.info("paused by daily job")
         time.sleep(60)
+
+
+def _load_sweep_manifest(s3) -> dict:
+    """Read the existing manifest at run start; missing -> empty skeleton.
+
+    This is the O(1) alternative to re-deriving slug_counts/unmapped_codes
+    by GETting every _done/ marker: each run folds in only the days it
+    itself processed (see _fold_sweep_day_into_manifest), on top of
+    whatever was already aggregated by prior runs.
+    """
+    try:
+        resp = s3.get_object(Bucket=BUCKET, Key=SWEEP_MANIFEST_KEY)
+        manifest = json.loads(resp["Body"].read())
+    except Exception as e:
+        if not _is_not_found(e):
+            log.warning("Could not read existing sweep manifest: %s (starting fresh)", e)
+        manifest = {}
+    manifest.setdefault("slug_counts", {})
+    manifest.setdefault("unmapped_codes", {})
+    return manifest
+
+
+def _fold_sweep_day_into_manifest(
+    manifest: dict, day_str: str, slugs: dict[str, int], unmapped_codes: dict[str, dict]
+) -> None:
+    """Merge one day's slug counts and unmapped-code counts into a manifest
+    in place. `slugs` and `unmapped_codes` use the same shapes as a
+    sweep_day() result / _done/ marker: {slug: count} and
+    {code: {"name": ..., "count": ...}}.
+    """
+    slug_counts = manifest["slug_counts"]
+    for slug, count in slugs.items():
+        slug_counts[slug] = slug_counts.get(slug, 0) + count
+
+    unmapped = manifest["unmapped_codes"]
+    for code, entry in unmapped_codes.items():
+        agg = unmapped.setdefault(code, {
+            "name": entry.get("name", ""),
+            "count": 0,
+            "first_seen": day_str,
+            "last_seen": day_str,
+        })
+        agg["count"] += entry.get("count", 0)
+        agg["name"] = entry.get("name", agg["name"])
+        if day_str < agg["first_seen"]:
+            agg["first_seen"] = day_str
+        if day_str > agg["last_seen"]:
+            agg["last_seen"] = day_str
+
+
+def _write_sweep_manifest(s3, manifest: dict, start: date, end: date, days_done_total: int, days_skipped_this_run: int) -> None:
+    manifest["last_run"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    manifest["date_range"] = {"start": str(start), "end": str(end)}
+    manifest["days_done"] = days_done_total
+    manifest["days_skipped_this_run"] = days_skipped_this_run
+    body = json.dumps(manifest, indent=2, default=str)
+    s3.put_object(Bucket=BUCKET, Key=SWEEP_MANIFEST_KEY, Body=body.encode("utf-8"), ContentType="application/json")
+    log.info("Sweep manifest written to s3://%s/%s", BUCKET, SWEEP_MANIFEST_KEY)
+
+
+def rebuild_sweep_manifest(s3, start: date, end: date) -> dict:
+    """Full O(days) manifest rebuild: GET every _done/ marker and re-aggregate
+    slug_counts/unmapped_codes from scratch. This is the old run_sweep
+    behavior, kept as an explicit on-demand op (`--rebuild-manifest`) rather
+    than something every run pays for — see Finding 3 in
+    audit_agy_2026-09-21.md.
+    """
+    marker_days = list_sweep_done(s3)
+    manifest: dict = {"slug_counts": {}, "unmapped_codes": {}}
+
+    for day_str in sorted(marker_days):
+        key = f"{SWEEP_DONE_PREFIX}{day_str}.json"
+        try:
+            resp = s3.get_object(Bucket=BUCKET, Key=key)
+            marker = json.loads(resp["Body"].read())
+        except Exception as e:
+            log.warning("  Could not read marker %s: %s", key, e)
+            continue
+        _fold_sweep_day_into_manifest(manifest, day_str, marker.get("slugs", {}), marker.get("unmapped", {}))
+
+    _write_sweep_manifest(s3, manifest, start, end, len(marker_days), 0)
+    log.info("Rebuilt sweep manifest from %d markers", len(marker_days))
+    return manifest
 
 
 def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
@@ -804,8 +1023,14 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
 
     Does not consult slug_start() and has no empty-day bailout (unlike
     fetch_type) — sweep mode is a flat scan over the whole range.
+
+    Manifest aggregation is an O(1)-GET rolling fold (read once at start,
+    fold in each day as it completes, write at the end and every 50 days as
+    a checkpoint) rather than re-reading every _done/ marker on every run —
+    use --rebuild-manifest / rebuild_sweep_manifest() to force a full rescan.
     """
     done = list_sweep_done(s3)
+    days_done_before_run = len(done)
     days: list[date] = []
     current = start
     while current <= end:
@@ -818,6 +1043,7 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
 
     days_done = 0
     days_skipped = 0
+    manifest = None if dry_run else _load_sweep_manifest(s3)
 
     for i, day in enumerate(days):
         if not dry_run:
@@ -828,12 +1054,18 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
             days_done += 1
             log.info("  [sweep] %s: %d records, %d pages (%d/%d)",
                       day, result.get("records", 0), result.get("pages", 0), i + 1, len(days))
+            if not dry_run:
+                _fold_sweep_day_into_manifest(
+                    manifest, str(day), result.get("slugs", {}), result.get("unmapped_codes", {})
+                )
         else:
             days_skipped += 1
             log.warning("  [sweep] %s: skipped (%d/%d)", day, i + 1, len(days))
 
         if i > 0 and i % 50 == 0:
             log.info("[sweep] PROGRESS: %d/%d days, %d done, %d skipped", i, len(days), days_done, days_skipped)
+            if not dry_run:
+                _write_sweep_manifest(s3, manifest, start, end, days_done_before_run + days_done, days_skipped)
 
         if i < len(days) - 1:
             time.sleep(delay)
@@ -847,48 +1079,7 @@ def run_sweep(s3, start: date, end: date, delay: float, dry_run: bool) -> dict:
     if dry_run:
         return stats
 
-    # Build the sweep manifest from every _done/ marker.
-    unmapped_codes: dict[str, dict] = {}
-    slug_counts: dict[str, int] = {}
-
-    marker_days = list_sweep_done(s3)
-    for day_str in sorted(marker_days):
-        key = f"{SWEEP_DONE_PREFIX}{day_str}.json"
-        try:
-            resp = s3.get_object(Bucket=BUCKET, Key=key)
-            marker = json.loads(resp["Body"].read())
-        except Exception as e:
-            log.warning("  Could not read marker %s: %s", key, e)
-            continue
-
-        for slug, count in marker.get("slugs", {}).items():
-            slug_counts[slug] = slug_counts.get(slug, 0) + count
-
-        for code, entry in marker.get("unmapped", {}).items():
-            agg = unmapped_codes.setdefault(code, {
-                "name": entry.get("name", ""),
-                "count": 0,
-                "first_seen": day_str,
-                "last_seen": day_str,
-            })
-            agg["count"] += entry.get("count", 0)
-            agg["name"] = entry.get("name", agg["name"])
-            if day_str < agg["first_seen"]:
-                agg["first_seen"] = day_str
-            if day_str > agg["last_seen"]:
-                agg["last_seen"] = day_str
-
-    manifest = {
-        "last_run": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "date_range": {"start": str(start), "end": str(end)},
-        "days_done": days_done,
-        "days_skipped_this_run": days_skipped,
-        "slug_counts": slug_counts,
-        "unmapped_codes": unmapped_codes,
-    }
-    body = json.dumps(manifest, indent=2, default=str)
-    s3.put_object(Bucket=BUCKET, Key=SWEEP_MANIFEST_KEY, Body=body.encode("utf-8"), ContentType="application/json")
-    log.info("Sweep manifest written to s3://%s/%s", BUCKET, SWEEP_MANIFEST_KEY)
+    _write_sweep_manifest(s3, manifest, start, end, days_done_before_run + days_done, days_skipped)
 
     return stats
 
@@ -926,6 +1117,16 @@ def main():
                         help="Sweep mode: one date-range query per day with no service_code, "
                              "so every service type is returned. Stages to open311/_sweep/ "
                              "(never canonical open311/{slug}/ paths). Ignores --type.")
+    parser.add_argument("--rebuild-manifest", action="store_true",
+                        help="With --sweep: rebuild the sweep manifest from a full scan of "
+                             "every _done/ marker instead of running the sweep. On-demand "
+                             "only — normal sweep runs fold the manifest incrementally.")
+    parser.add_argument("--coordinate-sweep", action="store_true",
+                        help="Per-type/daily mode only: write the sweep pause object before "
+                             "this run and delete it after, so a concurrent --sweep backfill "
+                             "yields the shared rate-limit budget. Off by default so a normal "
+                             "per-type run never touches the pause key; Railway's daily cron "
+                             "should add this flag once the backfill sweep starts running.")
     args = parser.parse_args()
 
     if not BUCKET:
@@ -940,8 +1141,12 @@ def main():
 
     # --- Sweep mode ---
     if args.sweep:
-        log.info("Sweep mode (ignoring --type)")
-        run_sweep(s3, start, end, args.delay, args.dry_run)
+        if args.rebuild_manifest:
+            log.info("Rebuilding sweep manifest from full _done/ scan (ignoring --type)")
+            rebuild_sweep_manifest(s3, start, end)
+        else:
+            log.info("Sweep mode (ignoring --type)")
+            run_sweep(s3, start, end, args.delay, args.dry_run)
         return
 
     # Determine which types to fetch
@@ -968,12 +1173,19 @@ def main():
 
     # --- Normal fetch mode ---
     # Signal the concurrent backfill sweep to pause for the duration of this
-    # run — both jobs share one unauthenticated 10 req/min budget. A failure
-    # to write/delete the pause object is logged, not fatal.
+    # run — both jobs share one unauthenticated 10 req/min budget. Only done
+    # when explicitly requested via --coordinate-sweep: a plain per-type run
+    # (the common case today, before the backfill sweep is in play) must not
+    # add S3 put/delete calls or new failure paths to the daily job. A
+    # failure to write/delete the pause object is logged, not fatal.
     pause_written = False
-    if not args.dry_run:
+    if args.coordinate_sweep and not args.dry_run:
         try:
-            s3.put_object(Bucket=BUCKET, Key=SWEEP_PAUSE_KEY, Body=b"1")
+            pause_body = json.dumps({
+                "set_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "ttl_seconds": PAUSE_TTL_SECONDS,
+            }).encode("utf-8")
+            s3.put_object(Bucket=BUCKET, Key=SWEEP_PAUSE_KEY, Body=pause_body, ContentType="application/json")
             pause_written = True
         except Exception as e:
             log.warning("Could not write sweep pause object: %s (continuing anyway)", e)

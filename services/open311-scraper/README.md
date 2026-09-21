@@ -102,19 +102,58 @@ open311/_sweep/
 ```
 
 A day is buffered entirely in memory and written only after its terminal
-(< 100 record) page. If any part of a day fails — the fetch, or a
-post-write verification mismatch — every object written for that day is
-rolled back and no `_done/` marker is written, so the next run retries the
-whole day from scratch. This means a page-3 failure can never leave a
-day half-written across slug files.
+(< 100 record) page. If any part of a day fails — the fetch, a `save_day`
+exception (S3 rate limit, connection drop, etc.), a post-write verification
+mismatch, or even the final `_done/` marker write itself — every object
+written for that day is rolled back and no `_done/` marker is written, so
+the next run retries the whole day from scratch. This means a page-3
+failure, or an S3 error partway through the per-slug writes, can never leave
+a day half-written across slug files.
+
+**Crash recovery / orphan cleanup.** If the process is killed mid-write
+(not just a clean exception), the rollback above never runs and slug files
+from that attempt can be left in S3 with no `_done/` marker. Resume treats
+a day with no marker as not-done and retries it — but before writing
+anything fresh, `sweep_day` first batch-deletes every possible slug/unmapped
+key for that day (built from the static `SERVICE_TYPES` list, not an S3
+listing, so it's one API call regardless of slug count; deleting a key that
+doesn't exist is a no-op). So a retried day is always overwritten cleanly,
+never stacked on top of a crash-orphaned file.
 
 **Pause coordination.** Because both the daily per-type job and a backfill
-sweep draw from the same unauthenticated rate limit, the daily job writes
+sweep draw from the same unauthenticated rate limit, the daily job can
+signal the sweep to yield: pass `--coordinate-sweep` and it writes
 `open311/_sweep/_pause` before it starts and deletes it when it's done (in a
-`finally`, so a crash mid-run doesn't matter more than it has to — an
-orphaned pause key just means the sweep waits until you clear it manually).
-The sweep checks for that key before every day and blocks (polling every 60s)
-while it's present.
+`finally`). **This flag is off by default** — a normal per-type run makes no
+S3 calls against the pause key at all. Railway's daily cron should add
+`--coordinate-sweep` once the backfill sweep starts running; until then,
+leaving it off means the daily job never grows a new S3 failure path.
+
+The pause object body is JSON: `{"set_at": "<ISO UTC timestamp>",
+"ttl_seconds": 7200}` (2 hours). The sweep checks for that key before every
+day and blocks (polling every 60s) while it's present *and fresh*. A pause
+older than `set_at + ttl_seconds` — or, for a non-JSON/unparsable body,
+older than 2 hours by the object's S3 `LastModified` — is treated as stale:
+logged, deleted, and ignored. As a second backstop, a single sweep-loop
+call to the pause check will wait at most 3 hours total before proceeding
+regardless. Together these mean a daily-job crash that skips its `finally`
+(SIGKILL, OOM) can no longer deadlock the backfill forever.
+
+**Manifest aggregation.** `manifest.json` (`slug_counts`, `unmapped_codes`,
+`days_done`, `date_range`, `last_run`) is maintained as a rolling fold, not
+a full rescan: each run reads the existing manifest once at the start,
+folds in the slug/unmapped counts from each day it completes, and writes
+the result back at the end (and every 50 days as a mid-run checkpoint, so a
+long backfill doesn't lose everything to a crash near the finish). This
+avoids a `GET` per `_done/` marker on every run, which would otherwise add
+minutes of blocking I/O once years of history are swept. Pass
+`--rebuild-manifest` (with `--sweep`) to force the old full-scan behavior
+on demand — it reads every `_done/` marker and rebuilds `manifest.json`
+from scratch, without running the sweep itself:
+
+```bash
+python fetch.py --sweep --rebuild-manifest
+```
 
 **Promotion is not implemented yet.** Sweep mode only stages data; nothing
 currently copies `_sweep/{slug}/...` into the canonical `open311/{slug}/...`
