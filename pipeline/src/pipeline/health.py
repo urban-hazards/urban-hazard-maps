@@ -196,7 +196,6 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
     today = today or datetime.now(UTC).date()
     start = today - timedelta(days=WINDOW_DAYS - 1)  # inclusive 30-day window
     py_start, py_end = start - timedelta(days=365), today - timedelta(days=365)
-    years = {start.year, today.year, py_start.year, py_end.year}
 
     # One pass over every encampment year file: `through` needs full history, and the
     # window counts are date-filtered by _window anyway, so a second windowed read is redundant.
