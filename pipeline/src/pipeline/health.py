@@ -11,7 +11,7 @@ from typing import Any
 
 from pipeline import storage
 from pipeline.cleaner import _parse_datetime
-from pipeline.config import CKAN_BASE, CREATIO_RESOURCE_ID, ENCAMPMENT_TYPES, RESOURCE_IDS
+from pipeline.config import CKAN_BASE, CREATIO_RESOURCE_ID, ENCAMPMENT_TYPES
 from pipeline.fetcher import _api_get
 
 logger = logging.getLogger(__name__)
@@ -100,19 +100,11 @@ def _legacy_year_files(prefix: str) -> list[int]:
     return sorted(years)
 
 
-def _legacy_window_days(dataset: str, type_name: str, years: set[int]) -> list[str]:
-    """last_30d / prior_year_30d window days: restricted to the rolling `years` set."""
-    days: list[str] = []
-    for year in sorted(years):
-        if year not in RESOURCE_IDS:
-            continue
-        days.extend(_days_from_rows(_rows(f"raw/{dataset}_{year}.json"), "type", type_name))
-    return sorted(d for d in days if d)
-
-
-def _legacy_through_days(dataset: str, type_name: str) -> list[str]:
-    """`through`: every raw/<dataset>_*.json year file present in the bucket, not just
-    the rolling `years` window (a file's year can fall out of that window).
+def _legacy_days(dataset: str, type_name: str) -> list[str]:
+    """Report days for a legacy CKAN source across every raw/<dataset>_*.json year file in
+    the bucket (one read per file). `through` needs the full history — a file's year can fall
+    out of the rolling `years` window — and the 30-day counts are date-filtered by _window, so
+    the same list serves both.
     """
     days: list[str] = []
     for year in _legacy_year_files(dataset):
@@ -143,13 +135,18 @@ def _encampment_partition(years: list[int]) -> tuple[list[str], list[str]]:
             continue
         type_rows = [r for r in rows if _row_route(r) == "type"]
         queue_rows = [r for r in rows if _row_route(r) == "queue"]
-        if len(type_rows) + len(queue_rows) != len(rows):
-            logger.warning(
-                "raw/encampments_v2_%d.json: type+queue partition (%d + %d) != row count %d",
+        unstamped = sum(1 for r in rows if r.get("_uhm_route") not in ("type", "queue"))
+        if unstamped:
+            # Rows cached before the _uhm_route stamp existed are classified by the mutable
+            # `type` field. Logged so the fallback's footprint is measurable; it disappears
+            # after the next --force re-fetch of that year.
+            logger.info(
+                "raw/encampments_v2_%d.json: %d/%d rows unstamped, routed by type (%d type / %d queue)",
                 year,
+                unstamped,
+                len(rows),
                 len(type_rows),
                 len(queue_rows),
-                len(rows),
             )
         type_days.extend(_local_day(str(r.get("open_dt") or "")) for r in type_rows)
         queue_days.extend(_local_day(str(r.get("open_dt") or "")) for r in queue_rows)
@@ -214,10 +211,9 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
             through = full_days[-1] if full_days else ""
         elif kind == "ckan_legacy":
             dataset, type_name = sel
-            window_days = _legacy_window_days(dataset, type_name, years)
-            full_days = _legacy_through_days(dataset, type_name)
-            cur = _window(window_days, start, today)
-            prior = _window(window_days, py_start, py_end)
+            full_days = _legacy_days(dataset, type_name)
+            cur = _window(full_days, start, today)
+            prior = _window(full_days, py_start, py_end)
             through = full_days[-1] if full_days else ""
         elif kind == "ckan_creatio":
             days = _creatio_days(sel[0])

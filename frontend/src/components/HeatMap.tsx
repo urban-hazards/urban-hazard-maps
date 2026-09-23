@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { DistrictBoundaries } from "../lib/bucket"
-import { fmtShort, isDisruptedMonth } from "../lib/freshness"
+import { disruptionNote } from "../lib/freshness"
 import type { MarkerData } from "../lib/types"
 
 declare const L: typeof import("leaflet")
@@ -174,14 +174,10 @@ export default function HeatMap({
 	)
 	const [wasteCount, setWasteCount] = useState(wasteTotal)
 
-	// Disruption note (year-month is in the disrupted window for the active layer, per contract.md).
-	const disruptionNoteFor = (layerKey: string): string | null => {
-		if (selYear === "all" || selMonth === 0) return null
-		const d = disruptions[layerKey]
-		if (!d) return null
-		if (!isDisruptedMonth(d.since, Number(selYear), selMonth)) return null
-		return fmtShort(d.since)
-	}
+	// Disruption note for the active year-month, per contract.md (logic lives in lib/freshness.ts
+	// so it is unit-tested against the 1-based month select used below).
+	const disruptionNoteFor = (layerKey: string): string | null =>
+		disruptionNote(disruptions, layerKey, selYear, selMonth)
 	const needlesDisruptionNote = disruptionNoteFor("needles")
 	const encampmentsDisruptionNote = disruptionNoteFor("encampments")
 	const wasteDisruptionNote = disruptionNoteFor("waste")

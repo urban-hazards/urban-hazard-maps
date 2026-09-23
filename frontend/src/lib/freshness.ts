@@ -157,12 +157,14 @@ export function freshnessModel(
 	let notice: string | null = null
 	if (troubled.length > 0) {
 		const sentences = troubled
-			.filter((c) => c.disruptedSince || (hasModernSchema && c.status === "degraded"))
+			.filter((c) => c.disruptedSince || hasModernSchema)
 			.map((c) => {
 				const plural = PLURAL_NOUNS[c.key] ?? c.label.toLowerCase()
 				const subject = NOTICE_SUBJECT[c.key] ?? c.label
 				if (!c.disruptedSince) {
-					return `${subject} reporting volume has dropped sharply since the switch; recent months may be incomplete.`
+					return c.status === "degraded"
+						? `${subject} reporting volume has dropped sharply since the switch; recent months may be incomplete.`
+						: `${subject} reporting is disrupted; recent months may be incomplete.`
 				}
 				return `${subject} reporting has been disrupted since ${fmtShort(c.disruptedSince)}; reports that still arrive are shown, but low counts after that date reflect missing data, not fewer ${plural}.`
 			})
@@ -196,4 +198,22 @@ export function isDisruptedMonth(since: string, year: number, month: number): bo
 	const sinceMonth = Number(since.slice(5, 7))
 	if (year !== sinceYear) return year > sinceYear
 	return month >= sinceMonth
+}
+
+/**
+ * Text for the map count line's disruption note ("May 28"), or null when the selected
+ * year-month is "all" or before the disruption. `selMonth` is the map's 1-based month select
+ * (0 = all months); `selYear` is a year string or "all".
+ */
+export function disruptionNote(
+	disruptions: Record<string, { since: string; latest: string }>,
+	layerKey: string,
+	selYear: string,
+	selMonth: number,
+): string | null {
+	if (selYear === "all" || selMonth === 0) return null
+	const d = disruptions[layerKey]
+	if (!d) return null
+	if (!isDisruptedMonth(d.since, Number(selYear), selMonth)) return null
+	return fmtShort(d.since)
 }

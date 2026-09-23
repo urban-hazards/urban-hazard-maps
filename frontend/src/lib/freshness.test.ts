@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { disruptionsFromHealth, freshnessModel, isDisruptedMonth } from "./freshness"
+import {
+	disruptionNote,
+	disruptionsFromHealth,
+	freshnessModel,
+	isDisruptedMonth,
+} from "./freshness"
 import type { SourceHealth } from "./types"
 
 const baseSchema2Health = (): SourceHealth => ({
@@ -128,5 +133,45 @@ describe("isDisruptedMonth", () => {
 		const m = freshnessModel(null, { encampments: "", waste: "2026-06-30" })
 		expect(m.chips.map((c) => c.key)).toEqual(["waste"])
 		expect(m.chips[0].disruptedSince).toBe("2026-07-01")
+	})
+
+	it("map note fires for the disrupted window only, using the 1-based month select", () => {
+		const d = { encampments: { since: "2026-05-28", latest: "2026-06-22" } }
+		expect(disruptionNote(d, "encampments", "2026", 4)).toBeNull()
+		expect(disruptionNote(d, "encampments", "2026", 5)).toBe("May 28")
+		expect(disruptionNote(d, "encampments", "2026", 6)).toBe("May 28")
+		expect(disruptionNote(d, "encampments", "all", 6)).toBeNull()
+		expect(disruptionNote(d, "encampments", "2026", 0)).toBeNull()
+		expect(disruptionNote(d, "needles", "2026", 6)).toBeNull()
+	})
+
+	it("disruptionsFromHealth is empty for null and legacy health", () => {
+		expect(disruptionsFromHealth(null)).toEqual({})
+		expect(
+			disruptionsFromHealth({
+				generated: "",
+				layers: { encampments: { status: "stale", through: "2026-05-27", sources: [] } },
+			}),
+		).toEqual({})
+	})
+
+	it("schema-2 stale layer with no report on record gets a schema-2 sentence, not the legacy notice", () => {
+		const health = {
+			generated: "",
+			schema_version: 2,
+			layers: {
+				encampments: {
+					status: "stale" as const,
+					through: "",
+					latest_report: "",
+					disrupted_since: null,
+					sources: [],
+				},
+			},
+		}
+		const m = freshnessModel(health, {})
+		expect(m.notice).toBe(
+			"Boston moved its 311 system to a new platform in 2026. Encampment reporting is disrupted; recent months may be incomplete.",
+		)
 	})
 })

@@ -192,3 +192,26 @@ def test_encampment_unstamped_rows_fall_back_to_type(s3_bucket: tuple[Any, str])
         h = compute_source_health(today=date(2026, 9, 23))
     assert h["sources"]["ckan_legacy:Encampments"]["through"] == "2026-05-27"
     assert h["sources"]["ckan_legacy:Encampments (queue)"]["through"] == "2026-06-22"
+
+
+def test_degraded_layer_has_no_disrupted_since(s3_bucket: tuple[Any, str]) -> None:
+    """A coverage source still reporting at reduced volume → layer degraded, no disruption date."""
+    storage.write_json("raw/needles_2026.json", [{"type": "Needle Pickup", "open_dt": "2026-09-20 10:00:00"}] * 3)
+    storage.write_json("raw/needles_2025.json", [{"type": "Needle Pickup", "open_dt": "2025-09-10 10:00:00"}] * 10)
+    with patch("pipeline.health._creatio_service_names", return_value=[]):
+        h = compute_source_health(today=date(2026, 9, 23))
+    assert h["sources"]["ckan_legacy:Needle Pickup"]["status"] == "degraded"
+    assert h["layers"]["needles"]["status"] == "degraded"
+    assert h["layers"]["needles"]["through"] == "2026-09-20"
+    assert h["layers"]["needles"]["disrupted_since"] is None
+
+
+def test_legacy_through_scans_all_year_files_and_ignores_non_year_suffixes(s3_bucket: tuple[Any, str]) -> None:
+    """needles/waste `through` must come from every year file, not the rolling window; stray
+    non-year suffixes under raw/ are ignored."""
+    storage.write_json("raw/needles_2019.json", [{"type": "Needle Pickup", "open_dt": "2019-03-01 10:00:00"}])
+    storage.write_json("raw/needles_2026_backup.json", [{"type": "Needle Pickup", "open_dt": "2026-09-01 10:00:00"}])
+    with patch("pipeline.health._creatio_service_names", return_value=[]):
+        h = compute_source_health(today=date(2028, 1, 30))
+    assert h["sources"]["ckan_legacy:Needle Pickup"]["through"] == "2019-03-01"
+    assert h["sources"]["ckan_legacy:Needle Pickup"]["last_30d"] == 0

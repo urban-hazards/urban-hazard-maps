@@ -50,3 +50,6 @@ year-month is >= the year-month of `since`, append to that layer's count line:
 
 ## Amendment 2026-09-23 (after live-data check)
 `disrupted_since` is set only when the layer is **stale**. A **degraded** layer (reports still arrive at reduced volume) keeps the `data through` chip with the suffix " · reporting volume down" and gets the notice sentence "<Subject> reporting volume has dropped sharply since the switch; recent months may be incomplete."
+
+## Reconciliation 2026-09-23 (GLM code review item 6)
+The notice sentence subject is the singular form from `NOTICE_SUBJECT` (Sharps / Encampment / Human waste), not the chip `<Label>`. A schema-2 troubled layer with no `disrupted_since` (stale, nothing on record) gets "<Subject> reporting is disrupted; recent months may be incomplete." The legacy notice text is used only for schema < 2.
