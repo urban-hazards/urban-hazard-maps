@@ -326,13 +326,20 @@ export default function HeatMap({
 			const boundaryPane = map.createPane("boundaryPane")
 			boundaryPane.style.zIndex = "450"
 
-			L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-				attribution:
-					'&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-				subdomains: "abcd",
-				maxZoom: 19,
-				opacity: 0.7,
-			}).addTo(map)
+			// CARTO's free basemap tiles started requiring an API key in Sept 2026
+			// (tiles now render an "API KEY REQUIRED" watermark). Esri's Light Gray
+			// Canvas is the closest keyless equivalent. Native tiles stop at z16;
+			// Leaflet upscales beyond that.
+			L.tileLayer(
+				"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+				{
+					attribution:
+						'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+					maxNativeZoom: 16,
+					maxZoom: 19,
+					opacity: 0.7,
+				},
+			).addTo(map)
 
 			// Both heat layers on by default, filtered to latest year
 			const needleBinned = filterPoints(needlePoints, defaultYear, 0)

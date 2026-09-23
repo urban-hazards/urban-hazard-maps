@@ -86,8 +86,14 @@ def _legacy_days(dataset: str, type_name: str, years: set[int]) -> list[str]:
     for year in sorted(years):
         if year not in RESOURCE_IDS:
             continue
-        key = f"raw/encampments_v2_{year}.json" if dataset == "encampments" else f"raw/{dataset}_{year}.json"
-        days.extend(_days_from_rows(_rows(key), "type", type_name))
+        if dataset == "encampments":
+            # raw/encampments_v2_* is already filtered by fetch_encampment_year
+            # (type="Encampments" OR queue in ENCAMPMENT_QUEUES). Queue-matched
+            # rows keep their original `type`, so filtering on type here would
+            # drop records that still reach the map and understate "through".
+            days.extend(_local_day(str(r.get("open_dt") or "")) for r in _rows(f"raw/encampments_v2_{year}.json"))
+        else:
+            days.extend(_days_from_rows(_rows(f"raw/{dataset}_{year}.json"), "type", type_name))
     return sorted(d for d in days if d)
 
 

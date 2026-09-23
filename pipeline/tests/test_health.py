@@ -66,3 +66,25 @@ def test_first_run_seeds_service_names_without_flagging_all_as_new(s3_bucket: tu
         h = compute_source_health(today=date(2026, 9, 2))
     assert h["new_service_names"] == []
     assert storage.read_json("metadata/creatio_service_names.json") == ["A", "B"]
+
+
+def test_encampment_through_counts_queue_matched_rows(s3_bucket: tuple[Any, str]) -> None:
+    """raw/encampments_v2_* is already filtered by the fetcher (type OR queue).
+
+    Rows that entered via the INFO_Homeless Issue queue carry another `type`
+    (e.g. "Requests for Street Cleaning"), but they are still encampment
+    records and still reach the map. "through" must reflect them, or the
+    banner says May while the map shows June (bug seen 2026-09-23).
+    """
+    storage.write_json(
+        "raw/encampments_v2_2026.json",
+        [
+            {"type": "Encampments", "queue": "INFO_Homeless Issue", "open_dt": "2026-05-27 10:00:00"},
+            {"type": "Requests for Street Cleaning", "queue": "INFO_Homeless Issue", "open_dt": "2026-06-22 12:39:43"},
+        ],
+    )
+    with patch("pipeline.health._creatio_service_names", return_value=[]):
+        h = compute_source_health(today=date(2026, 9, 23))
+    assert h["sources"]["ckan_legacy:Encampments"]["through"] == "2026-06-22"
+    assert h["layers"]["encampments"]["through"] == "2026-06-22"
+    assert h["layers"]["encampments"]["status"] == "stale"
