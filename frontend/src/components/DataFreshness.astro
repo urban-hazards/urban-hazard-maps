@@ -1,4 +1,5 @@
 ---
+import { freshnessModel } from "../lib/freshness"
 import type { SourceHealth } from "../lib/types"
 
 interface Props {
@@ -8,44 +9,7 @@ interface Props {
 }
 const { health, frozen = {} } = Astro.props
 
-const LABELS: Record<string, string> = {
-	needles: "Sharps",
-	encampments: "Encampments",
-	waste: "Human Waste",
-}
-const fmt = (d: string) =>
-	d
-		? new Date(`${d}T12:00:00`).toLocaleDateString("en-US", {
-				month: "short",
-				day: "numeric",
-				year: "numeric",
-			})
-		: "unknown"
-
-type Chip = {
-	key: string
-	label: string
-	through: string
-	status: "ok" | "degraded" | "stale"
-	sources: string[]
-}
-const layers = Object.entries(health?.layers ?? {})
-const chips: Chip[] = layers.length
-	? layers.map(([k, l]) => ({
-			key: k,
-			label: LABELS[k] ?? k,
-			through: l.through ?? "",
-			status: l.status ?? "stale",
-			sources: l.sources ?? [],
-		}))
-	: Object.entries(frozen).map(([k, d]) => ({
-			key: k,
-			label: LABELS[k] ?? k,
-			through: d,
-			status: "stale",
-			sources: [],
-		}))
-const troubled = chips.filter((c) => c.status !== "ok")
+const { chips, notice } = freshnessModel(health, frozen)
 const alerts = health?.alerts ?? []
 ---
 
@@ -55,15 +19,13 @@ const alerts = health?.alerts ?? []
 			<div class="chips">
 				{chips.map((c) => (
 					<span class={`chip chip-${c.status}`} title={c.sources.join(", ")}>
-						{c.label}: data through {fmt(c.through)}
+						{c.text}
 					</span>
 				))}
 			</div>
-			{troubled.length > 0 && (
+			{notice && (
 				<p class="notice">
-					Boston moved its 311 system to a new platform in 2026. Some categories stopped appearing in the
-					city's data during the switch ({troubled.map((c) => c.label).join(", ")}). We show those layers
-					through their last complete date rather than guess.
+					{notice}
 					<a href="/data-quality#migration">What changed</a>
 				</p>
 			)}

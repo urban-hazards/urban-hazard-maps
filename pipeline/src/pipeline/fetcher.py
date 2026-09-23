@@ -201,6 +201,7 @@ def fetch_encampment_year(year: int) -> list[dict[str, Any]]:
             cid = str(r.get("case_enquiry_id", ""))
             if cid and cid not in seen_ids:
                 seen_ids.add(cid)
+                r["_uhm_route"] = "type"
                 all_records.append(r)
                 type_count += 1
 
@@ -211,6 +212,7 @@ def fetch_encampment_year(year: int) -> list[dict[str, Any]]:
             cid = str(r.get("case_enquiry_id", ""))
             if cid and cid not in seen_ids:
                 seen_ids.add(cid)
+                r["_uhm_route"] = "queue"
                 all_records.append(r)
                 queue_new_count += 1
 

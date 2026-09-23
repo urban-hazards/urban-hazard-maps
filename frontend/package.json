@@ -10,7 +10,8 @@
 		"check": "astro check && biome check src/",
 		"format": "biome format --write src/",
 		"lint": "biome lint src/",
-		"lint:fix": "biome lint --write src/"
+		"lint:fix": "biome lint --write src/",
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.8",
@@ -28,7 +29,8 @@
 		"@biomejs/biome": "^2.4.10",
 		"@types/leaflet": "^1.9.21",
 		"@types/react": "^19.2.14",
-		"@types/react-dom": "^19.2.3"
+		"@types/react-dom": "^19.2.3",
+		"vitest": "^5.0.1"
 	},
 	"packageManager": "pnpm@10.33.0",
 	"pnpm": {

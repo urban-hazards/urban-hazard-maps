@@ -15,6 +15,7 @@ import {
 	fetchPoints,
 	fetchSourceHealth,
 } from "../lib/bucket"
+import { disruptionsFromHealth } from "../lib/freshness"
 import { formatNumber } from "../lib/seo"
 import "../styles/global.css"
 
@@ -121,6 +122,8 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			stateSenateDistricts={stats.state_senate_districts ?? []}
 			stateSenateLabels={stats.state_senate_district_labels ?? stats.state_senate_districts ?? []}
 			districtBoundaries={districtBoundaries}
+			basemapKey={import.meta.env.CARTO_BASEMAP_KEY ?? process.env.CARTO_BASEMAP_KEY ?? ""}
+			disruptions={disruptionsFromHealth(sourceHealth)}
 		/>
 		<noscript>
 			<div style="text-align: center; padding: 24px;">

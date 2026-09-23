@@ -14,10 +14,16 @@ Never load the production `pipeline/.env` for local investigation or tests.
   expected daily schedule and `metadata/last_run.json`. An old snapshot can still
   say `ok`. Monitor exceptions are logged and do not abort the pipeline, so a
   successful pipeline run does not guarantee a fresh health file.
-- `schema_version`: currently 1.
-- `sources`: per-source `through`, `last_30d`, `prior_year_30d`, `ratio`, `status`.
-- `layers`: `needles`, `encampments`, `waste`, each with `status`, `through` and
-  the exact source keys contributing to it.
+- `schema_version`: currently 2 (since 2026-09-23; see
+  `docs/design/2026-09-23-data-freshness-v3.md`).
+- `sources`: per-source `through`, `last_30d`, `prior_year_30d`, `ratio`, `status`,
+  `coverage` (whether the source may make its layer `ok`). The encampment raw file is
+  split by fetch-time provenance into `ckan_legacy:Encampments` (type button, coverage)
+  and `ckan_legacy:Encampments (queue)` (INFO queue leak, not coverage).
+- `layers`: `needles`, `encampments`, `waste`, each with `status`, `through` (latest
+  date across **coverage** sources), `latest_report` (latest date across all sources),
+  `disrupted_since` (day after `through` for a `stale` layer, else null), `sources` and
+  `coverage_sources`.
 - `creatio_service_names`: all names returned by the CKAN distinct query.
 - `new_service_names`: sorted additions relative to
   `metadata/creatio_service_names.json`. The first successful run seeds that
@@ -45,8 +51,10 @@ when the prior count is zero. Status uses that rounded ratio:
 | `degraded` | Otherwise, non-null ratio is below 0.50 (more than a 50% drop). |
 | `ok` | Otherwise; this includes active feeds with no prior-year baseline. |
 
-Layer status is `ok` if **any** contributing source is OK; otherwise degraded
-if any is degraded; otherwise stale. Layer `through` is the latest source date.
+Layer status is `ok` if **any** *coverage* source is OK; otherwise degraded if any
+is degraded; otherwise stale. Non-coverage sources (the encampment queue leak) never
+change layer status. Layer `through` is the latest coverage-source date; a `stale`
+layer also carries `disrupted_since`, which drives the banner chip and the map note.
 Always inspect individual sources: one live Other feed can keep waste OK even
 when Litter & Debris is missing. Neither a recent date nor an OK chip establishes
 complete coverage, permits unfreezing encampments, or validates waste precision.

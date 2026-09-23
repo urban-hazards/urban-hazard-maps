@@ -114,12 +114,16 @@ export interface SourceHealthEntry {
 	prior_year_30d: number
 	ratio: number | null
 	status: SourceStatus
+	coverage?: boolean
 }
 
 export interface LayerHealth {
 	status: SourceStatus
 	through: string
 	sources: string[]
+	latest_report?: string
+	disrupted_since?: string | null
+	coverage_sources?: string[]
 }
 
 export interface SourceHealth {

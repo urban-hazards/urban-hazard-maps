@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { DistrictBoundaries } from "../lib/bucket"
+import { disruptionNote } from "../lib/freshness"
 import type { MarkerData } from "../lib/types"
 
 declare const L: typeof import("leaflet")
@@ -26,6 +27,10 @@ interface HeatMapProps {
 	stateSenateDistricts: string[]
 	stateSenateLabels: string[]
 	districtBoundaries: DistrictBoundaries
+	/** CARTO basemap key (CARTO_BASEMAP_KEY). Empty → keyless Esri fallback. */
+	basemapKey?: string
+	/** Layers currently disrupted (status != "ok" with a known disrupted_since), from source health. */
+	disruptions?: Record<string, { since: string; latest: string }>
 }
 
 const NEEDLE_GRADIENT: Record<number, string> = {
@@ -131,6 +136,8 @@ export default function HeatMap({
 	stateSenateDistricts,
 	stateSenateLabels,
 	districtBoundaries,
+	basemapKey = "",
+	disruptions = {},
 }: HeatMapProps) {
 	const mapRef = useRef<HTMLDivElement>(null)
 	const mapInstance = useRef<L.Map | null>(null)
@@ -166,6 +173,14 @@ export default function HeatMap({
 		() => encampmentPoints.filter(([, , yr]) => String(yr) === defaultYear).length,
 	)
 	const [wasteCount, setWasteCount] = useState(wasteTotal)
+
+	// Disruption note for the active year-month, per contract.md (logic lives in lib/freshness.ts
+	// so it is unit-tested against the 1-based month select used below).
+	const disruptionNoteFor = (layerKey: string): string | null =>
+		disruptionNote(disruptions, layerKey, selYear, selMonth)
+	const needlesDisruptionNote = disruptionNoteFor("needles")
+	const encampmentsDisruptionNote = disruptionNoteFor("encampments")
+	const wasteDisruptionNote = disruptionNoteFor("waste")
 	const [ready, setReady] = useState(false)
 	const [isMobile, setIsMobile] = useState(false)
 	const [filterOpen, setFilterOpen] = useState(false)
@@ -326,13 +341,32 @@ export default function HeatMap({
 			const boundaryPane = map.createPane("boundaryPane")
 			boundaryPane.style.zIndex = "450"
 
-			L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-				attribution:
-					'&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-				subdomains: "abcd",
-				maxZoom: 19,
-				opacity: 0.7,
-			}).addTo(map)
+			// CARTO's free basemap tiles started requiring an API key in Sept 2026
+			// (keyless requests render an "API KEY REQUIRED" watermark). With
+			// CARTO_BASEMAP_KEY set we keep the Positron look; without it, fall back
+			// to Esri's Light Gray Canvas, the closest keyless equivalent (native
+			// tiles stop at z16; Leaflet upscales beyond that).
+			const basemap = basemapKey
+				? L.tileLayer(
+						`https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${encodeURIComponent(basemapKey)}`,
+						{
+							attribution:
+								'&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+							maxZoom: 19,
+							opacity: 0.7,
+						},
+					)
+				: L.tileLayer(
+						"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+						{
+							attribution:
+								'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+							maxNativeZoom: 16,
+							maxZoom: 19,
+							opacity: 0.7,
+						},
+					)
+			basemap.addTo(map)
 
 			// Both heat layers on by default, filtered to latest year
 			const needleBinned = filterPoints(needlePoints, defaultYear, 0)
@@ -1168,12 +1202,24 @@ export default function HeatMap({
 					{(dataLayer === "needles" || dataLayer === "both") && (
 						<span style={{ color: "#e85a1b" }}>
 							<strong>{count.toLocaleString()}</strong> sharps
+							{needlesDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {needlesDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 					{dataLayer === "both" && <span> + </span>}
 					{(dataLayer === "encampments" || dataLayer === "both") && (
 						<span style={{ color: "#7b2d8e" }}>
 							<strong>{encampmentCount.toLocaleString()}</strong> encampments
+							{encampmentsDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {encampmentsDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 					{dataLayer === "waste" && (
@@ -1185,6 +1231,12 @@ export default function HeatMap({
 									? "missed reports (ML)"
 									: "human waste reports"}
 							<span style={{ fontSize: "10px", opacity: 0.7 }}> (beta)</span>
+							{wasteDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {wasteDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 				</div>
