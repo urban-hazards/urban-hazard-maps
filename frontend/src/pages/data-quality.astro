@@ -360,15 +360,24 @@ const rs = (wasteStats as unknown as Record<string, unknown>)?.routing_stats as
 				<p>
 					Boston is moving 311 from its old platform (Lagan) to a new one (Creatio), one department at a
 					time. The public export now comes in two datasets with different category names and different
-					ID formats. In the old dataset, Requests for Street Cleaning, Illegal Dumping and Encampments
-					stop after June 2026; the encampment intake ends on May 27, 2026 and has no equivalent in the
-					new system at all.
+					ID formats. In the old dataset, Requests for Street Cleaning and Illegal Dumping stop after
+					June 2026.
 				</p>
 				<p>
 					What we do about it: each layer shows the last date its source was complete, and a layer is
 					frozen at that date rather than shown as a false decline. Resident descriptions for litter and
 					debris now come from the new system's feed and drive the human-waste classifier going forward.
 					Details and the code-level mapping live in the project wiki.
+				</p>
+				<h3>Encampments</h3>
+				<p>
+					The dedicated encampment intake ended on May 27, 2026. Checks of the old feed and the new
+					system's categories found no replacement topic. Encampment mentions still appear in Other
+					and Litter &amp; Debris descriptions, but those scattered reports do not provide a comparable
+					series. We keep the historical layer frozen: missing intake data does not mean fewer
+					encampments. The project wiki's
+					<a href="https://github.com/urban-hazards/urban-hazard-maps/blob/main/docs/wiki/encampment-intake-ended-2026.md">encampment intake finding</a>
+					documents these checks.
 				</p>
 			</div>
 		</section>

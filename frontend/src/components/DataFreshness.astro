@@ -10,9 +10,10 @@ interface Props {
 const { health, frozen = {} } = Astro.props
 
 const { chips, notice } = freshnessModel(health, frozen)
+const alerts = health?.alerts ?? []
 ---
 
-{chips.length > 0 && (
+{(chips.length > 0 || alerts.length > 0) && (
 	<section class="freshness" aria-label="Data freshness">
 		<div class="container freshness-inner">
 			<div class="chips">
@@ -28,6 +29,7 @@ const { chips, notice } = freshnessModel(health, frozen)
 					<a href="/data-quality#migration">What changed</a>
 				</p>
 			)}
+			{alerts.map((alert) => <p class="notice">{alert}</p>)}
 		</div>
 	</section>
 )}

@@ -51,6 +51,9 @@ are different populations; the scheduler changed where the first group is record
 
 ## Asks for the city (if they want this tracked)
 
+The boston.gov/mattress backend is Firebase project `sanitation-scheduling-prod` (Cloud Function `getAddresses`), with no public appointment data.
+A CSV export request to the city is the only path to recovering the appointment feed.
+
 1. Export of boston.gov/mattress appointments since 2024-06 (date, neighborhood/zip) — restores the pickup series.
 2. Pre-2023 311 export **with** `description` — the public CKAN drops it; the API doesn't go back that far.
 3. A "dumped mattress" case type or sub-type so ~4,000 free-text reports a year become countable.

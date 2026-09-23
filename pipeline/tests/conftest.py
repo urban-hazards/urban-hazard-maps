@@ -2,6 +2,9 @@
 
 import os
 
+# Never read a developer's .env (which may point at production) during tests.
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+
 # Set env vars at module-import time, BEFORE any pipeline import triggers
 # `load_dotenv()` inside pipeline.config. Because load_dotenv defaults to
 # override=False, these values take precedence over any local .env file.
@@ -19,6 +22,16 @@ from typing import Any  # noqa: E402
 import boto3  # noqa: E402
 import pytest  # noqa: E402
 from moto import mock_aws  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def no_live_http(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Public HTTP readers must be explicitly mocked in every test."""
+
+    def blocked(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("Live HTTP is disabled in tests; mock urllib.request.urlopen")
+
+    monkeypatch.setattr("urllib.request.urlopen", blocked)
 
 
 @pytest.fixture

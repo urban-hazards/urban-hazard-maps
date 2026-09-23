@@ -222,8 +222,10 @@ class TestProcessWasteIntegration:
 
         with (
             patch("pipeline.run.WasteClassifier", return_value=fake_classifier),
+            patch("pipeline.run.fetch_creatio_records", return_value=[]),
             patch("pipeline.run.enrich_records", side_effect=lambda recs, cache, **kw: (recs, cache)),
             patch("pipeline.run._enrich_districts"),
+            patch("pipeline.run._district_labels", return_value=[]),
             patch("pipeline.run.compute_stats") as mock_stats,
             patch("pipeline.run.storage") as mock_storage,
         ):
@@ -311,6 +313,7 @@ def test_waste_uses_litter_debris_text_and_reports_creatio_coverage(s3_bucket: t
         patch("pipeline.run.WasteClassifier", return_value=fake_classifier),
         patch("pipeline.run.enrich_records", side_effect=lambda recs, cache, **kw: (recs, cache)),
         patch("pipeline.run._enrich_districts"),
+        patch("pipeline.run._district_labels", return_value=[]),
     ):
         count = run._process_waste([CKAN_CONFIRMED], force=False)
 

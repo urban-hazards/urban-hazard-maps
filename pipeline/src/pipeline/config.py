@@ -30,6 +30,15 @@ RESOURCE_IDS: dict[int, str] = {
     2026: "1a0b420d-99f1-4887-9851-990b2a5a6e17",
 }
 
+# Download-only resources: their CKAN datastores are empty. Resolve the CSV URL
+# from package_show rather than assuming a filename or querying datastore_search.
+LEGACY_CSV_RESOURCES: dict[int, str] = {
+    2011: "94b499d9-712a-4d2a-b790-7ceec5c9c4b1",
+    2012: "382e10d9-1864-40ba-bef6-4eea3c75463c",
+    2013: "407c5cd0-f764-4a41-adf8-054ff535049e",
+    2014: "bdae89c8-d4ce-40e9-a6e1-a5203953a2e0",
+}
+
 UA = "BostonHazardPipeline/1.0 (daily-pipeline; public-health-research)"
 
 # --- Creatio ("311 Service Requests - NEW SYSTEM") ---

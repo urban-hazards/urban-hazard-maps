@@ -132,13 +132,6 @@ writes per-source freshness to `metadata/source_health.json`.
 The new Creatio system has 29 fields. Still no `description`. The Open311 API
 continues serving it live — it's deliberately excluded from the open data export.
 
-## Research Scripts
-
-All audit scripts live in `research/` in the repo:
-- `data_quality_audit.py` — full audit
-- `data_quality_patch.py` — supplemental queries
-- `human_waste_explore.py`, `human_waste_extract.py`, `human_waste_deep_dive.py`
-
 ## 15. New-System Timestamps Are Local Time Labeled "+00"
 
 The Creatio export writes `open_date` / `close_date` like `2026-08-20 09:41:28+00`, but the wall-clock
@@ -148,3 +141,72 @@ three days (Litter & Debris, Illegal Dumping, Park Litter & Debris). Parsing the
 case four hours early and shifts late-evening cases to the previous day. The pipeline re-labels these
 timestamps as Eastern in `creatio.creatio_timestamp()` before anything buckets them. Re-check the offset
 after the November DST change (expect the label to stay "+00" and the wall clock to stay local).
+
+## 16. Validating the waste classifier on new-system text
+
+The Litter & Debris and Park Litter & Debris resident descriptions are a new
+input distribution. **Precision must be ≥0.85 before this layer is trusted.**
+Ingesting the feed does not establish its precision; human review is still required.
+
+Use `pipeline.tools.precision_sample` as a manual research tool, separate from
+the daily pipeline. It reads `waste/classified.json` and the two scraper slugs'
+day files using `storage.read_json` / `list_keys`. It makes no LLM or spaCy calls
+and writes no bucket objects. Use explicitly configured read-only credentials
+or a local/moto bucket; do not use `pipeline/.env`, which points at production.
+
+From `pipeline/`, with the intended bucket environment already set:
+
+```sh
+PYTHON_DOTENV_DISABLED=1 uv run python -m pipeline.tools.precision_sample \
+  --n 100 --seed 42 --output-dir ../research
+```
+
+The output is `research/precision_sample_<date>.csv`. Preserve stdout alongside
+the CSV: it records the seed, eligible population and sample count in each
+stratum, plus per-case and aggregate HIGH/MEDIUM keyword hits saved by the
+classifier. Existing CSVs are never overwritten; use a separate output directory
+for another audit on the same day. Save the input snapshot/version and code commit
+with the audit so the seeded draw can be reproduced after bucket updates.
+
+Eligible cases are unique classified-positive IDs (`high` or `medium`) joined
+to `litter-debris` / `park-litter-debris`, opened July 1–August 31, 2026 inclusive
+in America/New_York. The September 1 UTC day file is included for Boston's last
+August evening. Unmatched IDs, low/none classifications and other slugs are
+excluded. Description/closure text saved with the classification takes priority
+over newer day-file text. Sampling is random within each (slug, month,
+confidence) stratum, with balanced allocation; small strata are exhausted and
+remaining slots redistributed. N must cover all nonempty strata and cannot exceed
+the eligible population. Report missing scraper coverage before interpreting
+precision: the estimate applies only to the joined population.
+
+Label every sampled row `1` for an actual human-waste report, `0` for a false
+positive, or `uncertain` pending adjudication. Keep a short rationale in `notes`,
+especially for animal waste, generic contractor wording, and closure-only hits.
+Review the resident description and staff closure separately; a keyword hit is
+an explanation of the prediction, not a human label. Resolve uncertain cases
+before declaring the target met, and report them explicitly in interim results.
+
+For each stratum h, calculate precision `p_h = true positives / labeled cases`.
+Overall precision is `sum(N_h * p_h) / sum(N_h)`, using the eligible population
+counts printed by the tool. A simple pooled percentage would overweight small
+strata. Report per-slug and per-confidence results, sample sizes and uncertainty
+alongside the weighted estimate. If precision is below 0.85, revise deterministic
+signals, then validate on a fresh held-out sample; keep the migration caveat and
+beta designation until validation succeeds. A positive-only audit measures
+precision, not recall or the number of missed reports.
+
+## Research Scripts
+
+All audit scripts live in `research/` in the repo:
+- `data_quality_audit.py` — full audit
+- `data_quality_patch.py` — supplemental queries
+- `human_waste_explore.py`, `human_waste_extract.py`, `human_waste_deep_dive.py`
+
+
+## 17. 2011–2014 Dumps Contain No Needle Records
+
+Checked 2026-09-07 by streaming all four legacy CSVs (56k, 117k, 140k, 141k rows): zero rows whose
+`type`, `case_title`, `reason` or `subject` match needle / syringe / sharp / hypodermic. The sharps series
+correctly starts in 2015. `pipeline/legacy_csv.py` remains as a reader for those files (it handles the
+data.boston.gov → presigned-S3 redirect, which needs the explicit `:443` stripped or AWS rejects the
+signature) but it is not wired into the daily run.
