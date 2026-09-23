@@ -26,6 +26,8 @@ interface HeatMapProps {
 	stateSenateDistricts: string[]
 	stateSenateLabels: string[]
 	districtBoundaries: DistrictBoundaries
+	/** CARTO basemap key (CARTO_BASEMAP_KEY). Empty → keyless Esri fallback. */
+	basemapKey?: string
 }
 
 const NEEDLE_GRADIENT: Record<number, string> = {
@@ -131,6 +133,7 @@ export default function HeatMap({
 	stateSenateDistricts,
 	stateSenateLabels,
 	districtBoundaries,
+	basemapKey = "",
 }: HeatMapProps) {
 	const mapRef = useRef<HTMLDivElement>(null)
 	const mapInstance = useRef<L.Map | null>(null)
@@ -327,19 +330,31 @@ export default function HeatMap({
 			boundaryPane.style.zIndex = "450"
 
 			// CARTO's free basemap tiles started requiring an API key in Sept 2026
-			// (tiles now render an "API KEY REQUIRED" watermark). Esri's Light Gray
-			// Canvas is the closest keyless equivalent. Native tiles stop at z16;
-			// Leaflet upscales beyond that.
-			L.tileLayer(
-				"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-				{
-					attribution:
-						'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-					maxNativeZoom: 16,
-					maxZoom: 19,
-					opacity: 0.7,
-				},
-			).addTo(map)
+			// (keyless requests render an "API KEY REQUIRED" watermark). With
+			// CARTO_BASEMAP_KEY set we keep the Positron look; without it, fall back
+			// to Esri's Light Gray Canvas, the closest keyless equivalent (native
+			// tiles stop at z16; Leaflet upscales beyond that).
+			const basemap = basemapKey
+				? L.tileLayer(
+						`https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${encodeURIComponent(basemapKey)}`,
+						{
+							attribution:
+								'&copy; <a href="https://carto.com/">CARTO</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+							maxZoom: 19,
+							opacity: 0.7,
+						},
+					)
+				: L.tileLayer(
+						"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+						{
+							attribution:
+								'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &middot; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+							maxNativeZoom: 16,
+							maxZoom: 19,
+							opacity: 0.7,
+						},
+					)
+			basemap.addTo(map)
 
 			// Both heat layers on by default, filtered to latest year
 			const needleBinned = filterPoints(needlePoints, defaultYear, 0)
