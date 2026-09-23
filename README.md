@@ -2,10 +2,11 @@
 
 Interactive heatmaps of publicly available data from Boston's [Analyze Boston](https://data.boston.gov/) open data portal (311 Service Requests).
 
-We map whatever geolocated 311 data is available and interesting. Right now that's two datasets:
+We map whatever geolocated 311 data is available and interesting. Right now that's three datasets:
 
 - **Sharps collection requests** — reports of discarded needles/syringes for safe pickup
-- **Encampment reports** — 311 requests filed under the "Quality of Life" category (available since 2025)
+- **Encampment reports** — 311 requests filed under the "Quality of Life" category (2023–present; the dedicated type ended May 27, 2026)
+- **Human waste (beta)** — street-cleaning requests classified by text as human waste
 
 **These are independent datasets.** They come from the same 311 system but are unrelated complaint types. We display them on the same map because it's useful to see where the city is responding to different kinds of issues — not because we're claiming any connection between them.
 
@@ -17,47 +18,51 @@ We map whatever geolocated 311 data is available and interesting. Right now that
 ## How it works
 
 ```
-┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│  data.boston.gov     │────>│  FastAPI backend      │────>│  Astro frontend │
-│  CKAN Datastore API │     │  Python 3.12 + uv     │     │  React + Leaflet│
-│  311 Service Reqs   │     │  Pydantic + Typer     │     │  Railway deploy │
-└─────────────────────┘     └──────────────────────┘     └─────────────────┘
+┌─────────────────────┐     ┌──────────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  data.boston.gov     │────>│  pipeline/ (daily cron)   │────>│  S3 bucket (Tigris)  │────>│  frontend/ (Astro │
+│  CKAN + Open311      │     │  Python 3.12 · uv · spaCy │     │  precomputed JSON    │     │  SSR + React map) │
+└─────────────────────┘     └──────────────────────────┘     └─────────────────────┘     └──────────────────┘
 ```
 
 **Key details:**
-- **Data source:** [Analyze Boston](https://data.boston.gov/dataset/311-service-requests) — 311 Service Requests dataset
-- **Sharps filter:** `TYPE` in `("Needle Pickup", "Needle Clean-up", "Needle Cleanup")` — available 2015–present
-- **Encampment filter:** `TYPE = "Encampments"` — available 2025–present
-- **API:** Uses CKAN Datastore SQL API (fetches only matching rows, not the full dataset)
-- **Caching:** Redis in production, filesystem locally. Avoids re-fetching during development.
-- **Deployment:** Railway (two services: backend + frontend)
+- **Data source:** [Analyze Boston](https://data.boston.gov/dataset/311-service-requests) 311 Service Requests (CKAN), plus the city's Open311 feed scraped by `services/open311-scraper/`
+- **Sharps filter:** `TYPE` in `("Needle Pickup", "Needle Clean-up", "Needle Cleanup")`, 2015–present
+- **Encampment filter:** `TYPE = "Encampments"` (2025+) plus tickets routed to the internal encampment queues (2023+); the dedicated type stopped appearing after May 27, 2026 (see `docs/wiki/encampment-intake-ended-2026.md`)
+- **Human waste (beta):** `TYPE = "Requests for Street Cleaning"` classified with a spaCy model, 2024–present
+- **Pipeline:** runs daily at 07:00 UTC on Railway, fetches the current year, computes stats, writes JSON to an S3-compatible bucket, and publishes a per-source health file (`docs/wiki/source-health-runbook.md`)
+- **Frontend:** Astro SSR reads the bucket with a 5-minute cache; the client filters points by year/month in the browser
+- **Deployment:** Railway (two services: pipeline cron + frontend). No GitHub Actions deploy.
 
 ---
 
 ## Setup
 
 ### Prerequisites
-- Python 3.12+
+- Python 3.12 or 3.13 (spaCy has no 3.14 wheels yet; `pipeline/.python-version` pins 3.13)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - [pnpm](https://pnpm.io/) (frontend package manager)
 - [lefthook](https://github.com/evilmartians/lefthook) (git hooks)
+- Docker (optional, for a local MinIO bucket)
 
 ### Install
 
 ```bash
-# Clone the repo
 git clone https://github.com/urban-hazards/urban-hazard-maps.git
 cd urban-hazard-maps
 
-# Backend
-cd backend
+# Pipeline
+cd pipeline
 uv sync
+uv run python -m spacy download en_core_web_sm   # re-run after any `uv sync` that drops it
+cp .env.example .env                              # points at local MinIO by default
 
 # Frontend
 cd ../frontend
 pnpm install
+cp .env.example .env
 
 # Git hooks
+cd ..
 lefthook install
 ```
 
@@ -68,38 +73,29 @@ lefthook install
 ### Run locally
 
 ```bash
-# Start the backend (port 8080 — avoid 8000, which conflicts with google-workspace-mcp OAuth callback)
-cd backend
-uv run boston-needle-map serve --port 8080
+# Local S3 (MinIO) — from the repo root; console at http://localhost:9001
+docker compose up -d
 
-# In another terminal, start the frontend (port 4321)
-cd frontend
+# Run the pipeline once (from pipeline/)
+uv run boston-pipeline                 # all datasets
+uv run boston-pipeline -d needles      # one dataset
+uv run boston-pipeline -d waste --force  # force re-fetch from CKAN
+uv run boston-pipeline --verbose
+
+# Start the frontend (from frontend/, port 4321)
 pnpm dev
 ```
 
-### Other backend commands
-
-```bash
-# Fetch data and print summary
-uv run boston-needle-map run
-
-# Fetch specific years
-uv run boston-needle-map run 2024 2025 2026
-
-# Clear cached data
-uv run boston-needle-map cache-clear
-
-# Export data as JSON
-uv run boston-needle-map dump-json
-```
+The frontend reads whatever the pipeline last wrote to the bucket. `CARTO_BASEMAP_KEY`
+(optional) enables the CARTO basemap; without it the map falls back to Esri's keyless tiles.
 
 ---
 
 ## Development
 
-### Linting & Type Checking
+### Linting, type checking, tests
 
-**Backend** (from `backend/`):
+**Pipeline** (from `pipeline/`):
 ```bash
 uv run ruff check src/ tests/
 uv run ruff format src/ tests/
@@ -110,11 +106,13 @@ uv run pytest
 **Frontend** (from `frontend/`):
 ```bash
 pnpm check    # astro check + biome check
+pnpm test     # vitest
 pnpm lint     # biome lint
 pnpm format   # biome format
 ```
 
-Git hooks (via lefthook) run ruff, mypy, and biome automatically on commit. All changes go through PRs with CI checks required to pass before merge.
+Git hooks (via lefthook) run ruff, mypy, and biome on commit. All changes go through PRs;
+`.github/workflows/pr.yml` must pass before merge.
 
 ---
 
@@ -122,29 +120,36 @@ Git hooks (via lefthook) run ruff, mypy, and biome automatically on commit. All 
 
 ```
 urban-hazard-maps/
-├── backend/
-│   ├── src/boston_needle_map/       # Python package
-│   │   ├── api.py                  # FastAPI app (needle + encampment endpoints)
-│   │   ├── cli.py                  # Typer CLI
-│   │   ├── config.py               # Constants (CKAN URLs, resource IDs, type filters)
-│   │   ├── models.py               # Pydantic models
-│   │   ├── fetcher.py              # CKAN API data fetching
+├── pipeline/                       # Daily Python cron job (Railway)
+│   ├── src/pipeline/
+│   │   ├── run.py                  # Orchestrator: fetch → clean → classify → compute → write
+│   │   ├── cli.py                  # Typer CLI (`boston-pipeline`)
+│   │   ├── config.py               # CKAN resource IDs, type filters, S3 env vars
+│   │   ├── fetcher.py              # CKAN fetching (type + queue strategies)
 │   │   ├── cleaner.py              # Record normalization & validation
-│   │   ├── analytics.py            # Stats computation
-│   │   └── cache.py                # Cache adapter (Redis / filesystem)
+│   │   ├── classifier.py           # spaCy human-waste classifier
+│   │   ├── analytics.py            # Heatmap bins, neighborhoods, hourly/monthly stats
+│   │   ├── health.py               # Per-source freshness → metadata/source_health.json
+│   │   └── storage.py              # S3 read/write
 │   ├── tests/
 │   ├── Dockerfile
 │   └── pyproject.toml
-├── frontend/
+├── frontend/                       # Astro SSR site (Railway)
 │   ├── src/
 │   │   ├── pages/                  # Astro pages
-│   │   ├── components/             # Astro + React components
-│   │   ├── lib/                    # TypeScript types, API client
-│   │   └── styles/                 # Global CSS
+│   │   ├── components/             # Astro components + React islands (HeatMap)
+│   │   ├── lib/                    # bucket reader, types, freshness model
+│   │   └── styles/
 │   ├── Dockerfile
 │   └── package.json
-├── CLAUDE.md                       # Project guide
-└── lefthook.yml                    # Git hook config
+├── services/open311-scraper/       # Open311 day-file scraper (Railway)
+├── docs/
+│   ├── wiki/                       # What we know about Boston 311 (start at INDEX.md)
+│   ├── design/                     # Design docs + review transcripts
+│   └── architectural-decisions/
+├── docker-compose.yml              # Local MinIO
+├── CLAUDE.md                       # Project guide for AI assistants
+└── lefthook.yml
 ```
 
 ---
@@ -156,7 +161,8 @@ All data comes from the City of Boston's [Analyze Boston](https://data.boston.go
 | Dataset | 311 Type | Available | Description |
 |---|---|---|---|
 | Sharps | `Needle Pickup`, `Needle Clean-up` | 2015–present | Reports to the city's Mobile Sharps Collection Team for safe retrieval of discarded sharps in public spaces |
-| Encampments | `Encampments` | 2025–present | 311 reports filed under the "Quality of Life" category |
+| Encampments | `Encampments` + internal encampment queues | 2023–present (type stopped May 27, 2026) | 311 reports filed under the "Quality of Life" category |
+| Human Waste (beta) | `Requests for Street Cleaning`, NLP-classified | 2024–present | Street-cleaning requests whose text describes human waste; see `/methodology` |
 
 These are separate complaint types within the same 311 system. People call 311 for all kinds of reasons — potholes, noise, graffiti, needles, encampments, etc. We picked these two because they have good geolocation data and are relevant to public health. Showing them on the same map is a convenience, not a claim that they're related.
 
