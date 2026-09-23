@@ -15,6 +15,7 @@ import {
 	fetchPoints,
 	fetchSourceHealth,
 } from "../lib/bucket"
+import { disruptionsFromHealth } from "../lib/freshness"
 import { formatNumber } from "../lib/seo"
 import "../styles/global.css"
 
@@ -74,7 +75,7 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 	distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: "https://www.urbanhazardmaps.com/api/stats" },
 }}>
 	<Header generated={stats.generated} />
-	<DataFreshness health={sourceHealth} frozen={{ encampments: "2026-06-22", waste: "2026-06-30" }} />
+	<DataFreshness health={sourceHealth} frozen={{ encampments: "2026-05-27", waste: "2026-06-30" }} />
 
 	<main class="container" style="padding-top: 32px; padding-bottom: 48px;">
 		<h1 class="page-title">
@@ -122,6 +123,7 @@ const description = `Interactive heatmap and analysis of ${formatNumber(stats.to
 			stateSenateLabels={stats.state_senate_district_labels ?? stats.state_senate_districts ?? []}
 			districtBoundaries={districtBoundaries}
 			basemapKey={import.meta.env.CARTO_BASEMAP_KEY ?? process.env.CARTO_BASEMAP_KEY ?? ""}
+			disruptions={disruptionsFromHealth(sourceHealth)}
 		/>
 		<noscript>
 			<div style="text-align: center; padding: 24px;">

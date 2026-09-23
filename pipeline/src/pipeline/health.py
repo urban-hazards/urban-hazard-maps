@@ -11,7 +11,7 @@ from typing import Any
 
 from pipeline import storage
 from pipeline.cleaner import _parse_datetime
-from pipeline.config import CKAN_BASE, CREATIO_RESOURCE_ID, RESOURCE_IDS
+from pipeline.config import CKAN_BASE, CREATIO_RESOURCE_ID, ENCAMPMENT_TYPES, RESOURCE_IDS
 from pipeline.fetcher import _api_get
 
 logger = logging.getLogger(__name__)
@@ -19,26 +19,30 @@ logger = logging.getLogger(__name__)
 WINDOW_DAYS = 30
 STALE_DAYS = 14
 DEGRADED_RATIO = 0.5
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
-# source key -> (kind, selector).
+# source key -> (kind, selector, coverage).
 # kind: "ckan_legacy" (dataset, type) | "ckan_creatio" (service_name,) | "open311" (slug,)
-SOURCES: dict[str, tuple[str, tuple[str, ...]]] = {
-    "ckan_legacy:Needle Pickup": ("ckan_legacy", ("needles", "Needle Pickup")),
-    "ckan_legacy:Encampments": ("ckan_legacy", ("encampments", "Encampments")),
-    "ckan_legacy:Requests for Street Cleaning": ("ckan_legacy", ("waste", "Requests for Street Cleaning")),
-    "ckan_creatio:Litter & Debris": ("ckan_creatio", ("Litter & Debris",)),
-    "ckan_creatio:Park Litter & Debris": ("ckan_creatio", ("Park Litter & Debris",)),
-    "open311:needles": ("open311", ("needles",)),
-    "open311:encampments": ("open311", ("encampments",)),
-    "open311:other": ("open311", ("other",)),
-    "open311:other-creatio": ("open311", ("other-creatio",)),
-    "open311:litter-debris": ("open311", ("litter-debris",)),
-    "open311:park-litter-debris": ("open311", ("park-litter-debris",)),
+# For kind "ckan_legacy" and dataset "encampments", selector[1] is a provenance route
+# ("type" | "queue"), not a `type` value to match — see H1/_row_route below.
+# coverage: whether this source can make its layer "ok" (see H1/H2 in plan_v3.md).
+SOURCES: dict[str, tuple[str, tuple[str, ...], bool]] = {
+    "ckan_legacy:Needle Pickup": ("ckan_legacy", ("needles", "Needle Pickup"), True),
+    "ckan_legacy:Encampments": ("ckan_legacy", ("encampments", "type"), True),
+    "ckan_legacy:Encampments (queue)": ("ckan_legacy", ("encampments", "queue"), False),
+    "ckan_legacy:Requests for Street Cleaning": ("ckan_legacy", ("waste", "Requests for Street Cleaning"), True),
+    "ckan_creatio:Litter & Debris": ("ckan_creatio", ("Litter & Debris",), True),
+    "ckan_creatio:Park Litter & Debris": ("ckan_creatio", ("Park Litter & Debris",), True),
+    "open311:needles": ("open311", ("needles",), True),
+    "open311:encampments": ("open311", ("encampments",), True),
+    "open311:other": ("open311", ("other",), True),
+    "open311:other-creatio": ("open311", ("other-creatio",), True),
+    "open311:litter-debris": ("open311", ("litter-debris",), True),
+    "open311:park-litter-debris": ("open311", ("park-litter-debris",), True),
 }
 LAYER_SOURCES: dict[str, list[str]] = {
     "needles": ["ckan_legacy:Needle Pickup", "open311:needles"],
-    "encampments": ["ckan_legacy:Encampments", "open311:encampments"],
+    "encampments": ["ckan_legacy:Encampments", "ckan_legacy:Encampments (queue)", "open311:encampments"],
     "waste": [
         "ckan_legacy:Requests for Street Cleaning",
         "ckan_creatio:Litter & Debris",
@@ -81,20 +85,75 @@ def _rows(key: str) -> list[dict[str, Any]]:
     return data if isinstance(data, list) else []
 
 
-def _legacy_days(dataset: str, type_name: str, years: set[int]) -> list[str]:
+def _legacy_year_files(prefix: str) -> list[int]:
+    """Years present in the bucket for a raw/<prefix>_*.json family (full history,
+    independent of the rolling last_30d / prior_year_30d `years` window).
+    """
+    years: set[int] = set()
+    for key in storage.list_keys(f"raw/{prefix}_"):
+        if not key.endswith(".json"):
+            continue
+        stem = key.rsplit("/", 1)[-1][: -len(".json")]
+        year_str = stem.rsplit("_", 1)[-1]
+        if year_str.isdigit():
+            years.add(int(year_str))
+    return sorted(years)
+
+
+def _legacy_window_days(dataset: str, type_name: str, years: set[int]) -> list[str]:
+    """last_30d / prior_year_30d window days: restricted to the rolling `years` set."""
     days: list[str] = []
     for year in sorted(years):
         if year not in RESOURCE_IDS:
             continue
-        if dataset == "encampments":
-            # raw/encampments_v2_* is already filtered by fetch_encampment_year
-            # (type="Encampments" OR queue in ENCAMPMENT_QUEUES). Queue-matched
-            # rows keep their original `type`, so filtering on type here would
-            # drop records that still reach the map and understate "through".
-            days.extend(_local_day(str(r.get("open_dt") or "")) for r in _rows(f"raw/encampments_v2_{year}.json"))
-        else:
-            days.extend(_days_from_rows(_rows(f"raw/{dataset}_{year}.json"), "type", type_name))
+        days.extend(_days_from_rows(_rows(f"raw/{dataset}_{year}.json"), "type", type_name))
     return sorted(d for d in days if d)
+
+
+def _legacy_through_days(dataset: str, type_name: str) -> list[str]:
+    """`through`: every raw/<dataset>_*.json year file present in the bucket, not just
+    the rolling `years` window (a file's year can fall out of that window).
+    """
+    days: list[str] = []
+    for year in _legacy_year_files(dataset):
+        days.extend(_days_from_rows(_rows(f"raw/{dataset}_{year}.json"), "type", type_name))
+    return sorted(d for d in days if d)
+
+
+def _row_route(row: dict[str, Any]) -> str:
+    """Provenance route for an encampment row: "type" (fetched via the type-button
+    strategy) or "queue" (fetched via the internal-routing-queue strategy). Rows fetched
+    before the `_uhm_route` stamp existed fall back to the mutable `type` field.
+    """
+    route = row.get("_uhm_route")
+    if route == "type" or route == "queue":
+        return route
+    return "type" if row.get("type") in ENCAMPMENT_TYPES else "queue"
+
+
+def _encampment_partition(years: list[int]) -> tuple[list[str], list[str]]:
+    """(type_days, queue_days) across the given raw/encampments_v2_<year>.json files,
+    partitioned by provenance rather than by the mutable `type` field (H1).
+    """
+    type_days: list[str] = []
+    queue_days: list[str] = []
+    for year in sorted(set(years)):
+        rows = _rows(f"raw/encampments_v2_{year}.json")
+        if not rows:
+            continue
+        type_rows = [r for r in rows if _row_route(r) == "type"]
+        queue_rows = [r for r in rows if _row_route(r) == "queue"]
+        if len(type_rows) + len(queue_rows) != len(rows):
+            logger.warning(
+                "raw/encampments_v2_%d.json: type+queue partition (%d + %d) != row count %d",
+                year,
+                len(type_rows),
+                len(queue_rows),
+                len(rows),
+            )
+        type_days.extend(_local_day(str(r.get("open_dt") or "")) for r in type_rows)
+        queue_days.extend(_local_day(str(r.get("open_dt") or "")) for r in queue_rows)
+    return sorted(d for d in type_days if d), sorted(d for d in queue_days if d)
 
 
 def _creatio_days(service_name: str) -> list[str]:
@@ -140,10 +199,28 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
     start = today - timedelta(days=WINDOW_DAYS - 1)  # inclusive 30-day window
     py_start, py_end = start - timedelta(days=365), today - timedelta(days=365)
     years = {start.year, today.year, py_start.year, py_end.year}
+
+    enc_type_window, enc_queue_window = _encampment_partition(sorted(years))
+    enc_type_full, enc_queue_full = _encampment_partition(_legacy_year_files("encampments_v2"))
+
     sources: dict[str, Any] = {}
-    for key, (kind, sel) in SOURCES.items():
-        if kind in ("ckan_legacy", "ckan_creatio"):
-            days = _legacy_days(sel[0], sel[1], years) if kind == "ckan_legacy" else _creatio_days(sel[0])
+    for key, (kind, sel, coverage) in SOURCES.items():
+        if kind == "ckan_legacy" and sel[0] == "encampments":
+            route = sel[1]  # "type" | "queue"
+            window_days = enc_type_window if route == "type" else enc_queue_window
+            full_days = enc_type_full if route == "type" else enc_queue_full
+            cur = _window(window_days, start, today)
+            prior = _window(window_days, py_start, py_end)
+            through = full_days[-1] if full_days else ""
+        elif kind == "ckan_legacy":
+            dataset, type_name = sel
+            window_days = _legacy_window_days(dataset, type_name, years)
+            full_days = _legacy_through_days(dataset, type_name)
+            cur = _window(window_days, start, today)
+            prior = _window(window_days, py_start, py_end)
+            through = full_days[-1] if full_days else ""
+        elif kind == "ckan_creatio":
+            days = _creatio_days(sel[0])
             cur = _window(days, start, today)
             prior = _window(days, py_start, py_end)
             through = days[-1] if days else ""
@@ -158,15 +235,32 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
             "prior_year_30d": prior,
             "ratio": ratio,
             "status": classify_status(ratio, days_since, cur),
+            "coverage": coverage,
         }
     layers: dict[str, Any] = {}
     notes: list[str] = []
     for layer, keys in LAYER_SOURCES.items():
-        statuses = [sources[k]["status"] for k in keys]
-        through = max((sources[k]["through"] for k in keys), default="")
-        layers[layer] = {"status": layer_status(statuses), "through": through, "sources": keys}
-        if layers[layer]["status"] != "ok":
-            notes.append(f"{layer}: {layers[layer]['status']} (through {through or 'never'})")
+        coverage_keys = [k for k in keys if SOURCES[k][2]]
+        statuses = [sources[k]["status"] for k in coverage_keys]
+        status = layer_status(statuses)
+        through = max((sources[k]["through"] for k in coverage_keys), default="")
+        latest_report = max((sources[k]["through"] for k in keys), default="")
+        # Only a *stale* layer (no coverage source reporting recently) is "disrupted since"
+        # the day after its last coverage report. "degraded" means reports still arrive at
+        # reduced volume, so no disruption date is claimed for it.
+        disrupted_since = (
+            (date.fromisoformat(through) + timedelta(days=1)).isoformat() if status == "stale" and through else None
+        )
+        layers[layer] = {
+            "status": status,
+            "through": through,
+            "latest_report": latest_report,
+            "disrupted_since": disrupted_since,
+            "sources": keys,
+            "coverage_sources": coverage_keys,
+        }
+        if status != "ok":
+            notes.append(f"{layer}: {status} (through {through or 'never'})")
     names = _creatio_service_names()
     if not names:
         notes.append("Creatio service-name discovery returned nothing (CKAN distinct query failed)")

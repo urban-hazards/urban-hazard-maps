@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { DistrictBoundaries } from "../lib/bucket"
+import { fmtShort, isDisruptedMonth } from "../lib/freshness"
 import type { MarkerData } from "../lib/types"
 
 declare const L: typeof import("leaflet")
@@ -28,6 +29,8 @@ interface HeatMapProps {
 	districtBoundaries: DistrictBoundaries
 	/** CARTO basemap key (CARTO_BASEMAP_KEY). Empty → keyless Esri fallback. */
 	basemapKey?: string
+	/** Layers currently disrupted (status != "ok" with a known disrupted_since), from source health. */
+	disruptions?: Record<string, { since: string; latest: string }>
 }
 
 const NEEDLE_GRADIENT: Record<number, string> = {
@@ -134,6 +137,7 @@ export default function HeatMap({
 	stateSenateLabels,
 	districtBoundaries,
 	basemapKey = "",
+	disruptions = {},
 }: HeatMapProps) {
 	const mapRef = useRef<HTMLDivElement>(null)
 	const mapInstance = useRef<L.Map | null>(null)
@@ -169,6 +173,18 @@ export default function HeatMap({
 		() => encampmentPoints.filter(([, , yr]) => String(yr) === defaultYear).length,
 	)
 	const [wasteCount, setWasteCount] = useState(wasteTotal)
+
+	// Disruption note (year-month is in the disrupted window for the active layer, per contract.md).
+	const disruptionNoteFor = (layerKey: string): string | null => {
+		if (selYear === "all" || selMonth === 0) return null
+		const d = disruptions[layerKey]
+		if (!d) return null
+		if (!isDisruptedMonth(d.since, Number(selYear), selMonth)) return null
+		return fmtShort(d.since)
+	}
+	const needlesDisruptionNote = disruptionNoteFor("needles")
+	const encampmentsDisruptionNote = disruptionNoteFor("encampments")
+	const wasteDisruptionNote = disruptionNoteFor("waste")
 	const [ready, setReady] = useState(false)
 	const [isMobile, setIsMobile] = useState(false)
 	const [filterOpen, setFilterOpen] = useState(false)
@@ -1190,12 +1206,24 @@ export default function HeatMap({
 					{(dataLayer === "needles" || dataLayer === "both") && (
 						<span style={{ color: "#e85a1b" }}>
 							<strong>{count.toLocaleString()}</strong> sharps
+							{needlesDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {needlesDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 					{dataLayer === "both" && <span> + </span>}
 					{(dataLayer === "encampments" || dataLayer === "both") && (
 						<span style={{ color: "#7b2d8e" }}>
 							<strong>{encampmentCount.toLocaleString()}</strong> encampments
+							{encampmentsDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {encampmentsDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 					{dataLayer === "waste" && (
@@ -1207,6 +1235,12 @@ export default function HeatMap({
 									? "missed reports (ML)"
 									: "human waste reports"}
 							<span style={{ fontSize: "10px", opacity: 0.7 }}> (beta)</span>
+							{wasteDisruptionNote && (
+								<span style={{ color: "#8a6d1f", fontSize: "0.85em" }}>
+									{" "}
+									· reporting disrupted since {wasteDisruptionNote}
+								</span>
+							)}
 						</span>
 					)}
 				</div>

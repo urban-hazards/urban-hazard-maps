@@ -1,0 +1,24 @@
+## Answers to the plan's questions
+
+**1. P2 heuristic — not sound as specified.** Three concrete failures:
+- **Current partial month.** The walk starts at `latest`'s month. On Sep 3 a *healthy* layer's month-to-date count is <25% of the trailing median → `complete_through` snaps to Aug 31 and every healthy layer gets the "incomplete" chip wording and the P4 map note for roughly the first week of every month. You must exclude the in-progress month or prorate by elapsed days. Your tests only cover the collapsed case.
+- **Seasonality.** Trailing-6-month median guarantees false "incomplete" flags on any seasonal layer (waste in winter). Compare year-over-year same-month volume instead.
+- **`years` interaction.** Completeness needs ≥6 months of files, but the `years` set only guarantees the 30-day window and its prior-year twin. On 2028-01-30 the 2026 file drops out and the median window silently changes. Deferring finding 6 is no longer tenable — P2 depends on it. Fix it here.
+- Also: "union count" masks a dead source. If the queue route kept normal volume while the type feed died, `complete_through` advances and the type death is invisible outside `sources`. State whether that's intended. And 25% is uncalibrated; emit the boundary plus the monthly counts into `source_health.json` so the resident-facing "complete" claim is auditable.
+
+**2. MIN_OK_VOLUME=5.** The floor is absolute, so a legitimately low-volume source can never be ok (open311:encampments ran ~10/month prior-year; a revived 4/month feed stays not-ok forever). Apply the floor only when the source historically had volume (`cur >= 5 or prior < 5`), or scale it. Also decide where it applies: the plan says "counts toward layer ok," but the source's own `status` still computes ok — your output will say source ok, layer stale. Contradictory diagnostics.
+
+**3. P3 wording.** "Complete through" asserts a heuristic guess as fact; a resident can't know "complete" means "volume looked normal." "Last report Jun 22" still invites the "June is quiet" inference round 1 killed. Shorter: "Encampments: full data through May 27; only 3 reports since." Bigger problem: the split-date chip renders regardless of status, but the explanatory notice only renders when a layer is not ok — an ok layer with differing dates gets an unexplained weird chip (and with the partial-month bug, that's every layer, every month).
+
+**4. P4.** Worth it — users read the map count, not the banner. Unspecified: where "reporting collapsed after May 27" comes from (hardcoded per layer? generated?); what July/August render ("0 encampments · incomplete month" — say so); and the condition "after complete_through" fires for *any* later month, including after a future Creatio revival re-inflates volume, and for historical gaps in earlier years. Scope it to the collapse episode.
+
+**5. P1 partition — yes, it breaks twice.** (a) The predicate is `type != "Encampments"`, but the fetcher uses `ENCAMPMENT_TYPES`, a list; if it ever holds more than one name, type-fetched rows land in the queue source. Use "not in ENCAMPMENT_TYPES." (b) If Creatio-era tickets arrive via the queue route carrying type "Encampments", they're counted into the dead type source and it looks alive again — v1's bug through the back door. Partition on provenance recorded at fetch time (which strategy contributed the row), not on a city-controlled mutable field.
+
+**6. Ordering.** You handled only one direction. New frontend + old health: `latest`/`complete_through` are undefined and P3's equality branch is unspecified; define the fallback (use `through`, render legacy wording). Same for the P4 prop and the `frozen` path (frozen has no `latest`; behavior unspecified). SCHEMA_VERSION is written but nothing reads it — gate the frontend on it or stop citing it as a compat mechanism. "Keep `through` for one release" — define the removal; silent key removal later breaks the consumer you just encouraged.
+
+**7. Still missing.**
+- **No frontend tests at all.** The bug was a cross-component disagreement; P6 tests only health.py. The "optional" banner/map agreement test is the one test that catches this bug class. Make it mandatory.
+- Flip test: with prior=0, ratio is None and `classify_status` returns ok on recency alone; it passes only via the P5 aggregation floor. Assert the source-vs-layer status contradiction explicitly.
+- Completeness for open311 sources: monthly counts mean reading ~180 day files per slug. Whether completeness is computed for open311/creatio sources at all, and what "union count" means per source kind, is undefined.
+- Timezone/month bucketing (which field, `_local_day` vs the 28ec0fa "+00 mislabel" fix) — carried from round 1, still unanswered.
+- With P5, a trickle-revived open311 source (≥5/month) makes the layer ok, the notice vanishes, but the chip still shows split dates with no explanation anywhere on the page.
