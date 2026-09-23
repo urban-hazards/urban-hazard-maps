@@ -120,4 +120,13 @@ describe("isDisruptedMonth", () => {
 		expect(isDisruptedMonth("2026-05-28", 2026, 6)).toBe(true)
 		expect(isDisruptedMonth("2026-05-28", 2027, 1)).toBe(true)
 	})
+
+	it("guards malformed or empty dates", () => {
+		expect(isDisruptedMonth("", 2026, 6)).toBe(false)
+		expect(isDisruptedMonth("garbage", 2026, 6)).toBe(false)
+		expect(isDisruptedMonth("2026-05-28", Number.NaN, 6)).toBe(false)
+		const m = freshnessModel(null, { encampments: "", waste: "2026-06-30" })
+		expect(m.chips.map((c) => c.key)).toEqual(["waste"])
+		expect(m.chips[0].disruptedSince).toBe("2026-07-01")
+	})
 })

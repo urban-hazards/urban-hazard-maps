@@ -200,17 +200,17 @@ def compute_source_health(today: date | None = None) -> dict[str, Any]:
     py_start, py_end = start - timedelta(days=365), today - timedelta(days=365)
     years = {start.year, today.year, py_start.year, py_end.year}
 
-    enc_type_window, enc_queue_window = _encampment_partition(sorted(years))
+    # One pass over every encampment year file: `through` needs full history, and the
+    # window counts are date-filtered by _window anyway, so a second windowed read is redundant.
     enc_type_full, enc_queue_full = _encampment_partition(_legacy_year_files("encampments_v2"))
 
     sources: dict[str, Any] = {}
     for key, (kind, sel, coverage) in SOURCES.items():
         if kind == "ckan_legacy" and sel[0] == "encampments":
             route = sel[1]  # "type" | "queue"
-            window_days = enc_type_window if route == "type" else enc_queue_window
             full_days = enc_type_full if route == "type" else enc_queue_full
-            cur = _window(window_days, start, today)
-            prior = _window(window_days, py_start, py_end)
+            cur = _window(full_days, start, today)
+            prior = _window(full_days, py_start, py_end)
             through = full_days[-1] if full_days else ""
         elif kind == "ckan_legacy":
             dataset, type_name = sel

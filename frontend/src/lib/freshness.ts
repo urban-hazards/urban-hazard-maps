@@ -54,7 +54,10 @@ export const fmtShort = (d: string): string =>
 			})
 		: "unknown"
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+
 function addDay(d: string): string {
+	if (!ISO_DAY.test(d)) return ""
 	const date = new Date(`${d}T12:00:00`)
 	date.setDate(date.getDate() + 1)
 	const y = date.getFullYear()
@@ -132,19 +135,21 @@ export function freshnessModel(
 			}
 		})
 	} else {
-		chips = Object.entries(frozen).map(([key, d]) => {
-			const label = LABELS[key] ?? key
-			const disruptedSince = addDay(d)
-			return {
-				key,
-				label,
-				text: notOkText(label, d, disruptedSince),
-				status: "stale" as SourceStatus,
-				sources: [],
-				disruptedSince,
-				latestReport: d,
-			}
-		})
+		chips = Object.entries(frozen)
+			.filter(([, d]) => ISO_DAY.test(d))
+			.map(([key, d]) => {
+				const label = LABELS[key] ?? key
+				const disruptedSince = addDay(d) || null
+				return {
+					key,
+					label,
+					text: notOkText(label, d, disruptedSince),
+					status: "stale" as SourceStatus,
+					sources: [],
+					disruptedSince,
+					latestReport: d,
+				}
+			})
 	}
 
 	const troubled = chips.filter((c) => c.status !== "ok")
@@ -186,6 +191,7 @@ export function disruptionsFromHealth(
 
 /** True when (year, month) >= the (year, month) of `since` ("YYYY-MM-DD"). */
 export function isDisruptedMonth(since: string, year: number, month: number): boolean {
+	if (!ISO_DAY.test(since) || !Number.isFinite(year) || month < 1) return false
 	const sinceYear = Number(since.slice(0, 4))
 	const sinceMonth = Number(since.slice(5, 7))
 	if (year !== sinceYear) return year > sinceYear
